@@ -1,0 +1,202 @@
+# falsegreen-skill
+
+**LLM-based semantic analysis for false-positive test detection.** This skill
+judges whether a test genuinely verifies correct behavior — for Python,
+TypeScript, JavaScript, Java, C#, PHP, Ruby, and C++.
+
+The companion [falsegreen](https://github.com/vinicq/falsegreen) scanner
+handles deterministic Python patterns (C1-C22). This skill handles the cases
+that need semantic judgment: mocking the unit under test, asserting the value
+fed to the mock, re-implementing the production formula, and frozen bugs. It
+also covers all non-Python languages where a static parser does not exist.
+
+Invoke with `/falsegreen-skill` inside Claude Code. Attach a test file or
+paste a test snippet.
+
+---
+
+## The one rule
+
+A test is useful only if it fails when the code breaks. Every pattern this
+skill looks for is a variation on tests that do not fail — tests that pass
+while the code is wrong, tests that check the wrong thing, or tests that
+borrow correctness from elsewhere.
+
+---
+
+## Protocol
+
+Work through these steps in order. Do not skip steps.
+
+### Step 1 — Detect language and framework
+
+Identify:
+- Language: Python / TypeScript / JavaScript / Java / C# / PHP / Ruby / C++
+- Test framework: pytest / Jest / Vitest / JUnit 4-5 / NUnit / xUnit.net /
+  PHPUnit / RSpec / Minitest / Catch2 / GoogleTest
+- Layer context: is this a unit test, an integration test, a UI/E2E test, or
+  a web layer test? (affects C6 and C14)
+
+See `reference.md` for framework-detection cues per language.
+
+### Step 2 — Run the deterministic check (Python only)
+
+If the language is Python, suggest running
+`falsegreen <file>` first. Its 21 mechanical codes catch structural problems
+(empty asserts, self-comparisons, uncollected tests) that do not need LLM
+judgment. Only proceed to the semantic steps for findings the scanner flags as
+needing semantic adjudication, or for the semantic-only cases (10/11/12/15/18).
+
+For all other languages, proceed directly to Step 3.
+
+### Step 3 — Classify test intent
+
+Before judging the expected value, classify each test:
+
+| Class | Meaning | Oracle |
+|---|---|---|
+| **spec/TDD** | the test is the spec; code must match it | the test itself |
+| **characterization** | intentionally freezes current behavior | current output is the oracle |
+| **regression** | records a known bug fix | the bug report is the oracle |
+| **behavior** | verifies a production rule or contract | spec / docstring / types |
+
+A failing TDD test is not a false positive. A labeled characterization
+snapshot is not a frozen bug. Misclassifying here causes false alarms.
+
+### Step 4 — Apply the six judgments
+
+Judge each test across J1-J6. Flag only the first judgment that fails — do
+not double-report the same root cause.
+
+**J1 — Does the assertion run?**
+Does at least one assertion execute when the test is run normally? An
+assertion inside a branch that never fires, or after an unconditional return,
+passes vacuously.
+
+**J2 — Is the expected value from an independent oracle?**
+Is the expected value derived from the spec, the API contract, or independent
+human judgment — NOT from the current code output? If the test asserts
+`result == current_implementation()`, both sides agree on the same wrong
+number. An assertion that re-implements the production formula has the same
+problem.
+
+**J3 — Is the real unit under test?**
+Is the test verifying the actual production unit, or a mock of it? Mocking
+the function/class under test and then asserting the mock value is not a test
+of the production code.
+
+**J4 — Does the assertion verify enough, and the right thing?**
+Does the assertion check a meaningful property of the result? Checking only
+that the result is truthy, or that an exception was raised without verifying
+its type, does not protect the behavior being tested.
+
+**J5 — Is the test coupled to implementation internals?**
+Does the test depend on private methods, internal state, or implementation
+details that could change without breaking the public contract?
+
+**J6 — Does the test pass in isolation?**
+Does the test depend on execution order, shared mutable state, or fixtures set
+up by a sibling test? A test that passes only in a specific order is not
+reliably testing anything.
+
+### Step 5 — Adversarial verify for case 18
+
+Case 18 (expected value contradicts what the code should do) is the highest-
+stakes finding: it means the test is freezing a bug as "correct". Before
+reporting it:
+
+1. Cite the independent oracle: spec, docstring, type annotation, API
+   contract, or domain rule. If you cannot cite one, do not report case 18.
+2. Run an adversarial check: assume the expected value is correct and argue
+   why. If the argument holds, withdraw the finding.
+3. Report only when the oracle clearly contradicts the expected value and the
+   adversarial argument does not hold.
+
+Never report case 18 based on gut feeling or pattern-matching alone.
+
+### Step 6 — Output the report
+
+For each finding, output:
+
+```
+CASE {number} ({J1-J6}) — {confidence: HIGH | LOW} — {language}
+
+Test: {function name, line range}
+Finding: {one sentence describing what is wrong}
+Evidence: {the specific line(s) that triggered this}
+Oracle: {for case 18 only: cite the independent oracle}
+Fix hint: {one sentence suggestion}
+```
+
+Then a summary block:
+
+```
+SUMMARY
+Tests reviewed: N
+Findings: M (H high, L low)
+Clean: N-M
+```
+
+Use HIGH only when there is no plausible legitimate interpretation.
+Precision over recall: a wrong HIGH finding is worse than a missed LOW one.
+
+---
+
+## Case reference (quick lookup)
+
+| Case | Judgment | Name | Caught by |
+|---|---|---|---|
+| 10 | J3 | Mocks the unit under test | Semantic |
+| 11 | J2/J3 | Asserts the value fed to the mock | Semantic |
+| 12 | J2 | Re-implements the production formula | Semantic |
+| 15 | J6 | Passes only if another test ran first | Semantic |
+| 18 | J2 | Expected value contradicts what the code should do | Semantic + adversarial verify |
+
+Cases 1-9, 13, 14, 16, 17, 19-22 are handled by the falsegreen scanner (Python)
+or by language-specific static analysis. This skill adjudicates them when the
+scanner output needs review, and handles them directly for non-Python languages.
+
+Full case catalog with language examples: see `reference.md`.
+
+---
+
+## Precision-first rules
+
+1. Never report a case 18 without citing an independent oracle.
+2. If a mock replaces a network/disk/time dependency (an edge), it is NOT
+   case 10. Case 10 applies only when the mock replaces the unit being tested.
+3. A characterization test is not a bug even if the expected value looks wrong.
+   Classify first (Step 3) before judging.
+4. A test that uses `assert True` in a `@pytest.mark.skip` block is not C5.
+   The skip marker stops it from running.
+5. In web/UI layer tests, a truthiness check on a response or locator object
+   is NOT case 6. Presence of a response IS the assertion at that layer.
+
+---
+
+## Multi-agent mode (case 18 deep analysis)
+
+For a case 18 finding that requires high confidence (blocking a deploy,
+cited in a report), run a two-pass adversarial check:
+
+**Pass 1 (finder):** Identify the expected value and the oracle. Report
+the finding with the cited oracle.
+
+**Pass 2 (refuter):** Given the case 18 finding, argue that the expected
+value is actually correct. Consider: is this a characterization test? Is the
+oracle you cited authoritative for this specific test? Does the domain have
+a convention that makes the expected value correct?
+
+If the refuter provides a plausible argument, downgrade to LOW or withdraw.
+Report case 18 HIGH only when the refuter cannot mount a credible defense.
+
+---
+
+## What this skill does not do
+
+- It does not suggest code fixes unless asked.
+- It does not run the tests.
+- It does not analyze production code unless the test snippet includes it.
+- It does not flag maintainability smells (bad names, missing messages,
+  Eager Test, Lazy Test). Those are style issues, not false-positive risks.
+  Use `ruff`'s `PT` rules or PyNose for that layer.
