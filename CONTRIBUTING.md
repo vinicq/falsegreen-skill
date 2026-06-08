@@ -1,6 +1,6 @@
-# Contributing to falsegreen-skill
+﻿# Contributing to falsegreen-skill
 
-Thanks for helping. falsegreen-skill is the LLM semantic pass companion to the
+falsegreen-skill is the LLM semantic pass companion to the
 [falsegreen](https://github.com/vinicq/falsegreen) Python scanner. It detects
 false-positive test patterns that no static tool can see, across Python,
 TypeScript, JavaScript, Java, C#, PHP, Ruby, and C++.

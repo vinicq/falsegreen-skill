@@ -1,4 +1,4 @@
-# falsegreen-skill
+﻿# falsegreen-skill
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -76,12 +76,12 @@ review, and for the semantic-only cases (10/11/12/15/18).
 One rule sits under everything: a test is useful only if it fails when the
 code breaks. The six-judgment framework (J1-J6) structures the analysis:
 
-- **J1** — Does the assertion run?
-- **J2** — Is the expected value from an independent oracle?
-- **J3** — Is the real unit under test (not a mock of it)?
-- **J4** — Does the assertion verify enough?
-- **J5** — Is the test coupled to implementation internals?
-- **J6** — Does the test pass in isolation?
+- **J1:** Does the assertion run?
+- **J2:** Is the expected value from an independent oracle?
+- **J3:** Is the real unit under test (not a mock of it)?
+- **J4:** Does the assertion verify enough?
+- **J5:** Is the test coupled to implementation internals?
+- **J6:** Does the test pass in isolation?
 
 The methodology and its research basis are documented in
 [falsegreen CREDITS.md](https://github.com/vinicq/falsegreen/blob/main/CREDITS.md)
@@ -94,7 +94,7 @@ and in this repo's [CREDITS.md](CREDITS.md).
 A finding that wrongly flags a legitimate test is worse than a missed
 finding. The skill applies the same guardrail as the scanner:
 
-- Case 18 requires a cited independent oracle — spec, docstring, API contract.
+- Case 18 requires a cited independent oracle: spec, docstring, API contract.
   No oracle, no finding.
 - An adversarial verification pass runs on every case 18 HIGH finding.
 - Characterization tests (intentionally freezing current behavior) are not

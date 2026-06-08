@@ -1,4 +1,4 @@
-# Detection Reference
+﻿# Detection Reference
 
 Full case catalog with per-language patterns, framework cues, and look-alike
 examples. Use alongside [SKILL.md](SKILL.md).
@@ -66,7 +66,7 @@ examples. Use alongside [SKILL.md](SKILL.md).
 
 ## Case catalog
 
-### Case 10 — Mocks the unit under test (J3, HIGH)
+### Case 10 - Mocks the unit under test (J3, HIGH)
 
 The test patches or mocks the function/class/method that is supposed to be
 under test, then asserts on the mock's return value. It is testing the mock
@@ -83,7 +83,7 @@ assertion. The test does not call the real implementation.
 def test_add(mock_add):
     mock_add.return_value = 5
     result = add(2, 3)
-    assert result == 5          # C10 — asserting the mock's value
+    assert result == 5          # C10 - asserting the mock's value
 
 # CLEAN: uses a real edge mock (database), not the function under test
 @patch('mymodule.db.fetch')
@@ -100,7 +100,7 @@ jest.mock('./calculator');
 import { add } from './calculator';
 (add as jest.Mock).mockReturnValue(5);
 test('add', () => {
-    expect(add(2, 3)).toBe(5);  // C10 — testing the mock
+    expect(add(2, 3)).toBe(5);  // C10 - testing the mock
 });
 
 // CLEAN
@@ -135,7 +135,7 @@ test('fetchUser returns user', async () => {
 
 ---
 
-### Case 11 — Asserts the value fed to the mock (J2/J3, HIGH)
+### Case 11 - Asserts the value fed to the mock (J2/J3, HIGH)
 
 The test stubs a dependency to return a specific value, then asserts the
 test result equals that same value. The result passes through no production
@@ -148,7 +148,7 @@ logic: it is an echo.
 # BAD: stubs price, asserts price
 def test_price(mock_product):
     mock_product.price = 100
-    assert get_price(mock_product) == 100  # C11 — just echoes the stub
+    assert get_price(mock_product) == 100  # C11 - just echoes the stub
 
 # CLEAN: stubs price, asserts the TAX is applied
 def test_price_with_tax(mock_product):
@@ -168,7 +168,7 @@ test('name', () => {
 
 ---
 
-### Case 12 — Re-implements the production formula (J2, HIGH)
+### Case 12 - Re-implements the production formula (J2, HIGH)
 
 The test computes the expected value using the same formula as the
 production code. Both sides agree on the same wrong answer. The test does
@@ -207,7 +207,7 @@ def test_total():
 
 ---
 
-### Case 15 — Passes only if another test ran first (J6, HIGH)
+### Case 15 - Passes only if another test ran first (J6, HIGH)
 
 The test reads or modifies shared mutable state set up by a sibling test.
 It passes in a specific execution order and fails when run alone.
@@ -223,7 +223,7 @@ def test_populate():
     cache['key'] = 'value'
 
 def test_read():
-    assert cache['key'] == 'value'  # C15 — depends on test_populate
+    assert cache['key'] == 'value'  # C15 - depends on test_populate
 ```
 
 **TypeScript/Jest example:**
@@ -236,16 +236,16 @@ test('push item', () => {
 });
 
 test('has item', () => {
-    expect(state[0]).toBe('a');  // C15 — only passes after the previous test
+    expect(state[0]).toBe('a');  // C15 - only passes after the previous test
 });
 ```
 
 ---
 
-### Case 18 — Expected value contradicts what the code should do (J2, HIGH)
+### Case 18 - Expected value contradicts what the code should do (J2, HIGH)
 
 The test asserts an expected value that contradicts the specification,
-documented contract, or domain rule. The test passes — but only because
+documented contract, or domain rule. The test passes - but only because
 it has frozen a bug as the correct behavior.
 
 **Requires an independent oracle.** Do not report without citing one.
@@ -255,7 +255,7 @@ it has frozen a bug as the correct behavior.
 # Spec says: apply_discount(200, 0.15) must return 170
 # Bug: the function subtracts the wrong amount
 def test_apply_discount():
-    assert apply_discount(200, 0.15) == 200  # C18 — asserts no discount was applied
+    assert apply_discount(200, 0.15) == 200  # C18 - asserts no discount was applied
     # oracle: docstring says "returns price minus discount"
 ```
 
@@ -278,19 +278,19 @@ source paper; see `research/papers/` in the audit repo for full summaries.
 
 ### TypeScript / JavaScript
 
-- **Conditional Test — assertion inside branch (J1/C1, HIGH):**
+- **Conditional Test - assertion inside branch (J1/C1, HIGH):**
   An `if`/`switch`/ternary inside the test body where the `expect()` or
   `assert` call lives inside the branch. The branch may never fire, leaving
   the assertion unexecuted. Prevalence: 92.31% across 65 JS projects.
   [Jorge 2023, STEEL tool]
 
-- **Unknown Test — zero `expect()` calls (J1/C2b, HIGH):**
+- **Unknown Test - zero `expect()` calls (J1/C2b, HIGH):**
   `it('...', () => { /* calls SUT but no expect() CallExpressions */ })`.
   Jest and Vitest do not warn when zero assertions run. Prevalence: 72.31%.
   Also covers `expect.assertions(0)`, which explicitly passes with zero checks.
   [Jorge 2023]
 
-- **Swallowed try/catch — exception absorbed, test stays green (J1, HIGH):**
+- **Swallowed try/catch - exception absorbed, test stays green (J1, HIGH):**
   ```javascript
   try { callUnit(); } catch (e) { console.log(e); }
   ```
@@ -321,7 +321,7 @@ source paper; see `research/papers/` in the audit repo for full summaries.
   `await`, or a non-async test that creates a Promise but does not `return` it.
   [Jorge 2023, Jest docs]
 
-- **`done()` called before assertion — Mocha/Jest done-callback style (J1, HIGH):**
+- **`done()` called before assertion - Mocha/Jest done-callback style (J1, HIGH):**
   The `done()` call precedes or is at the same nesting level as the assertion.
   The runner marks the test complete and the subsequent assertion throw is
   ignored. [Jorge 2023, Mocha idiom]
@@ -349,7 +349,7 @@ source paper; see `research/papers/` in the audit repo for full summaries.
   indefinitely. Require a `value` string on `@Disabled`; flag bare `@Ignore`.
   Confirmed in large mature projects. [Goes 2024, Pizzini 2024]
 
-- **`@Test(expected = Exception.class)` — over-broad exception catch (J4/C9, HIGH):**
+- **`@Test(expected = Exception.class)` - over-broad exception catch (J4/C9, HIGH):**
   Catching the base `Exception` class means any exception, including a
   `NullPointerException` from a typo in the test itself, satisfies the
   expectation. Flag only when `Exception.class` (not a specific subtype) is
@@ -359,11 +359,11 @@ source paper; see `research/papers/` in the audit repo for full summaries.
   Identical false-green risk to the JUnit 4 pattern above, expressed in
   TestNG syntax. [Goes 2024]
 
-- **`assertThrows(Exception.class, ...)` — JUnit 5 (J4/C9, HIGH):**
+- **`assertThrows(Exception.class, ...)` - JUnit 5 (J4/C9, HIGH):**
   Same over-broad catch in JUnit 5 style. Flag only when `Exception.class`
   itself is passed, not a specific subtype. [Goes 2024]
 
-- **Conditional Test Logic — assert inside `if`/`for`/`while` (J1/C1, HIGH):**
+- **Conditional Test Logic - assert inside `if`/`for`/`while` (J1/C1, HIGH):**
   Any control structure in the test body that guards an assertion. Present
   even in highly-maintained large codebases. JNose rule: flag when an
   assertion lives inside any conditional or loop. [Goes 2024]
@@ -388,18 +388,18 @@ source paper; see `research/papers/` in the audit repo for full summaries.
 
 ### C#
 
-- **`async void` test method — NUnit/MSTest (J1/C22 analog, HIGH):**
+- **`async void` test method - NUnit/MSTest (J1/C22 analog, HIGH):**
   When an exception is thrown inside an `async void` test, it is posted to
   the thread-pool `SynchronizationContext` rather than propagated to the test
   runner. The test shows green even if the assertion throws. xUnit disallows
   `async void` by design. Flag `async void` on any `[Test]`/`[TestMethod]`-
   annotated method. [Paul 2024, xNose - arXiv:2405.04063]
 
-- **`Assert.Pass()` — unconditional green (J1/C5 analog, HIGH):**
+- **`Assert.Pass()` - unconditional green (J1/C5 analog, HIGH):**
   Marks the test passed without executing any assertions below it. No Python
   equivalent. [Paul 2024]
 
-- **`Assert.Inconclusive()` — counts as green in most CI pipelines (J1, MEDIUM):**
+- **`Assert.Inconclusive()` - counts as green in most CI pipelines (J1, MEDIUM):**
   Marks the test inconclusive, which many pipelines treat as passing. Neither
   pass nor fail, but the assertions below it do not execute. [Paul 2024]
 
@@ -408,7 +408,7 @@ source paper; see `research/papers/` in the audit repo for full summaries.
   `[Ignore]`. Both silently skip forever when no condition is attached. Flag
   when the reason string contains no issue number or expiry date. [Paul 2024]
 
-- **Unknown Test — must recognize all assertion dialects (J1/C2b, HIGH):**
+- **Unknown Test - must recognize all assertion dialects (J1/C2b, HIGH):**
   A test body with none of these assertion patterns is an Unknown Test:
   `Assert.Equal(...)` / `Assert.AreEqual(...)` (MSTest/NUnit),
   `.Should().Be(...)` (FluentAssertions),
@@ -426,25 +426,25 @@ source paper; see `research/papers/` in the audit repo for full summaries.
 
 ### PHP
 
-- **Unknown Test — no `$this->assert*` call (J1/C2b, HIGH):**
+- **Unknown Test - no `$this->assert*` call (J1/C2b, HIGH):**
   A `test*`-prefixed method or a method with `@test` docblock that contains
   no `$this->assertEquals`, `$this->assertTrue`, `$this->assertSame`,
   `$this->assertInstanceOf`, or similar. Also check for absence of
   `$this->fail()`, which is the only non-assert way to force a failure.
 
-- **`$this->assertTrue(true)` / `$this->assertFalse(false)` — always-true
+- **`$this->assertTrue(true)` / `$this->assertFalse(false)` - always-true
   (J2/C5, HIGH):** Both sides are literals; passes by construction regardless
   of production code. [Paul 2024 analog]
 
-- **`$this->assertEquals($x, $x)` — same variable on both sides (J2/C7, HIGH):**
+- **`$this->assertEquals($x, $x)` - same variable on both sides (J2/C7, HIGH):**
   Always passes. Requires both arguments to be syntactically identical.
 
-- **`$this->expectException(\Exception::class)` — over-broad (J4/C9 analog, HIGH):**
+- **`$this->expectException(\Exception::class)` - over-broad (J4/C9 analog, HIGH):**
   Catches any `Exception` subclass including errors from typos in the test
   itself. Flag when `\Exception::class` (root class) is passed rather than
   a specific type.
 
-- **`$this->expectException(\Throwable::class)` or `\Error::class` — even broader
+- **`$this->expectException(\Throwable::class)` or `\Error::class` - even broader
   (J4/C9 analog, HIGH):** `Throwable` in PHP 7+ covers both `Exception` and
   `Error` hierarchies. A fatal `TypeError` from a wrong type hint satisfies
   this expectation. Flag as HIGH when `Throwable` or `Error` (not a specific
@@ -462,19 +462,19 @@ source paper; see `research/papers/` in the audit repo for full summaries.
 
 ### Ruby
 
-- **Fire and Forget — async with no wait (J1/C22 analog, HIGH):**
+- **Fire and Forget - async with no wait (J1/C22 analog, HIGH):**
   A test that starts a background job, thread, or EventMachine operation
   without waiting for completion before the assertion. The test returns before
   the async work settles. High prevalence in multi-language study. [Lucas 2024]
 
-- **`it { }` with empty block — RSpec pending (J1/C2b, MEDIUM):**
+- **`it { }` with empty block - RSpec pending (J1/C2b, MEDIUM):**
   RSpec pending examples are silently green or pending depending on
   configuration. No assertion executes. [Lucas 2024]
 
 - **`expect { }.not_to raise_error` without a positive result assertion
   (J4/C9 analog, MEDIUM):** Checks only exception absence, not correctness of
   the return value. The block could return any value and the test passes.
-  This is NOT automatically C10 or J4 — classify intent first (Step 3). Only
+  This is NOT automatically C10 or J4 - classify intent first (Step 3). Only
   flag when the block wraps the SUT and absence-of-exception is not itself the
   specified contract. Pair with a positive assertion on the result. [Lucas 2024]
 
@@ -483,12 +483,12 @@ source paper; see `research/papers/` in the audit repo for full summaries.
   chain on the system under test rather than a dependency. The test verifies
   the stub fires, not production behavior. [Lucas 2024]
 
-- **Self-Test — `expect(mock).to receive(:method)` then calls `mock.method()`
+- **Self-Test - `expect(mock).to receive(:method)` then calls `mock.method()`
   directly (J3/C13, HIGH):** Sets an expectation on a mock, then calls the
   method on the mock rather than passing the mock to the SUT. Asserts only
   that the stub fires, not that real code calls it. [Lucas 2024]
 
-- **Echo pattern — stub return value asserted directly (J2/J3/C11, HIGH):**
+- **Echo pattern - stub return value asserted directly (J2/J3/C11, HIGH):**
   `allow(...).to receive(:method).and_return(value)` followed by
   `expect(result).to eq(value)` where the asserted value is the same value
   injected into the stub. No production logic transforms it. [Lucas 2024]
@@ -496,7 +496,7 @@ source paper; see `research/papers/` in the audit repo for full summaries.
 - **Minitest `test_*` method with no `assert_*` or `refute_*` (J1/C2b, HIGH):**
   Method is collected by the runner but has no check.
 
-- **`assert_raises` catching `StandardError` or `Exception` — Minitest
+- **`assert_raises` catching `StandardError` or `Exception` - Minitest
   (J4/C9 analog, HIGH):** Over-broad exception capture; any runtime error
   satisfies the assertion.
 
@@ -523,18 +523,18 @@ source paper; see `research/papers/` in the audit repo for full summaries.
   LOW only when more than one non-trivial call appears inside the macro.
   [Lopes 2023, arXiv:2405.04063 analog]
 
-- **`TEST_CASE` with no `REQUIRE`/`CHECK` — Catch2 (J1/C2, HIGH):**
+- **`TEST_CASE` with no `REQUIRE`/`CHECK` - Catch2 (J1/C2, HIGH):**
   The Catch2 equivalent of the GoogleTest unknown-test pattern. A `TEST_CASE`
   block with no `REQUIRE`, `CHECK`, `REQUIRE_THROWS`, or `CHECK_THROWS`
   macros is always green.
 
-- **`DISABLED_` prefix or `GTEST_SKIP()` — GoogleTest (J1, MEDIUM):**
+- **`DISABLED_` prefix or `GTEST_SKIP()` - GoogleTest (J1, MEDIUM):**
   `TEST(Suite, DISABLED_Name)` is silently excluded from the default run.
   `GTEST_SKIP()` at the top skips with no failure. Neither signals intent or
   expiry. Note: an empty body inside a `DISABLED_`-prefixed test is a true
-  negative, not an Unknown Test — the test is explicitly excluded. [Lopes 2023]
+  negative, not an Unknown Test - the test is explicitly excluded. [Lopes 2023]
 
-- **`ASSERT_TRUE(ptr != nullptr)` only — no further content check
+- **`ASSERT_TRUE(ptr != nullptr)` only - no further content check
   (J4/C6 analog, LOW):** Confirms non-null but does not verify the pointed-to
   value. Passes for any non-null pointer regardless of content.
 
@@ -551,7 +551,7 @@ The expected value must come from a source independent of the code:
 1. **Explicit spec or requirement** (spec document, ticket, RFC)
 2. **Documented contract** (docstring, type annotations, API docs)
 3. **Independent human judgment** (the tester's own derivation)
-4. **The current code** (lowest priority — this is where bugs hide)
+4. **The current code** (lowest priority - this is where bugs hide)
 
 Promoting the current code to the top of this hierarchy is how a bug gets
 frozen as "correct". The semantic pass enforces this hierarchy.

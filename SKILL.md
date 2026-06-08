@@ -1,7 +1,7 @@
-# falsegreen-skill
+﻿# falsegreen-skill
 
 **LLM-based semantic analysis for false-positive test detection.** This skill
-judges whether a test genuinely verifies correct behavior — for Python,
+judges whether a test genuinely verifies correct behavior, across Python,
 TypeScript, JavaScript, Java, C#, PHP, Ruby, and C++.
 
 The companion [falsegreen](https://github.com/vinicq/falsegreen) scanner
@@ -18,7 +18,7 @@ paste a test snippet.
 ## The one rule
 
 A test is useful only if it fails when the code breaks. Every pattern this
-skill looks for is a variation on tests that do not fail — tests that pass
+skill looks for is a variation on tests that do not fail: tests that pass
 while the code is wrong, tests that check the wrong thing, or tests that
 borrow correctness from elsewhere.
 
@@ -28,7 +28,7 @@ borrow correctness from elsewhere.
 
 Work through these steps in order. Do not skip steps.
 
-### Step 1 — Detect language and framework
+### Step 1: Detect language and framework
 
 Identify:
 - Language: Python / TypeScript / JavaScript / Java / C# / PHP / Ruby / C++
@@ -39,7 +39,7 @@ Identify:
 
 See `reference.md` for framework-detection cues per language.
 
-### Step 2 — Run the deterministic check (Python only)
+### Step 2: Run the deterministic check (Python only)
 
 If the language is Python, suggest running
 `falsegreen <file>` first. Its 21 mechanical codes catch structural problems
@@ -49,7 +49,7 @@ needing semantic adjudication, or for the semantic-only cases (10/11/12/15/18).
 
 For all other languages, proceed directly to Step 3.
 
-### Step 3 — Classify test intent
+### Step 3: Classify test intent
 
 Before judging the expected value, classify each test:
 
@@ -63,43 +63,42 @@ Before judging the expected value, classify each test:
 A failing TDD test is not a false positive. A labeled characterization
 snapshot is not a frozen bug. Misclassifying here causes false alarms.
 
-### Step 4 — Apply the six judgments
+### Step 4: Apply the six judgments
 
-Judge each test across J1-J6. Flag only the first judgment that fails — do
-not double-report the same root cause.
+Judge each test across J1-J6. Flag only the first judgment that fails; do not double-report the same root cause.
 
-**J1 — Does the assertion run?**
+**J1: Does the assertion run?**
 Does at least one assertion execute when the test is run normally? An
 assertion inside a branch that never fires, or after an unconditional return,
 passes vacuously.
 
-**J2 — Is the expected value from an independent oracle?**
+**J2: Is the expected value from an independent oracle?**
 Is the expected value derived from the spec, the API contract, or independent
-human judgment — NOT from the current code output? If the test asserts
+human judgment, NOT from the current code output? If the test asserts
 `result == current_implementation()`, both sides agree on the same wrong
 number. An assertion that re-implements the production formula has the same
 problem.
 
-**J3 — Is the real unit under test?**
+**J3: Is the real unit under test?**
 Is the test verifying the actual production unit, or a mock of it? Mocking
 the function/class under test and then asserting the mock value is not a test
 of the production code.
 
-**J4 — Does the assertion verify enough, and the right thing?**
+**J4: Does the assertion verify enough, and the right thing?**
 Does the assertion check a meaningful property of the result? Checking only
 that the result is truthy, or that an exception was raised without verifying
 its type, does not protect the behavior being tested.
 
-**J5 — Is the test coupled to implementation internals?**
+**J5: Is the test coupled to implementation internals?**
 Does the test depend on private methods, internal state, or implementation
 details that could change without breaking the public contract?
 
-**J6 — Does the test pass in isolation?**
+**J6: Does the test pass in isolation?**
 Does the test depend on execution order, shared mutable state, or fixtures set
 up by a sibling test? A test that passes only in a specific order is not
 reliably testing anything.
 
-### Step 5 — Adversarial verify for case 18
+### Step 5: Adversarial verify for case 18
 
 Case 18 (expected value contradicts what the code should do) is the highest-
 stakes finding: it means the test is freezing a bug as "correct". Before
@@ -114,7 +113,7 @@ reporting it:
 
 Never report case 18 based on gut feeling or pattern-matching alone.
 
-### Step 6 — Output the report
+### Step 6: Output the report
 
 For each finding, output:
 
