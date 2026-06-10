@@ -227,29 +227,30 @@ mutation testing pass.
 
 ## Installation
 
-Claude Code installs via npm; Codex and Gemini CLIs work from a local clone of this repo.
-
-| Platform | Command |
+| Platform | How |
 |---|---|
-| Claude Code | `npm install falsegreen-skill` (plugin auto-discovered from `node_modules`) |
-| OpenAI Codex CLI | Clone repo — `AGENTS.md` is auto-loaded |
-| Gemini CLI | Clone repo — `GEMINI.md` is auto-loaded |
+| Claude Code | `/plugin marketplace add vinicq/falsegreen-skill` then `/plugin install falsegreen-skill@falsegreen` |
+| OpenAI Codex CLI | `codex plugin marketplace add vinicq/falsegreen-skill` — or clone the repo: `AGENTS.md` is auto-loaded |
+| Gemini CLI | `gemini extensions install https://github.com/vinicq/falsegreen-skill` |
 | Cursor | Copy contents of `contexts/cursor.md` to `.cursor/rules/falsegreen-skill.mdc` |
+| CLI (any provider) | `npx falsegreen-skill analyze tests/test_example.py` — see [docs/cli.md](docs/cli.md) |
 | Any LLM | Use `llm.md` as system prompt |
 | API (any provider) | See `contexts/general.md` for a universal Python snippet |
 
 ### Claude Code (primary path)
 
-Install [Claude Code](https://github.com/anthropics/claude-code), then invoke
-the skill inside a session:
+Add the marketplace and install the plugin:
 
 ```
-/falsegreen-skill
+/plugin marketplace add vinicq/falsegreen-skill
+/plugin install falsegreen-skill@falsegreen
 ```
 
-Attach a test file or paste a snippet. The skill identifies the language and
-framework, classifies the test intent, applies the six-judgment protocol, and
-reports findings with case numbers, confidence levels, and fix hints.
+Then invoke the skill with `/falsegreen-skill:falsegreen`, or just attach a
+test file and ask for false-positive analysis — the skill triggers on intent.
+The skill identifies the language and framework, classifies the test intent,
+applies the six-judgment protocol, and reports findings with case numbers,
+confidence levels, and fix hints.
 
 For Python, the skill applies the full pattern catalog directly. Optionally,
 run the static scanner first to speed up batch analysis:
@@ -292,17 +293,33 @@ false-positive smells, and the J1-J6 protocol runs automatically.
 
 ```
 falsegreen-skill/
-  SKILL.md          the skill protocol (language and LLM agnostic)
-  reference.md      per-language case catalog and framework cues
-  providers.md      multi-LLM invocation guide (API snippets)
-  CREDITS.md        the research this skill builds on
-  contexts/         ready-to-use context files per platform
-    claude.md       Claude Code CLI, Claude.ai, Anthropic API
-    codex.md        ChatGPT, OpenAI API, structured output, batch
-    gemini.md       Google AI Studio, Gemini API, long context
-    cursor.md       Cursor IDE — full .cursor/rules/ MDC template
-    deepseek.md     DeepSeek Chat, DeepSeek API, R1 reasoning
-    general.md      any LLM — Ollama, Groq, OpenRouter, plain chat
+  SKILL.md              the skill protocol (language and LLM agnostic)
+  AGENTS.md             Codex CLI context (auto-loaded from project root)
+  GEMINI.md             Gemini CLI context (auto-loaded, extension contextFileName)
+  llm.md                self-contained universal context for any LLM
+  reference.md          per-language case catalog and framework cues
+  providers.md          multi-LLM invocation guide (API snippets)
+  CREDITS.md            the research this skill builds on
+  gemini-extension.json Gemini CLI extension manifest
+  .claude-plugin/       Claude Code plugin manifest + marketplace catalog
+  .codex-plugin/        Codex CLI plugin manifest
+  .agents/plugins/      Codex CLI marketplace catalog
+  skills/
+    falsegreen/         shared skill entry point (Claude Code + Codex plugins)
+  bin/
+    falsegreen.js       zero-dependency CLI (npx falsegreen-skill)
+  docs/
+    cli.md              CLI usage guide
+  schema/
+    finding.json        JSON Schema for a single finding
+    report.json         JSON Schema for a full report
+  contexts/             ready-to-use context files per platform
+    claude.md           Claude Code CLI, Claude.ai, Anthropic API
+    codex.md            ChatGPT, OpenAI API, structured output, batch
+    gemini.md           Google AI Studio, Gemini API, long context
+    cursor.md           Cursor IDE — full .cursor/rules/ MDC template
+    deepseek.md         DeepSeek Chat, DeepSeek API, R1 reasoning
+    general.md          any LLM — Ollama, Groq, OpenRouter, plain chat
   examples/
     python/
       family_a_never_checks.py       C1, C2, C2b, C3, C4, C4b, C20, C21, CC

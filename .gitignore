@@ -12,4 +12,6 @@ build/
 Thumbs.db
 
 # internal development / research - stays in falsegreen-skill-audit (private)
-.agents/
+# exception: .agents/plugins/ is the Codex CLI plugin marketplace catalog (public)
+.agents/*
+!.agents/plugins/

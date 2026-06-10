@@ -15,22 +15,32 @@
     "url": "https://github.com/vinicq/falsegreen-skill"
   },
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "falsegreen-skill": "bin/falsegreen.js"
+  },
   "scripts": {
-    "version": "node -e \"const fs=require('fs');const v=require('./package.json').version;['.claude-plugin/plugin.json','.claude-plugin/marketplace.json','.codex-plugin/plugin.json','.codex-plugin/marketplace.json','.gemini-plugin/plugin.json','.gemini-plugin/marketplace.json','.universal-plugin/plugin.json','.universal-plugin/marketplace.json','.universal-plugin/mcp-manifest.json'].forEach(f=>{const p=JSON.parse(fs.readFileSync(f));p.version=v;fs.writeFileSync(f,JSON.stringify(p,null,2)+'\\n')});\" && git add .claude-plugin/ .codex-plugin/ .gemini-plugin/ .universal-plugin/"
+    "version": "node -e \"const fs=require('fs');const v=require('./package.json').version;['.claude-plugin/plugin.json','.codex-plugin/plugin.json','gemini-extension.json'].forEach(f=>{const p=JSON.parse(fs.readFileSync(f));p.version=v;fs.writeFileSync(f,JSON.stringify(p,null,2)+'\\n')});\" && git add .claude-plugin/ .codex-plugin/ gemini-extension.json"
   },
   "files": [
     "SKILL.md",
     "AGENTS.md",
-    "reference.md",
     "GEMINI.md",
     "llm.md",
+    "reference.md",
+    "providers.md",
+    "models.yaml",
+    "gemini-extension.json",
+    "bin/",
+    "docs/",
+    "skills/",
     "contexts/",
     "examples/",
     "schema/",
     ".claude-plugin/",
     ".codex-plugin/",
-    ".gemini-plugin/",
-    ".universal-plugin/",
-    "models.yaml"
+    ".agents/plugins/"
   ]
 }
