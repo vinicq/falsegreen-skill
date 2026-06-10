@@ -3,7 +3,7 @@
 Full case catalog with per-language patterns, framework cues, and look-alike
 examples. Use alongside [SKILL.md](SKILL.md).
 
-<!-- This file is populated from paper synthesis. See workflow output. -->
+Supported languages: **Python, TypeScript, JavaScript.**
 
 ## Language and framework detection cues
 
@@ -22,45 +22,6 @@ examples. Use alongside [SKILL.md](SKILL.md).
   `vi.spyOn()`, `sinon.stub()`, `sinon.spy()`
 - Layer cues: `@testing-library/react`, `@testing-library/vue`,
   `supertest`, `playwright`, `cypress` imply web/browser layer.
-
-### Java
-- Imports: `import org.junit.jupiter.api.*` (JUnit 5),
-  `import org.junit.*` (JUnit 4), `import org.testng.*`
-- Annotations: `@Test`, `@BeforeEach`, `@AfterEach`, `@ExtendWith`,
-  `@MockBean`, `@InjectMocks`, `@Mock`
-- Mock cues: `Mockito.mock()`, `when(...).thenReturn(...)`, `verify(...)`,
-  `@Mock`, `@InjectMocks`
-- Assertion style: `assertEquals`, `assertThat`, `assertTrue`,
-  `assertThrows` (JUnit 5), `Assertions.*`
-
-### C#
-- Namespaces: `using NUnit.Framework`, `using Xunit`, `using Microsoft.VisualStudio.TestTools.UnitTesting`
-- Attributes: `[Test]`, `[Fact]`, `[Theory]`, `[TestMethod]`, `[SetUp]`
-- Mock cues: `Mock<T>`, `.Setup(...)`, `.Returns(...)`, `.Verify(...)`,
-  `Moq.Mock`, `NSubstitute`, `FakeItEasy`
-- Assertion style: `Assert.That(...)`, `Assert.Equal(...)`,
-  `Assert.AreEqual(...)`, `.Should()` (FluentAssertions)
-
-### PHP
-- Uses: `use PHPUnit\Framework\TestCase`
-- Methods: `setUp()`, `tearDown()`, `test*` prefixed methods, `@test` docblock
-- Mock cues: `$this->createMock(...)`, `$this->getMockBuilder(...)`,
-  `expects(...)`, `method(...)`, `willReturn(...)`
-- Assertion style: `$this->assertEquals(...)`, `$this->assertSame(...)`,
-  `$this->assertInstanceOf(...)`
-
-### Ruby
-- Requires: `require 'rspec'`, `require 'minitest/autorun'`
-- RSpec: `describe`, `context`, `it`, `expect(...).to`, `subject`, `let`
-- Mock cues: `allow(...).to receive(...)`, `expect(...).to receive(...)`,
-  `double(...)`, `instance_double(...)`, `stub`
-- Minitest: `def test_*`, `assert_equal`, `assert_raises`, `refute_*`
-
-### C++
-- Includes: `#include <gtest/gtest.h>`, `#include <catch2/catch_test_macros.hpp>`
-- GoogleTest: `TEST(Suite, Name)`, `TEST_F(Fixture, Name)`, `ASSERT_*`, `EXPECT_*`
-- Catch2: `TEST_CASE(...)`, `REQUIRE(...)`, `CHECK(...)`, `SECTION(...)`
-- Mock cues: `MOCK_METHOD(...)` (gmock), `NiceMock<>`, `StrictMock<>`
 
 ---
 
@@ -112,25 +73,6 @@ test('fetchUser returns user', async () => {
     const user = await fetchUser(1);      // real function
     expect(user.id).toBe(1);
 });
-```
-
-**Java/Mockito example:**
-```java
-// BAD
-@Mock Calculator calculator;
-@Test void testAdd() {
-    when(calculator.add(2, 3)).thenReturn(5);
-    assertEquals(5, calculator.add(2, 3)); // C10
-}
-
-// CLEAN
-@Mock Repository repo;
-@InjectMocks UserService sut;             // real SUT
-@Test void testGetUser() {
-    when(repo.findById(1L)).thenReturn(Optional.of(new User(1L, "Alice")));
-    User u = sut.getUser(1L);
-    assertEquals("Alice", u.getName());
-}
 ```
 
 ---
@@ -190,21 +132,6 @@ def test_total():
     assert calculate_total(100, 0.1) == 110.0  # from the spec: 100 + 10% = 110
 ```
 
-**Java example:**
-```java
-// BAD
-@Test void testDiscount() {
-    double price = 200, rate = 0.15;
-    double expected = price - (price * rate);  // re-implements
-    assertEquals(expected, sut.applyDiscount(price, rate));
-}
-
-// CLEAN
-@Test void testDiscount() {
-    assertEquals(170.0, sut.applyDiscount(200.0, 0.15)); // 200 - 15% = 170
-}
-```
-
 ---
 
 ### Case 15 - Passes only if another test ran first (J6, HIGH)
@@ -259,22 +186,471 @@ def test_apply_discount():
     # oracle: docstring says "returns price minus discount"
 ```
 
-**C# example:**
-```csharp
-// Spec: VAT rate for food is 7%
-[Test]
-public void TestVat() {
-    Assert.AreEqual(107, calculator.AddVat(100, ProductType.Food)); // C18 if spec says 7%
-    // oracle: tax regulation document
-}
-```
-
 ---
 
 ## Language-specific patterns
 
 Paper evidence backs each entry. Abbreviations in brackets identify the
 source paper; see `research/papers/` in the audit repo for full summaries.
+
+### Python
+
+All patterns below map directly to falsegreen scanner codes. The LLM applies
+these by reading the source — no AST required. The scanner is a faster batch
+alternative; results must be identical.
+
+**Confidence levels:** HIGH = definite false positive, flag it. LOW = likely
+smell, operator confirms. OFF/INFO = diagnostic only, skip unless asked.
+
+#### Family A — test never checks anything
+
+- **C1 — Assertion inside conditional or loop that may never run (J1, LOW):**
+  An `assert` (or `self.assert*`) lives inside an `if`, `for`, or `while`
+  block whose condition could evaluate to false or whose iterable could be
+  empty. The test passes vacuously when the branch is never entered.
+  Flag when: the assertion is not reachable from the function's top level
+  without entering a conditional. Do NOT flag when the loop iterates over
+  a non-empty literal (e.g. `for x in (1, 2, 3):`).
+  ```python
+  # BAD
+  def test_items():
+      for item in items:          # items could be []
+          assert item.valid       # never runs if items is empty
+  # CLEAN
+  def test_items():
+      assert len(items) > 0
+      for item in items:
+          assert item.valid
+  ```
+
+- **C2 — Test body contains no assertion at all (J1, HIGH):**
+  The function has no `assert`, no `self.assert*`, no `pytest.raises()`, no
+  fluent `.should.`, no mock assertion call. Body is only `pass`, docstring,
+  `...`, or setup-only statements. Always green regardless of production code.
+  Exemptions — do NOT flag: `@pytest.mark.skip`, `@pytest.mark.xfail`,
+  `@hypothesis`/`@given`/`@fuzz` decorators.
+  ```python
+  # BAD
+  def test_create_user():
+      user = create_user("Alice")   # no assert — always green
+  ```
+
+- **C2b — Test calls production code but verifies nothing (J1, LOW):**
+  Similar to C2 but the test has real `SUT` calls. The check is just missing.
+  Different from C2 because it's easy to mistake for a delegation pattern.
+  Exemption: if the test calls a helper function that itself contains the
+  assertion, do NOT flag (the check executes through the helper).
+  ```python
+  # BAD
+  def test_process():
+      result = process(data)        # calls SUT but no assert follows
+  ```
+
+- **C3 — Assert inside try whose except swallows the error (J1, HIGH):**
+  A `try` block contains an `assert` (or equivalent check), and the `except`
+  handler catches `AssertionError`, `Exception`, or bare `except:` with a
+  body that is only `pass`/`continue`. The assertion failure is silently
+  eaten; the test stays green.
+  Exemption: handler that re-raises (`raise`) or does meaningful work is NOT C3.
+  ```python
+  # BAD
+  def test_value():
+      try:
+          assert compute() == 42
+      except Exception:
+          pass                      # C3 — hides the failure
+  ```
+
+- **C4 — Test function not collected by pytest (J1, HIGH):**
+  A `def test_*` function is defined inside another function or class method
+  (nested), takes no parameters (or only `self`/`cls`), has a real assertion
+  in its body, but is never called and never decorated as a route/callback.
+  pytest only collects top-level (or class-method) test functions; this one
+  is invisible to the runner.
+  Exemption: framework callbacks (`@app.get`, `@click.command`, coroutines
+  used with `await`, web route handlers) are NOT C4.
+
+- **C4b — Test class has `__init__` (pytest won't collect it) (J1, LOW):**
+  A class whose name starts with `Test` (or is a `unittest.TestCase` subclass)
+  defines an `__init__` method. pytest skips such classes entirely.
+
+- **C20 — Assertion after unconditional return/raise/fail (J1, HIGH):**
+  An `assert` appears after a `return`, `raise`, `break`, `continue`, or
+  `pytest.fail()` in the same block. Dead code; never reached.
+  ```python
+  # BAD
+  def test_flag():
+      if not flag:
+          return
+      assert flag          # reachable, ok
+      return               # unconditional return
+      assert True          # C20 — dead, never runs
+  ```
+
+- **C21 — Every assertion is inside a conditional; none runs unconditionally
+  (J1, LOW):**
+  The function has assertions but `runs_a_check_unconditionally` is false:
+  every check is inside an `if` branch, and there is no exhaustive if/else
+  that guarantees at least one branch runs.
+
+- **C22 — Async test never awaits the unit under test (J1, OFF):**
+  An `async def test_*` makes calls and has assertions, but contains no
+  `await`, `async with`, `async for`, and does not drive a loop
+  (`asyncio.run`, `run_until_complete`, `anyio.run`). The coroutine may
+  return before any I/O completes. Opt-in only.
+
+- **CC — Commented-out assert (J1, LOW):**
+  A line in the test function body is `# assert ...` — an assertion that was
+  commented out and left. The check never runs. Not a blocking issue but a
+  strong signal the test was weakened.
+  ```python
+  def test_total():
+      result = total(items)
+      # assert result == 42    # CC — this check is disabled
+  ```
+
+---
+
+#### Family B — check is weak or always true
+
+- **C5 — Always-true assertion (J2, HIGH):**
+  The assertion is structurally guaranteed to pass regardless of production
+  code: `assert True`, `assert (x, y)` (non-empty tuple is always truthy),
+  `assert 1`, `assert x or True`. The check adds no protection.
+  ```python
+  # BAD
+  def test_items():
+      assert (item_a, item_b)   # C5 — non-empty tuple, always True
+  ```
+
+- **C6 — Weak assertion: only checks that something came back (J4, LOW):**
+  Assertion checks only truthiness (`assert result`), non-empty length
+  (`assert len(result) > 0`), or string containment (`assert "x" in str(y)`)
+  without verifying the actual value or structure.
+  Exemption: in web/browser layer tests, checking that a response or locator
+  object is truthy IS the meaningful assertion (presence IS the contract).
+  Do NOT flag `assert response.status_code` in HTTP tests.
+  ```python
+  # BAD (unit test context)
+  def test_users():
+      result = get_users()
+      assert result            # C6 — only checks non-empty, not what users are
+  # CLEAN
+  def test_users():
+      result = get_users()
+      assert len(result) == 3
+      assert result[0].name == "Alice"
+  ```
+
+- **C6b — Assertion on positional mock argument via computed index (J3, LOW):**
+  The test accesses `mock.call_args.args[idx]` or `mock.call_args[0][idx]`
+  where `idx` is computed (`.index()`, arithmetic, variable), rather than a
+  fixed literal. The position is fragile and may silently shift.
+
+- **C7 — Self-comparison: both sides are identical (J2, HIGH):**
+  `assert x == x`, `assertEqual(x, x)`, or any comparison where left and
+  right are syntactically identical and contain no function calls. Always true
+  by reflexivity; catches nothing.
+  Exemption: if the test also checks `x != peer` (distinct object) or
+  `x in {x}` or `hash(x)`, it is testing `__eq__`/`__hash__` semantics —
+  NOT C7.
+  ```python
+  # BAD
+  def test_name():
+      name = get_name()
+      assert name == name    # C7 — always true
+  ```
+
+- **C8 — Float exact equality (J4, LOW):**
+  Comparison with `==` against a non-sentinel float literal (anything other
+  than `0.0` or `1.0`). Floating-point arithmetic makes exact equality
+  unreliable. Use `pytest.approx()`.
+  ```python
+  # BAD
+  assert compute() == 3.14159    # C8
+  # CLEAN
+  assert compute() == pytest.approx(3.14159, rel=1e-6)
+  ```
+
+- **C9 — pytest.raises too broad (J4, LOW):**
+  `pytest.raises()` called with no exception type, or with a very broad type
+  (`Exception`, `BaseException`) and no `match=` parameter. Any exception —
+  including one from a typo inside the test itself — satisfies the check.
+  ```python
+  # BAD
+  with pytest.raises(Exception):   # C9 — anything passes
+      divide(a, b)
+  # CLEAN
+  with pytest.raises(ZeroDivisionError, match="division by zero"):
+      divide(a, 0)
+  ```
+
+- **C11a — Self-confirming literal: test assigns then asserts the same value
+  (J2, LOW):**
+  The test body contains `obj.attr = VALUE` followed by
+  `assert obj.attr == VALUE` using the same literal. The test only confirms
+  Python's attribute assignment works, not the production code.
+  ```python
+  # BAD
+  def test_price():
+      product.price = 100
+      assert product.price == 100   # C11a — just confirms assignment
+  ```
+
+- **C13 — Mock assertion misspelled or not called (J4, HIGH):**
+  A mock assertion method is accessed as an attribute without `()`:
+  `mock.assert_called_once` instead of `mock.assert_called_once_with()`.
+  The attribute access returns a bound method; the check never runs.
+  Also flags invented names like `assert_called_twice`, `called_once_with`.
+  ```python
+  # BAD
+  mock_fn.assert_called_once      # C13 — missing (), does nothing
+  # CLEAN
+  mock_fn.assert_called_once_with(expected_arg)
+  ```
+
+- **C13b — patch() without autospec (J3, LOW):**
+  `@patch('module.Thing')` or `patch.object(obj, 'method')` without
+  `autospec=True`, `spec=`, or `spec_set=`. The mock accepts any call
+  signature silently; typos in argument names or counts go undetected.
+
+- **C14 — Golden file generated from the actual output (J2, LOW):**
+  Pattern: `if not exists(golden_path): write(golden_path, actual_output)`.
+  On the first run the test writes the current (possibly wrong) output as the
+  expected value. Every subsequent run compares against that captured output.
+  Exemption: in web/browser snapshot testing (Playwright, Selenium) this
+  pattern is intentional. Do NOT flag in browser layer context.
+
+- **C16 — Result depends on uncontrolled time, randomness, or sleep (J6, LOW):**
+  Test uses `time.sleep(N)` (making it flaky under load), reads
+  `datetime.now()` / `time.time()` without freezegun/time_machine imported,
+  uses `random.*` without `random.seed()`, `torch.rand*` without
+  `torch.manual_seed()`, or calls `train_test_split` without `random_state=`.
+  ```python
+  # BAD
+  def test_expiry():
+      created = datetime.now()      # C16 — not frozen
+      assert is_expired(created, ttl=0) == False
+  ```
+
+- **C18 — String/repr comparison (J2, LOW):**
+  Comparison with `==` where one side is `str(x)`, `repr(x)`, `format(x,...)`,
+  or an f-string, and the other is a string literal. String/repr format is
+  implementation detail; it changes without semantic change.
+  ```python
+  # BAD
+  assert str(user) == "User(Alice, 30)"   # C18 — couples to str() format
+  # CLEAN
+  assert user.name == "Alice" and user.age == 30
+  ```
+
+- **C25 — xfail without strict=True (J1, LOW):**
+  `@pytest.mark.xfail` without `strict=True`. If the test unexpectedly passes,
+  pytest still reports it as `XPASS` (not a failure by default). A quietly
+  passing xfail hides that the bug was fixed without removing the mark.
+
+- **C34 — Suboptimal assertion form (J4, LOW):**
+  Any of: `assert not x in y` (use `assert x not in y`),
+  `assert len(x) == 0` (use `assert not x`),
+  `assert x == True` (use `assert x`),
+  `assert x == False` (use `assert not x`),
+  `assert x == None` (use `assert x is None`),
+  `assert x != None` (use `assert x is not None`).
+  These weaken error messages and obscure intent.
+
+---
+
+#### Family C — test checks its own setup, not the program
+
+- **C19 — pytest.raises wraps more than one call (J1, LOW):**
+  A `with pytest.raises(E):` block contains more than one statement. If the
+  first statement raises, the second never executes. The test may be checking
+  a different line than intended.
+  ```python
+  # BAD
+  with pytest.raises(ValueError):
+      setup_data()          # this might raise, not the SUT
+      sut.process(data)     # C19 — intended target
+  ```
+
+- **C28 — pytest.raises binding variable never read (J4, LOW):**
+  `with pytest.raises(E) as exc:` but `exc` is never used in an assertion
+  afterward. The exception type is checked but not its message or attributes.
+  ```python
+  # BAD
+  with pytest.raises(ValueError) as exc:   # C28 — exc never read
+      process(bad_input)
+  # CLEAN
+  with pytest.raises(ValueError) as exc:
+      process(bad_input)
+  assert "must be positive" in str(exc.value)
+  ```
+
+- **C29 — os.environ modified directly in test (J6, LOW):**
+  `os.environ["KEY"] = value` or `os.environ.update(...)` or `os.putenv(...)`
+  in a test body. The change persists across tests in the same process.
+  Use `monkeypatch.setenv()` instead.
+
+---
+
+#### Family D — test depends on external or shared state
+
+- **C17 — pytest.skip() inside broad except (J1, HIGH):**
+  A `try` block with an assertion, where the `except` handler is broad
+  (`except Exception:` or bare `except:`) and calls `pytest.skip()` or
+  `skipTest()`. A real assertion failure triggers the skip instead of failing
+  the test. The test is green even when the SUT is broken.
+  ```python
+  # BAD
+  def test_api():
+      try:
+          assert fetch_data() == expected
+      except Exception:
+          pytest.skip("skipping")   # C17 — hides real failures
+  ```
+
+- **C23 — Hard-coded absolute or home-relative file path (J6, LOW):**
+  `open("/home/user/data.csv")` or `Path("/tmp/fixture.json").read_text()`.
+  The path does not exist in CI or on another developer's machine.
+  Use `tmp_path` fixture or `Path(__file__).parent / "data.csv"`.
+
+- **C24 — Module-level mutable state mutated by test (J6, LOW):**
+  The module declares a global `list`, `dict`, or `set`. A test function
+  mutates it (`append`, `update`, `[key] =`, `+=`). No autouse fixture
+  resets it between tests. Test order determines test outcome.
+  ```python
+  _cache = {}                       # module-level mutable
+
+  def test_fill():
+      _cache["key"] = "value"       # C24 — mutates shared state
+
+  def test_read():
+      assert _cache["key"] == "value"  # passes only after test_fill
+  ```
+
+- **C27 — try/except/pass around SUT call with no assertion (J1, HIGH):**
+  A `try` block calls the SUT (no assertion), and the `except` handler is
+  `pass`-only. The test passes whether the call succeeds or raises. Different
+  from C3: C3 wraps an assert; C27 has no assert at all in the try.
+  Use `with pytest.raises(E, match=...)` instead.
+  ```python
+  # BAD
+  def test_process():
+      try:
+          process(data)      # C27 — success and failure both → green
+      except Exception:
+          pass
+  ```
+
+- **C30 — HTTP mock not activated (J3, LOW):**
+  `responses.add(...)` or `httpretty.register_uri(...)` called, but the
+  corresponding activator (`@responses.activate`, `responses.RequestsMock()`,
+  `responses.start()`, `httpretty.enable()`) is absent. Real HTTP requests
+  go through; the mock is never used.
+
+- **C31 — capsys.readouterr() result discarded (J4, LOW):**
+  `capsys.readouterr()` called as bare expression (result ignored) or
+  assigned to a variable never read in an assertion. The capture ran but
+  no check was performed on it.
+  ```python
+  # BAD
+  def test_output(capsys):
+      run()
+      capsys.readouterr()          # C31 — captured but never asserted
+  # CLEAN
+  def test_output(capsys):
+      run()
+      out, _ = capsys.readouterr()
+      assert out == "hello\n"
+  ```
+
+- **C32 — @pytest.mark.skip without reason (J1, LOW):**
+  `@pytest.mark.skip` with no `reason=` keyword. No explanation for why
+  the test is disabled; may be forgotten permanently.
+
+- **C35 — Retry/flaky decorator (J6, LOW):**
+  A decorator whose name is in `{flaky, repeat, retry, rerun, flake}` on
+  a test function. Masking non-determinism rather than fixing it.
+
+---
+
+#### Family E — passes but checks the wrong thing
+
+- **C33 — ML metric computed but not asserted (J4, LOW):**
+  Call to an sklearn metric function (`accuracy_score`, `f1_score`,
+  `model.score()`, etc.) where the result is discarded (bare expression) or
+  assigned to a variable never read in an assertion. The metric was computed
+  but not validated against any threshold.
+  ```python
+  # BAD
+  def test_model():
+      acc = accuracy_score(y_true, y_pred)   # C33 — never asserted
+  # CLEAN
+  def test_model():
+      acc = accuracy_score(y_true, y_pred)
+      assert acc >= 0.90
+  ```
+
+- **C36 — pytest.fail() without reason (J1, LOW):**
+  `pytest.fail()` with no positional argument and no `reason=` keyword.
+  Calling `pytest.fail()` with no message makes the failure unintelligible
+  in CI output.
+
+- **C37 — Duplicate parametrize case (J2, LOW):**
+  `@pytest.mark.parametrize` where the exact same argument set appears
+  twice. The duplicate provides no additional coverage; it just confirms
+  the same code path a second time.
+
+---
+
+#### Diagnostic codes (opt-in, OFF by default)
+
+Apply only when the user explicitly asks for diagnostic analysis.
+
+- **D1 — Assertion Roulette: multiple asserts, none with a message (LOW):**
+  Two or more `assert` statements in the function body where every single one
+  omits the message argument (`assert cond, "message"`). When any fails, the
+  output says only which line failed, not which logical condition.
+
+- **D3 — Duplicate Assert: same assertion appears twice (LOW):**
+  The identical `assert expr == val` expression appears more than once in the
+  same test. No additional coverage; likely a copy-paste artifact.
+
+- **D4 — Unnamed parametrize cases (LOW):**
+  `@pytest.mark.parametrize` with 3 or more cases and no `ids=` keyword.
+  CI output shows `test[0]`, `test[1]`; debugging is harder than necessary.
+
+- **D5 — Excessive inline setup (LOW):**
+  More than 5 assignment/call statements before the first `assert` in the
+  test body. Consider moving setup to a fixture.
+
+- **D6 — Debug print in test (LOW):**
+  `print()` call inside the test body. Output is suppressed by pytest by
+  default; the print was likely left over from debugging.
+
+- **M2 — Long test method (LOW):**
+  The test function body exceeds 50 lines. Consider splitting into focused
+  single-concern tests.
+
+---
+
+#### Look-alikes: do NOT flag these Python patterns
+
+- `@pytest.mark.skip` or `@pytest.mark.xfail` on a test with an empty body
+  → the test is explicitly disabled, not a C2.
+- `@given`/`@hypothesis`/`@fuzz` decorated test with no explicit `assert`
+  → hypothesis generates the assertions internally, not C2.
+- A helper called from the test that contains the `assert`
+  → not C2b; the assertion executes through the helper.
+- `for x in (1, 2, 3): assert x` → not C1; literal is always non-empty.
+- `assert response` in an HTTP test / `assert locator` in a Playwright test
+  → not C6; presence IS the assertion at that layer.
+- `assert x == x` where the test also checks `x != peer` or `hash(x)`
+  → testing `__eq__`/`__hash__`, not C7.
+- freezegun/time_machine imported → unfreeze `datetime.now()` is NOT C16.
+- `patch(..., autospec=True)` → not C13b.
+- `with pytest.raises(E) as exc: ...; assert "msg" in str(exc.value)`
+  → exc is read, not C28.
 
 ### TypeScript / JavaScript
 
@@ -339,208 +715,6 @@ source paper; see `research/papers/` in the audit repo for full summaries.
 - **`it.skip` / `describe.skip` / `xit` left permanently (J1, MEDIUM):**
   Silently excluded from the run; the skip annotation is never revisited.
   Maps to the Ignored Test smell. [Jorge 2023, STEEL]
-
----
-
-### Java
-
-- **`@Ignore` (JUnit 4) / `@Disabled` (JUnit 5) with no explanation or expiry
-  (J1, MEDIUM):** The annotation silently removes the test from the suite
-  indefinitely. Require a `value` string on `@Disabled`; flag bare `@Ignore`.
-  Confirmed in large mature projects. [Goes 2024, Pizzini 2024]
-
-- **`@Test(expected = Exception.class)` - over-broad exception catch (J4/C9, HIGH):**
-  Catching the base `Exception` class means any exception, including a
-  `NullPointerException` from a typo in the test itself, satisfies the
-  expectation. Flag only when `Exception.class` (not a specific subtype) is
-  used. [Goes 2024, Pizzini 2024]
-
-- **TestNG `@Test(expectedExceptions = Exception.class)` (J4/C9, HIGH):**
-  Identical false-green risk to the JUnit 4 pattern above, expressed in
-  TestNG syntax. [Goes 2024]
-
-- **`assertThrows(Exception.class, ...)` - JUnit 5 (J4/C9, HIGH):**
-  Same over-broad catch in JUnit 5 style. Flag only when `Exception.class`
-  itself is passed, not a specific subtype. [Goes 2024]
-
-- **Conditional Test Logic - assert inside `if`/`for`/`while` (J1/C1, HIGH):**
-  Any control structure in the test body that guards an assertion. Present
-  even in highly-maintained large codebases. JNose rule: flag when an
-  assertion lives inside any conditional or loop. [Goes 2024]
-
-- **`assertAll()` called with no lambdas (J1/C2 analog, HIGH):**
-  `assertAll()` with an empty varargs list compiles and passes vacuously.
-  The grouped assertion block contains nothing to fail. [JUnit 5 behavior]
-
-- **Empty `@Test` method (J1/C2b, HIGH):**
-  A `@Test`-annotated method with an empty body or only comments. Compiles
-  fine, produces no assertion, always green. [Pizzini 2024, Goes 2024]
-
-- **Re-implementing the formula as the expected value (J2/C12, HIGH):**
-  ```java
-  double expected = price - (price * rate);
-  assertEquals(expected, sut.applyDiscount(price, rate));
-  ```
-  Both sides use the same arithmetic. Detected by semantic pass only, not
-  static scan. [Goes 2024, Pizzini 2024]
-
----
-
-### C#
-
-- **`async void` test method - NUnit/MSTest (J1/C22 analog, HIGH):**
-  When an exception is thrown inside an `async void` test, it is posted to
-  the thread-pool `SynchronizationContext` rather than propagated to the test
-  runner. The test shows green even if the assertion throws. xUnit disallows
-  `async void` by design. Flag `async void` on any `[Test]`/`[TestMethod]`-
-  annotated method. [Paul 2024, xNose - arXiv:2405.04063]
-
-- **`Assert.Pass()` - unconditional green (J1/C5 analog, HIGH):**
-  Marks the test passed without executing any assertions below it. No Python
-  equivalent. [Paul 2024]
-
-- **`Assert.Inconclusive()` - counts as green in most CI pipelines (J1, MEDIUM):**
-  Marks the test inconclusive, which many pipelines treat as passing. Neither
-  pass nor fail, but the assertions below it do not execute. [Paul 2024]
-
-- **`[Fact(Skip = "...")]` / `[Ignore]` / `[TestMethod][Ignore]` left permanently
-  (J1, MEDIUM):** xUnit uses the `Skip =` parameter; NUnit/MSTest use
-  `[Ignore]`. Both silently skip forever when no condition is attached. Flag
-  when the reason string contains no issue number or expiry date. [Paul 2024]
-
-- **Unknown Test - must recognize all assertion dialects (J1/C2b, HIGH):**
-  A test body with none of these assertion patterns is an Unknown Test:
-  `Assert.Equal(...)` / `Assert.AreEqual(...)` (MSTest/NUnit),
-  `.Should().Be(...)` (FluentAssertions),
-  `.ShouldBe(...)` / `.ShouldEqual(...)` (Shouldly).
-  Also check `Assert.Throws` / `Assert.ThrowsAsync`. [Paul 2024]
-
-- **`Assert.IsTrue(true)` / `Assert.AreEqual(x, x)` with identical arguments
-  (J2/C5-C7, HIGH):** Both are always-true checks. The same-expression check
-  requires that both arguments are syntactically identical. [Paul 2024]
-
-- **Empty `[Test]`/`[Fact]`/`[TestMethod]` method (J1/C2b, HIGH):**
-  No assertions in the body; method is a no-op that always passes. [Paul 2024]
-
----
-
-### PHP
-
-- **Unknown Test - no `$this->assert*` call (J1/C2b, HIGH):**
-  A `test*`-prefixed method or a method with `@test` docblock that contains
-  no `$this->assertEquals`, `$this->assertTrue`, `$this->assertSame`,
-  `$this->assertInstanceOf`, or similar. Also check for absence of
-  `$this->fail()`, which is the only non-assert way to force a failure.
-
-- **`$this->assertTrue(true)` / `$this->assertFalse(false)` - always-true
-  (J2/C5, HIGH):** Both sides are literals; passes by construction regardless
-  of production code. [Paul 2024 analog]
-
-- **`$this->assertEquals($x, $x)` - same variable on both sides (J2/C7, HIGH):**
-  Always passes. Requires both arguments to be syntactically identical.
-
-- **`$this->expectException(\Exception::class)` - over-broad (J4/C9 analog, HIGH):**
-  Catches any `Exception` subclass including errors from typos in the test
-  itself. Flag when `\Exception::class` (root class) is passed rather than
-  a specific type.
-
-- **`$this->expectException(\Throwable::class)` or `\Error::class` - even broader
-  (J4/C9 analog, HIGH):** `Throwable` in PHP 7+ covers both `Exception` and
-  `Error` hierarchies. A fatal `TypeError` from a wrong type hint satisfies
-  this expectation. Flag as HIGH when `Throwable` or `Error` (not a specific
-  subclass) is the argument.
-
-- **`@dataProvider` returning an empty dataset (J1/C1 analog, MEDIUM):**
-  A `@dataProvider` annotation pointing to a method that returns an empty
-  array causes the test to be skipped with no assertion. No iteration runs.
-
-- **`$this->markTestSkipped(...)` or `$this->markTestIncomplete(...)` without
-  a condition guard (J1/C4 analog, MEDIUM):** Unconditionally marks the test
-  as skipped/incomplete on every run; the test body never executes.
-
----
-
-### Ruby
-
-- **Fire and Forget - async with no wait (J1/C22 analog, HIGH):**
-  A test that starts a background job, thread, or EventMachine operation
-  without waiting for completion before the assertion. The test returns before
-  the async work settles. High prevalence in multi-language study. [Lucas 2024]
-
-- **`it { }` with empty block - RSpec pending (J1/C2b, MEDIUM):**
-  RSpec pending examples are silently green or pending depending on
-  configuration. No assertion executes. [Lucas 2024]
-
-- **`expect { }.not_to raise_error` without a positive result assertion
-  (J4/C9 analog, MEDIUM):** Checks only exception absence, not correctness of
-  the return value. The block could return any value and the test passes.
-  This is NOT automatically C10 or J4 - classify intent first (Step 3). Only
-  flag when the block wraps the SUT and absence-of-exception is not itself the
-  specified contract. Pair with a positive assertion on the result. [Lucas 2024]
-
-- **`stub_chain` through the SUT itself (J3/C10, HIGH):**
-  `allow(sut).to receive_message_chain(:method_a, :method_b)` stubs a call
-  chain on the system under test rather than a dependency. The test verifies
-  the stub fires, not production behavior. [Lucas 2024]
-
-- **Self-Test - `expect(mock).to receive(:method)` then calls `mock.method()`
-  directly (J3/C13, HIGH):** Sets an expectation on a mock, then calls the
-  method on the mock rather than passing the mock to the SUT. Asserts only
-  that the stub fires, not that real code calls it. [Lucas 2024]
-
-- **Echo pattern - stub return value asserted directly (J2/J3/C11, HIGH):**
-  `allow(...).to receive(:method).and_return(value)` followed by
-  `expect(result).to eq(value)` where the asserted value is the same value
-  injected into the stub. No production logic transforms it. [Lucas 2024]
-
-- **Minitest `test_*` method with no `assert_*` or `refute_*` (J1/C2b, HIGH):**
-  Method is collected by the runner but has no check.
-
-- **`assert_raises` catching `StandardError` or `Exception` - Minitest
-  (J4/C9 analog, HIGH):** Over-broad exception capture; any runtime error
-  satisfies the assertion.
-
----
-
-### C++
-
-- **`TEST`/`TEST_F` with no `ASSERT_*` or `EXPECT_*` in the body
-  (J1/C2, HIGH):** The test compiles and runs but emits no assertion; always
-  green. Detection: parse the block for any call matching `ASSERT_[A-Z]+` or
-  `EXPECT_[A-Z]+`; flag if none found.
-  **Delegate-pattern exemption:** if `ASSERT_*`/`EXPECT_*` appears inside a
-  helper function called by the test (not in the test body itself), do NOT
-  flag Unknown Test. The assertion executes when the helper is called. Check
-  the call chain before reporting J1/C2. [Lopes 2023]
-
-- **`ASSERT_NO_THROW(expr)` without inspecting the return value
-  (J4/C9 analog, MEDIUM):** Verifies only that no exception was thrown; does
-  not check correctness of the result. A function returning the wrong value
-  still passes. Pair with `EXPECT_EQ`/`EXPECT_THAT` on the result. [Lopes 2023]
-
-- **`ASSERT_NO_THROW` wrapping multiple non-trivial calls (C19 analog, LOW):**
-  An earlier call may throw, shielding the target call from executing. Flag
-  LOW only when more than one non-trivial call appears inside the macro.
-  [Lopes 2023, arXiv:2405.04063 analog]
-
-- **`TEST_CASE` with no `REQUIRE`/`CHECK` - Catch2 (J1/C2, HIGH):**
-  The Catch2 equivalent of the GoogleTest unknown-test pattern. A `TEST_CASE`
-  block with no `REQUIRE`, `CHECK`, `REQUIRE_THROWS`, or `CHECK_THROWS`
-  macros is always green.
-
-- **`DISABLED_` prefix or `GTEST_SKIP()` - GoogleTest (J1, MEDIUM):**
-  `TEST(Suite, DISABLED_Name)` is silently excluded from the default run.
-  `GTEST_SKIP()` at the top skips with no failure. Neither signals intent or
-  expiry. Note: an empty body inside a `DISABLED_`-prefixed test is a true
-  negative, not an Unknown Test - the test is explicitly excluded. [Lopes 2023]
-
-- **`ASSERT_TRUE(ptr != nullptr)` only - no further content check
-  (J4/C6 analog, LOW):** Confirms non-null but does not verify the pointed-to
-  value. Passes for any non-null pointer regardless of content.
-
-- **`EXPECT_CALL(mock, Method()).Times(0)` as the sole assertion (J4, LOW):**
-  Verifies a method is never called but does not verify what the SUT produced.
-  Pair with a positive result check.
 
 ---
 

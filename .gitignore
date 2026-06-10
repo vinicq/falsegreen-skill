@@ -10,3 +10,6 @@ build/
 *.log
 .DS_Store
 Thumbs.db
+
+# internal development / research - stays in falsegreen-skill-audit (private)
+.agents/

@@ -2,13 +2,13 @@
 
 **LLM-based semantic analysis for false-positive test detection.** This skill
 judges whether a test genuinely verifies correct behavior, across Python,
-TypeScript, JavaScript, Java, C#, PHP, Ruby, and C++.
+TypeScript, and JavaScript.
 
-The companion [falsegreen](https://github.com/vinicq/falsegreen) scanner
-handles deterministic Python patterns (C1-C22). This skill handles the cases
-that need semantic judgment: mocking the unit under test, asserting the value
-fed to the mock, re-implementing the production formula, and frozen bugs. It
-also covers all non-Python languages where a static parser does not exist.
+For Python, this skill applies the complete falsegreen catalog directly — all
+structural and semantic patterns — without requiring the static scanner to run
+first. The companion [falsegreen](https://github.com/vinicq/falsegreen) scanner
+is a faster batch alternative for Python; results must be consistent with this
+skill. For TypeScript and JavaScript, this skill is the primary detection tool.
 
 Invoke with `/falsegreen-skill` inside Claude Code. Attach a test file or
 paste a test snippet.
@@ -31,23 +31,37 @@ Work through these steps in order. Do not skip steps.
 ### Step 1: Detect language and framework
 
 Identify:
-- Language: Python / TypeScript / JavaScript / Java / C# / PHP / Ruby / C++
-- Test framework: pytest / Jest / Vitest / JUnit 4-5 / NUnit / xUnit.net /
-  PHPUnit / RSpec / Minitest / Catch2 / GoogleTest
-- Layer context: is this a unit test, an integration test, a UI/E2E test, or
-  a web layer test? (affects C6 and C14)
+- Language: Python / TypeScript / JavaScript
+- Test framework: pytest / unittest (Python) · Jest / Vitest / Mocha+Chai (TS/JS)
+- Layer context: unit test, integration test, UI/E2E, or web layer test?
+  (affects C6 and C14 — see reference.md)
 
-See `reference.md` for framework-detection cues per language.
+See `reference.md` for framework-detection cues.
 
-### Step 2: Run the deterministic check (Python only)
+### Step 2: Apply the full Python pattern catalog (Python only)
 
-If the language is Python, suggest running
-`falsegreen <file>` first. Its 21 mechanical codes catch structural problems
-(empty asserts, self-comparisons, uncollected tests) that do not need LLM
-judgment. Only proceed to the semantic steps for findings the scanner flags as
-needing semantic adjudication, or for the semantic-only cases (10/11/12/15/18).
+If the language is Python, scan the file against **all** falsegreen patterns
+before proceeding to the semantic judgments. These patterns are organized in
+`reference.md` under "Python" by family. Apply them in order:
 
-For all other languages, proceed directly to Step 3.
+| Family | Codes | What to look for |
+|---|---|---|
+| A — never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, C22, CC | assertion unreachable, missing, swallowed, or uncollected |
+| B — weak/always-true | C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34 | tautology, truthiness-only, self-compare, broad exception, string repr |
+| C — checks own setup | C19, C28, C29 | pytest.raises wraps too much, binding unread, env mutation |
+| D — external state | C17, C23, C24, C27, C30, C31, C32, C35 | skip-on-failure, hard path, shared mutable, try/pass, flaky |
+| E — wrong thing | C33, C36, C37 | metric not asserted, fail without reason, duplicate case |
+| Diagnostic (opt-in) | D1, D3, D4, D5, D6, M2 | apply only when user requests diagnostic pass |
+
+Report each structural finding with its code number and confidence level before
+proceeding to Steps 3-6.
+
+**Relationship with the falsegreen scanner:** if the user has already run
+`falsegreen <file>` and provides its output, use that as the structural pass
+result and proceed directly to Step 3 for findings the scanner marked as
+needing semantic review. If no scanner output is provided, apply Step 2 fully.
+
+For TypeScript and JavaScript, proceed directly to Step 3.
 
 ### Step 3: Classify test intent
 

@@ -3,7 +3,7 @@
 falsegreen-skill is the LLM semantic pass companion to the
 [falsegreen](https://github.com/vinicq/falsegreen) Python scanner. It detects
 false-positive test patterns that no static tool can see, across Python,
-TypeScript, JavaScript, Java, C#, PHP, Ruby, and C++.
+TypeScript, and JavaScript.
 
 ## 30-second cheat sheet
 
@@ -58,9 +58,9 @@ Format: `type(scope): summary`. Recognised types: `feat`, `fix`, `docs`,
 `refactor`, `chore`. Scope is usually the language or case number.
 
 ```
-feat(java): add JUnit5 assertThrows boundary rule (case 9)
+feat(python): add C35 flaky-decorator detection to reference
 fix(typescript): stop flagging jest.spyOn when SUT is an edge
-docs(reference): add C# NUnit Assert.That look-alike examples
+docs(reference): add JavaScript Sinon stub look-alike examples
 ```
 
 ## License
