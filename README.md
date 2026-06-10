@@ -1,4 +1,4 @@
-﻿# falsegreen-skill
+# falsegreen-skill
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -13,20 +13,213 @@ detection tool.
 
 ---
 
-## What it catches
+## Why this exists
 
-For Python, the complete falsegreen catalog applied via LLM (no scanner required):
+A test suite with 100% green tests is not a proof of correctness. It is a
+proof that no test failed — which is a different thing. Tests can pass
+permanently not because the code is right, but because the test never checks
+anything meaningful.
 
-| Family | Codes | What is wrong |
+Static analysis tools catch some of these cases. Linters like ruff or
+flake8-pytest-style catch syntax-level patterns: a bare `assert True`, a
+missing `assert` call, an unreachable block. Mutation testing tools like
+mutmut probe whether tests actually fail when the code changes. Both
+approaches have limits: linters cannot reason about test intent, and
+mutation testing requires the code to run.
+
+This skill fills the gap between linters and mutation testing. It reads the
+test as text, reconstructs the intent, and asks six structural questions about
+whether the test can actually fail. The questions are derived from the
+taxonomy of false-positive test patterns collected in
+[CREDITS.md](CREDITS.md).
+
+The core insight: a test is useful if and only if there exists some incorrect
+implementation that would cause it to fail. If no such implementation exists —
+because the assertion is unreachable, tautological, or verifies the mock
+instead of the code — the test is structurally green regardless of whether the
+production code is correct.
+
+---
+
+## The methodology
+
+One rule underlies every judgment: a test is useful only if it can fail when
+the code breaks.
+
+The six-judgment framework (J1-J6) makes this rule concrete:
+
+| # | Question | Catches |
 |---|---|---|
-| Never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, C22, CC | assertion unreachable, missing, swallowed, or uncollected |
-| Weak / always-true | C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34 | tautology, truthiness-only, self-compare, broad exception, repr coupling |
-| Checks own setup | C19, C28, C29 | raises context wraps too much, binding unread, env mutation |
-| External state | C17, C23, C24, C27, C30, C31, C32, C35 | skip-on-failure, hard path, shared state, try/pass, flaky |
-| Wrong thing | C33, C36, C37 | metric unasserted, fail without reason, duplicate parametrize |
-| Semantic (all languages) | 10, 11, 12, 15, 18 | mocks SUT, echo mock value, re-implements formula, order-dependent, frozen bug |
+| J1 | Does the assertion run? | Dead assertions, vacuous loops, swallowed failures |
+| J2 | Is the expected value from an independent oracle? | Echo mocks, formula re-implementation, spec contradictions |
+| J3 | Is the real unit under test, not a mock of it? | Mock-the-SUT, self-confirming literals |
+| J4 | Does the assertion verify enough? | Truthiness-only, len > 0, repr coupling, broad raises |
+| J5 | Is the test coupled to implementation internals? | Positional mock args, private method testing |
+| J6 | Does the test pass in isolation, without ordering? | Shared mutable state, test-order dependency |
 
-For TypeScript and JavaScript, the semantic and structural patterns from `reference.md`.
+A test is flagged HIGH when it fails more than one judgment and there is no
+legitimate exemption. A test is flagged LOW when it fails one judgment but
+has plausible intent. Everything else is PASS.
+
+**Precision over recall.** One wrong flag on a legitimate test costs more
+goodwill than a missed smell. Exemptions are explicit:
+
+- Case 18 requires a cited independent oracle (spec, docstring, API contract).
+  Without a citation, the finding is downgraded to LOW.
+- Characterization tests — intentionally freezing current behavior — are not
+  false positives.
+- Boolean predicates (`isinstance`, `.exists()`, `.is_dir()`) are not weak assertions.
+- In HTTP/UI layer tests, a truthiness check on a response object means
+  "the request succeeded" and is meaningful.
+
+Full protocol: [SKILL.md](SKILL.md).
+
+---
+
+## What it detects
+
+### Python — structural patterns (complete falsegreen catalog)
+
+**Family A — The test never checks anything**
+
+| Code | Pattern | Example |
+|---|---|---|
+| C1 | Assert inside `if`/`for` that may not run | `if items: assert items[0].valid` when `items` can be `[]` |
+| C2 | No assertion at all | test body contains only setup calls |
+| C2b | Calls SUT but discards result | `result = process(x)` — result never asserted |
+| C3 | Assert inside `try` whose `except` swallows it | `except Exception: pass` catches `AssertionError` |
+| C4 | Test function nested inside another function | pytest does not collect inner defs |
+| C4b | Test class with `__init__` | pytest skips classes that have `__init__` |
+| C20 | Assertion after unconditional `return`/`raise` | dead code, never runs |
+| C21 | Every assert is conditional, none runs unconditionally | all asserts inside `if/else` branches |
+| CC | Commented-out assertion | `# assert result == 42` |
+
+**Family B — The check is weak or always true**
+
+| Code | Pattern | Example |
+|---|---|---|
+| C5 | Always-true check | `assert True`, `assert (a, b)` (non-empty tuple) |
+| C6 | Truthiness / `len > 0` / substring in `str()` | `assert result`, `assert len(x) > 0` |
+| C6b | Positional mock arg via computed index | `call_args.args[expected_args.index("target")]` |
+| C7 | Self-comparison | `assert name == name` |
+| C8 | Exact float equality | `assert ratio == 3.14159` |
+| C9 | `pytest.raises` too broad or no `match=` | `with pytest.raises(Exception)` |
+| C11a | Self-confirming literal | `product.price = 100; assert product.price == 100` |
+| C13 | Mock assertion uncalled or misspelled | `mock.assert_called_once` (no parens) |
+| C13b | `@patch` without `autospec=True` | typos in kwargs pass silently |
+| C14 | Golden file written from actual output | first run records any output as truth |
+| C16 | Depends on wall clock, random, or `sleep` | `datetime.now()` unfrozen, `time.sleep()` |
+| C18 | `str()`/`repr()` comparison | `assert str(user) == "User(Alice, 30)"` |
+| C25 | `@pytest.mark.xfail` without `strict=True` | XPASS silently accepted |
+| C34 | Suboptimal assertion form | `== True`, `== None`, `not x in y`, `len == 0` |
+
+**Family C — The test checks its own setup**
+
+| Code | Pattern | Example |
+|---|---|---|
+| C19 | `pytest.raises` wraps multiple calls | setup call inside raises block may be the one that raises |
+| C28 | `pytest.raises` binding variable never read | `as exc:` but `exc` never asserted |
+| C29 | `os.environ` mutated directly | `os.environ["KEY"] = "x"` without `monkeypatch` |
+
+**Family D — Green depends on outside factors**
+
+| Code | Pattern | Example |
+|---|---|---|
+| C17 | `pytest.skip()` inside broad `except` | assertion failure silently becomes a skip |
+| C23 | Hard-coded absolute or home-relative path | `/home/user/data.csv` |
+| C24 | Module-level mutable state shared between tests | `_cache = {}` at module scope |
+| C27 | `try/except/pass` instead of `pytest.raises` | both raise and no-raise leave test green |
+| C30 | `responses.add()` without activating interceptor | real HTTP goes through |
+| C31 | `capsys.readouterr()` result discarded | captured output never asserted |
+| C32 | `@pytest.mark.skip` without `reason=` | forgotten skip |
+| C35 | `@pytest.mark.flaky` / retry decorator | masks non-determinism |
+
+**Family E — The test checks the wrong thing**
+
+| Code | Pattern | Example |
+|---|---|---|
+| C33 | sklearn/ML metric computed but not asserted | `accuracy_score(y, y_hat)` result discarded |
+| C36 | `pytest.fail()` without reason | CI shows only `FAILED`, no context |
+| C37 | Duplicate case in `@pytest.mark.parametrize` | same `(a, b, expected)` tuple appears twice |
+
+### Semantic patterns (all three languages)
+
+Semantic patterns require LLM judgment — no static rule can detect them.
+
+| Case | Pattern |
+|---|---|
+| 10 | Patches the unit under test (not a dependency) |
+| 11 | Asserts the value fed to the mock (echo) |
+| 12 | Re-implements the production formula as the expected value |
+| 15 | Passes only when another test has already run |
+| 18 | Expected value contradicts the spec (freezes a bug as correct) |
+
+---
+
+## Diagnostic and coupling codes (opt-in)
+
+These codes do not create false positives, but they reduce observability and
+make failures harder to diagnose. They are OFF by default and can be enabled
+per code in `.falsegreen.toml`:
+
+```toml
+[tool.falsegreen]
+severity = { D1 = "info", D3 = "info", D4 = "info", D5 = "info", D6 = "info", M2 = "info" }
+```
+
+| Code | Pattern | Why it matters |
+|---|---|---|
+| D1 | Assertion Roulette: 2+ asserts without messages | CI output says only the line number — hard to triage |
+| D3 | Duplicate Assert: exact same assertion written twice | second assertion adds nothing |
+| D4 | Unnamed Parametrize: 3+ cases, no `ids=` | CI shows `test[0]`, `test[1]` — unreadable failure reports |
+| D5 | Inline Setup Excess: 5+ setup statements before first assert | test should be split or setup moved to a fixture |
+| D6 | Debug Print: `print()` or `pprint()` in test body | suppressed by default, often a forgotten debug statement |
+| M2 | Long Test Method: test body over 50 lines | trying to verify too many concerns at once |
+
+---
+
+## How it compares
+
+**vs. ruff / flake8-pytest-style**
+
+Ruff and flake8-pytest-style catch syntax-level patterns: `assert True`,
+`pytest.raises` with no type, magic values in assertions. They are fast and
+precise for the patterns they cover — about 8-10 of the 37+ cases in the
+falsegreen catalog.
+
+This skill covers all 37+ structural codes and the 5 semantic cases that
+require reading the test as a whole — echo mocks, formula re-implementation,
+spec contradictions. The two tools are complementary: run the linter for
+instant feedback on simple cases, run the skill for semantic judgment on the
+rest.
+
+**vs. PyNose / pytest-smell**
+
+PyNose and pytest-smell are the closest research counterparts. Both apply the
+classic Palomba 2018 test-smell taxonomy (Assertion Roulette, Duplicate
+Assert, General Fixture, etc.). The falsegreen taxonomy is narrower: it
+focuses only on patterns that create false-positive green tests, not on
+maintainability smells in general.
+
+Where there is overlap (Assertion Roulette = D1, Duplicate Assert = D3),
+falsegreen flags them as diagnostic codes — informational, not blocking.
+The structural codes unique to falsegreen (C1-C37) cover patterns that
+Palomba's taxonomy does not address because they were derived specifically
+from studying how green tests hide broken code in CI.
+
+**vs. mutmut / cosmic-ray**
+
+Mutation testing answers the question definitively: change the code, does the
+test fail? That is the ground truth. Mutmut and cosmic-ray are accurate for
+the programs they can run, but they require an executable environment, a full
+test suite, and minutes to hours per run.
+
+This skill is a static pre-flight check. It cannot prove that a test fails
+when the code changes — that is mutation testing's job. It can identify, in
+seconds, tests that are structurally unable to fail: assertions that never
+execute, checks that are always true by construction, mocks that intercept
+the function being tested. Think of the skill as a fast filter before the
+mutation testing pass.
 
 ---
 
@@ -82,41 +275,6 @@ false-positive smells, and the J1-J6 protocol runs automatically.
 
 ---
 
-## The methodology
-
-One rule sits under everything: a test is useful only if it fails when the
-code breaks. The six-judgment framework (J1-J6) structures the analysis:
-
-- **J1:** Does the assertion run?
-- **J2:** Is the expected value from an independent oracle?
-- **J3:** Is the real unit under test (not a mock of it)?
-- **J4:** Does the assertion verify enough?
-- **J5:** Is the test coupled to implementation internals?
-- **J6:** Does the test pass in isolation?
-
-The methodology and its research basis are documented in
-[falsegreen CREDITS.md](https://github.com/vinicq/falsegreen/blob/main/CREDITS.md)
-and in this repo's [CREDITS.md](CREDITS.md).
-
----
-
-## Precision over recall
-
-A finding that wrongly flags a legitimate test is worse than a missed
-finding. The skill applies the same guardrail as the scanner:
-
-- Case 18 requires a cited independent oracle: spec, docstring, API contract.
-  No oracle, no finding.
-- An adversarial verification pass runs on every case 18 HIGH finding.
-- Characterization tests (intentionally freezing current behavior) are not
-  false positives.
-- In web/UI layer tests, a truthiness check on a response or locator object
-  is not a weak assertion.
-
-Full protocol: [SKILL.md](SKILL.md).
-
----
-
 ## Project layout
 
 ```
@@ -125,8 +283,15 @@ falsegreen-skill/
   reference.md      per-language case catalog and framework cues
   providers.md      multi-LLM invocation guide and Cursor setup
   CREDITS.md        the research this skill builds on
-  examples/         test snippets per language (bad and clean)
+  examples/
     python/
+      family_a_never_checks.py       C1, C2, C2b, C3, C4, C4b, C20, C21, CC
+      family_b_weak_always_true.py   C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34
+      family_c_checks_own_setup.py   C19, C28, C29
+      family_d_external_state.py     C17, C23, C24, C27, C30, C31, C32, C35
+      family_e_wrong_thing.py        C33, C36, C37
+      semantic_cases.py              cases 10, 11, 12, 15, 18 (LLM-only)
+      diagnostic_codes.py            D1, D3, D4, D5, D6, M2 (opt-in)
     typescript/
     javascript/
 ```
