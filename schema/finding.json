@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vinicq/falsegreen-skill/schema/finding.json",
+  "title": "FalsegreenFinding",
+  "description": "A single finding produced by the falsegreen-skill J1-J6 analysis.",
+  "type": "object",
+  "required": ["case", "judgment", "confidence", "language", "test", "finding", "evidence", "fix_hint"],
+  "properties": {
+    "case": {
+      "description": "Case number from the skill catalog. Integer (e.g., 10) or prefixed string (e.g., \"C1\").",
+      "oneOf": [
+        { "type": "integer", "minimum": 1 },
+        { "type": "string", "pattern": "^C?[0-9]+$" }
+      ]
+    },
+    "judgment": {
+      "description": "The J1-J6 judgment category assigned to this finding.",
+      "type": "string",
+      "enum": ["J1", "J2", "J3", "J4", "J5", "J6"]
+    },
+    "confidence": {
+      "description": "Confidence level of the finding.",
+      "type": "string",
+      "enum": ["HIGH", "LOW"]
+    },
+    "language": {
+      "description": "Programming language of the test under analysis.",
+      "type": "string",
+      "enum": ["Python", "TypeScript", "JavaScript"]
+    },
+    "test": {
+      "description": "Identity of the test function or method where the finding was detected.",
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "Name of the test function or method.",
+          "type": "string"
+        },
+        "line_start": {
+          "description": "First line of the test function (1-indexed).",
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_end": {
+          "description": "Last line of the test function (1-indexed).",
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "finding": {
+      "description": "One sentence describing what is wrong with the test.",
+      "type": "string"
+    },
+    "evidence": {
+      "description": "The specific lines from the source file that triggered this finding.",
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "oracle": {
+      "description": "Citation of the independent oracle (spec, docstring, API contract) used to establish the correct expected value. Required when case is 18.",
+      "type": "string"
+    },
+    "fix_hint": {
+      "description": "One sentence suggestion for how to fix the identified issue.",
+      "type": "string"
+    }
+  },
+  "if": {
+    "properties": {
+      "case": {
+        "oneOf": [
+          { "type": "integer", "const": 18 },
+          { "type": "string", "enum": ["18", "C18"] }
+        ]
+      }
+    }
+  },
+  "then": {
+    "required": ["case", "judgment", "confidence", "language", "test", "finding", "evidence", "oracle", "fix_hint"]
+  },
+  "additionalProperties": false
+}

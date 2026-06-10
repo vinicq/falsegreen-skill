@@ -718,6 +718,54 @@ Apply only when the user explicitly asks for diagnostic analysis.
 
 ---
 
+### Look-alikes: do NOT flag these TypeScript patterns
+
+1. **Type guard tests with `as unknown as T`** — casting through `unknown` to
+   pass bad input into a type guard without a compiler error. The purpose is
+   to verify the guard correctly rejects the value. This is not C5 and not
+   C7. The cast is deliberate, not a tautology.
+
+2. **`expect(result).toMatchObject({ kind: 'error' })` on discriminated unions**
+   — asserting only the discriminant field is not C6. In a discriminated union,
+   the discriminant fully determines the branch. Asserting `kind` IS the
+   meaningful assertion. This is the TypeScript equivalent of C6's HTTP
+   response exemption.
+
+3. **`expectTypeOf(v).toEqualTypeOf<T>()`** from vitest/expect-type — these are
+   compile-time type assertions. They do nothing at runtime but fail at `tsc`
+   time if the type no longer matches. They are not C5 (always-true) because
+   they fail when the type changes. Do not flag `expectTypeOf` calls.
+
+4. **`expect(result).toBeInstanceOf(SpecificError)`** when identity is the
+   contract (domain errors, value objects) — not C6 even though it skips field
+   inspection. When the class itself is the contract (e.g., a specific domain
+   error subclass), `instanceof` IS the full assertion.
+
+5. **`vi.mocked(fn)` or `jest.mocked(fn)` wrapping** — not C13b. These typed
+   mock wrappers preserve the original function's type signature. They serve
+   the same purpose as `autospec=True` in Python: preventing silent signature
+   drift. Do not flag them as untyped mocks.
+
+---
+
+### Look-alikes: do NOT flag these JavaScript patterns
+
+1. **`expect(fn).not.toThrow()`** after a setup call — verifies the setup
+   completed without error. Not C2 when the contract is "must not throw". The
+   assertion is the absence of an exception, which is meaningful.
+
+2. **`expect(emitter).toHaveProperty('on')` on an EventEmitter or similar
+   interface** — duck-typing check, not C6, when interface presence IS the
+   contract. Checking that an object exposes a required API surface is a
+   legitimate assertion.
+
+3. **`done()` called once after a series of assertions inside a callback** —
+   not C2 if the assertions are present and precede the `done()` call. The
+   smell is `done()` called before or instead of assertions, not `done()` used
+   as the callback signal after real checks have run.
+
+---
+
 ## The oracle hierarchy
 
 The expected value must come from a source independent of the code:

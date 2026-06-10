@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vinicq/falsegreen-skill/schema/report.json",
+  "title": "FalsegreenReport",
+  "description": "Full analysis report produced by one falsegreen-skill invocation over a test file or suite.",
+  "type": "object",
+  "required": ["findings", "summary", "language", "framework"],
+  "properties": {
+    "findings": {
+      "description": "List of individual findings from the J1-J6 analysis.",
+      "type": "array",
+      "items": { "$ref": "./finding.json" }
+    },
+    "summary": {
+      "description": "Aggregate counts for the analyzed file or suite.",
+      "type": "object",
+      "required": ["tests_reviewed", "high", "low", "clean"],
+      "properties": {
+        "tests_reviewed": {
+          "description": "Total number of test functions examined.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "high": {
+          "description": "Number of HIGH-confidence findings.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "low": {
+          "description": "Number of LOW-confidence findings.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "clean": {
+          "description": "Number of tests with no findings.",
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "language": {
+      "description": "Primary programming language of the analyzed test file.",
+      "type": "string"
+    },
+    "framework": {
+      "description": "Test framework detected in the file (e.g., pytest, jest, vitest, unittest).",
+      "type": "string"
+    },
+    "scan_date": {
+      "description": "ISO 8601 date-time when the scan was run.",
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

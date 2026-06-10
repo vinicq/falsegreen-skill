@@ -1,0 +1,48 @@
+# falsegreen-skill model tier routing
+#
+# Three tiers map analysis passes to model capability requirements.
+# Pick the tier that matches the cases you are running.
+
+tiers:
+
+  structural:
+    description: >
+      C1-C37 structural patterns. Pattern matching against well-defined AST signatures.
+      Small models handle this tier reliably.
+    cases: "C1-C37"
+    minimum: "7B+ instruction model"
+    rationale: "Pattern matching against well-defined structural signatures. Small models handle this reliably."
+    models:
+      anthropic: "claude-haiku-4-5-20251001"
+      openai: "gpt-4o-mini"
+      google: "gemini-2.0-flash"
+      groq: "llama-3.3-70b-versatile"
+      local: "qwen2.5-coder:7b"
+
+  semantic:
+    description: >
+      Cases 10-15. Requires reasoning about test intent vs. what is actually tested.
+      Frontier models or 70B+ local models are needed for reliable results.
+    cases: "10-15"
+    minimum: "Frontier model or 70B+ local"
+    rationale: "Requires reasoning about test intent vs. what is tested. Smaller models produce high false-positive rates on these cases."
+    models:
+      anthropic: "claude-sonnet-4-6"
+      openai: "gpt-4o"
+      google: "gemini-2.5-pro"
+      groq: "llama-3.3-70b-versatile"
+      local: "qwen2.5-coder:32b"
+
+  adversarial:
+    description: >
+      Case 18 deep verification only. Runs a two-pass finder/refuter pipeline.
+      Local models are not recommended because the refuter pass collapses on smaller
+      models, producing unreliable HIGH confidence ratings.
+    cases: "18"
+    minimum: "Frontier model with extended reasoning support"
+    rationale: "The adversarial refuter pass collapses on smaller models. Use the two-pass procedure documented in providers.md."
+    models:
+      anthropic: "claude-opus-4-8"
+      openai: "o3"
+      google: "gemini-2.5-pro"
+      local: "not recommended"

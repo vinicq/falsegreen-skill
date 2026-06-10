@@ -1,0 +1,27 @@
+{
+  "name": "falsegreen-skill",
+  "version": "0.1.0",
+  "description": "LLM skill for false-positive test detection (J1-J6 protocol)",
+  "keywords": [
+    "claude-code-plugin",
+    "testing",
+    "test-smells",
+    "code-quality",
+    "false-positive"
+  ],
+  "homepage": "https://github.com/vinicq/falsegreen-skill",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vinicq/falsegreen-skill"
+  },
+  "license": "MIT",
+  "files": [
+    "SKILL.md",
+    "reference.md",
+    "contexts/",
+    "examples/",
+    "schema/",
+    ".claude-plugin/",
+    "models.yaml"
+  ]
+}

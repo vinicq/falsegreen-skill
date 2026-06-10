@@ -50,7 +50,7 @@ print(response.content[0].text)
 ```
 
 For structured JSON output, use tool use with the canonical schema from
-`.agents/llm-architect.md`.
+`schema/finding.json` in this repo.
 
 ---
 
@@ -69,7 +69,7 @@ response = client.chat.completions.create(
         {"role": "system", "content": skill_protocol},
         {"role": "user", "content": test_code}
     ],
-    response_format={"type": "json_object"}  # use the schema from llm-architect.md
+    response_format={"type": "json_object"}  # use the schema from schema/finding.json
 )
 print(response.choices[0].message.content)
 ```
@@ -229,6 +229,79 @@ Cursor supports Claude and GPT models. For falsegreen-skill:
 - `claude-sonnet-4-6` - default; best balance of precision and speed
 - `gpt-4o` - solid alternative, slightly less precise on case 18
 - Use the "long context" model option for files with many test functions
+
+---
+
+## Case 18 two-pass invocation
+
+Case 18 (expected value contradicts the spec) requires two independent API calls with
+separate context windows. A single call risks self-confirmation bias: the model that
+found the issue will tend to defend it. The two-pass structure forces a genuine challenge.
+
+**Pass 1 (finder):** system = SKILL.md content, user = test file + "Identify any case 18
+candidates (expected value contradicts the spec). For each candidate, cite the independent
+oracle."
+
+**Pass 2 (refuter):** system = "You are a skeptical code reviewer. Your only job is to
+argue that the expected value in this test is CORRECT. Assume the test author knew what
+they were doing.", user = Pass 1's case 18 finding. If the refuter cannot mount a credible
+defense, the finding stands as HIGH. If the refuter's argument holds, downgrade to LOW or
+withdraw.
+
+Use `claude-opus-4-8` or `o3` for both passes. See `models.yaml` for the full tier guide.
+
+```python
+from openai import OpenAI  # works for any OpenAI-compatible provider
+
+client = OpenAI()  # set base_url + api_key for non-OpenAI providers
+skill_protocol = open("SKILL.md").read()
+test_code = open("tests/test_example.py").read()
+
+# Pass 1: finder
+finder_response = client.chat.completions.create(
+    model="o3",
+    messages=[
+        {"role": "system", "content": skill_protocol},
+        {
+            "role": "user",
+            "content": (
+                test_code
+                + "\n\nIdentify any case 18 candidates (expected value contradicts the spec)."
+                + " For each candidate, cite the independent oracle."
+            ),
+        },
+    ],
+)
+finder_finding = finder_response.choices[0].message.content
+
+# Pass 2: refuter (fresh context window, no system protocol)
+refuter_response = client.chat.completions.create(
+    model="o3",
+    messages=[
+        {
+            "role": "system",
+            "content": (
+                "You are a skeptical code reviewer. Your only job is to argue that the"
+                " expected value in this test is CORRECT. Assume the test author knew"
+                " what they were doing."
+            ),
+        },
+        {
+            "role": "user",
+            "content": finder_finding,
+        },
+    ],
+)
+refuter_argument = refuter_response.choices[0].message.content
+
+# Decision rule:
+# - If the refuter cannot mount a credible defense -> finding stays HIGH
+# - If the refuter's argument holds              -> downgrade to LOW or withdraw
+print("--- Finder ---")
+print(finder_finding)
+print("\n--- Refuter ---")
+print(refuter_argument)
+```
 
 ---
 

@@ -28,6 +28,28 @@ borrow correctness from elsewhere.
 
 Work through these steps in order. Do not skip steps.
 
+### Step 0 (optional): Load project conventions
+
+If the user supplies a `conventions:` block, incorporate it before applying any judgments.
+This block declares project-specific context that affects the look-alike rules.
+
+Example:
+```
+conventions:
+  custom_assertion_helpers:
+    - conftest.assert_model_valid()   # wraps assert + validation logic
+    - helpers.assert_valid_uuid()
+  test_layer_overrides:
+    - tests/integration/ is web-layer  # apply C6 HTTP exemption here
+  excluded_codes:
+    - C8   # project uses Decimal, not float
+```
+
+The conventions block does NOT disable severity levels. It only extends the look-alike
+exemptions in reference.md. HIGH findings that survive after exemptions are still reported as HIGH.
+
+If no conventions block is provided, proceed directly to Step 1.
+
 ### Step 1: Detect language and framework
 
 Identify:
@@ -132,7 +154,7 @@ Never report case 18 based on gut feeling or pattern-matching alone.
 For each finding, output:
 
 ```
-CASE {number} ({J1-J6}) — {confidence: HIGH | LOW} — {language}
+CASE {number} ({J1-J6}) - {confidence: HIGH | LOW} - {language} - {intent: spec|char|regression|behavior}
 
 Test: {function name, line range}
 Finding: {one sentence describing what is wrong}
@@ -140,6 +162,8 @@ Evidence: {the specific line(s) that triggered this}
 Oracle: {for case 18 only: cite the independent oracle}
 Fix hint: {one sentence suggestion}
 ```
+
+Intent is the classification from Step 3. Include it in every finding - it is required for dataset analysis.
 
 Then a summary block:
 
@@ -152,6 +176,20 @@ Clean: N-M
 
 Use HIGH only when there is no plausible legitimate interpretation.
 Precision over recall: a wrong HIGH finding is worse than a missed LOW one.
+
+### Step 7 (optional): Suggest project conventions
+
+Run this step only when the report contains 3 or more findings of the same code or pattern.
+
+Add a note at the end of the SUMMARY block:
+
+```
+Pattern note: {code or pattern} appears {N} times. If intentional in this project,
+add it to the conventions: block (Step 0) to suppress future findings.
+```
+
+Do not run Step 7 for reports with fewer than 3 findings. Do not call a separate model -
+append the note to the existing SUMMARY using what you already know from the analysis.
 
 ---
 

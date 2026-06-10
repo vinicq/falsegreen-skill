@@ -1,0 +1,21 @@
+{
+  "name": "falsegreen-skill",
+  "description": "LLM-based semantic analysis for false-positive test detection. Applies the J1-J6 judgment framework across Python, TypeScript, and JavaScript.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Vinicius Queiroz",
+    "url": "https://github.com/vinicq"
+  },
+  "homepage": "https://github.com/vinicq/falsegreen-skill",
+  "repository": "https://github.com/vinicq/falsegreen-skill",
+  "license": "MIT",
+  "keywords": [
+    "testing",
+    "test-smells",
+    "code-quality",
+    "false-positive",
+    "python",
+    "typescript",
+    "javascript"
+  ]
+}
