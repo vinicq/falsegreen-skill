@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "name": "falsegreen-skill",
+  "slug": "falsegreen-skill",
+  "description": "LLM skill for false-positive test detection. Applies the J1-J6 judgment framework across Python, TypeScript, and JavaScript.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Vinicius Queiroz",
+    "url": "https://github.com/vinicq"
+  },
+  "homepage": "https://github.com/vinicq/falsegreen-skill",
+  "repository": "https://github.com/vinicq/falsegreen-skill",
+  "license": "MIT",
+  "category": "code-quality",
+  "tags": ["testing", "test-smells", "code-quality", "false-positive", "python", "typescript", "javascript"],
+  "languages": ["Python", "TypeScript", "JavaScript"],
+  "entrypoints": {
+    "claude": "CLAUDE.md is loaded via .claude-plugin/plugin.json",
+    "codex": "AGENTS.md",
+    "gemini": "GEMINI.md",
+    "universal": "llm.md"
+  },
+  "skill": {
+    "file": "SKILL.md",
+    "description": "Core J1-J6 protocol for false-positive test detection",
+    "invocation": "Attach or paste a test file and request false-positive analysis"
+  },
+  "schema": {
+    "finding": "schema/finding.json",
+    "report": "schema/report.json"
+  },
+  "context_files": {
+    "claude": "contexts/claude.md",
+    "codex": "contexts/codex.md",
+    "gemini": "contexts/gemini.md",
+    "deepseek": "contexts/deepseek.md",
+    "general": "contexts/general.md"
+  },
+  "models": {
+    "structural_pass": {
+      "minimum": "7B instruction-following",
+      "recommended": "gpt-4o-mini or equivalent"
+    },
+    "semantic_pass": {
+      "minimum": "70B or frontier API",
+      "recommended": "gpt-4o or claude-sonnet-4-6"
+    },
+    "adversarial_verify": {
+      "minimum": "frontier with reasoning",
+      "recommended": "o3 or claude-opus-4-8"
+    }
+  },
+  "openai_compatible_providers": [
+    { "name": "Groq (LLaMA)", "base_url": "https://api.groq.com/openai/v1", "model": "llama-3.3-70b-versatile" },
+    { "name": "Together.ai (LLaMA)", "base_url": "https://api.together.xyz/v1", "model": "meta-llama/Llama-3.1-405B-Instruct" },
+    { "name": "Ollama (local)", "base_url": "http://localhost:11434/v1", "model": "qwen2.5-coder:32b" },
+    { "name": "OpenRouter (Qwen)", "base_url": "https://openrouter.ai/api/v1", "model": "Qwen/Qwen2.5-72B-Instruct" },
+    { "name": "Moonshot Kimi", "base_url": "https://api.moonshot.cn/v1", "model": "kimi-k2-0711-instruct" },
+    { "name": "Mistral", "base_url": "https://api.mistral.ai/v1", "model": "mistral-large-latest" }
+  ]
+}

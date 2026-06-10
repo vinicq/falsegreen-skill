@@ -283,3 +283,17 @@ For thinking mode on Vertex AI, pass `generation_config` with
 | Batch scoring (Dataset B, CI) | `gemini-2.0-flash`, validate against benchmark first |
 | Structured output for tooling | `response_mime_type="application/json"` with `response_schema` |
 | Enterprise / GCP-native | Vertex AI client, same model names |
+
+---
+
+## Google AI Studio — Gem setup
+
+To use falsegreen-skill as a persistent Gem in Google AI Studio:
+
+1. Open [AI Studio](https://aistudio.google.com) and create a new Gem.
+2. Set the name to `falsegreen-skill`.
+3. Set the description to: "Detects false-positive tests using the J1-J6 semantic judgment framework. Paste a test file or directory contents — get a structured finding report with case numbers, confidence levels, and fix hints."
+4. Paste the contents of `SKILL.md` as the system instructions.
+5. Enable the Code execution capability.
+
+The Gem persists the system instructions, so subsequent chats in that Gem start from the full J1-J6 protocol without re-pasting SKILL.md.

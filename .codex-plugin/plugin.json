@@ -1,0 +1,35 @@
+{
+  "name": "falsegreen-skill",
+  "description": "LLM-based semantic analysis for false-positive test detection. Applies the J1-J6 judgment framework across Python, TypeScript, and JavaScript.",
+  "version": "0.1.0",
+  "platform": "codex",
+  "author": {
+    "name": "Vinicius Queiroz",
+    "url": "https://github.com/vinicq"
+  },
+  "homepage": "https://github.com/vinicq/falsegreen-skill",
+  "repository": "https://github.com/vinicq/falsegreen-skill",
+  "license": "MIT",
+  "entrypoint": "AGENTS.md",
+  "skills": [
+    {
+      "name": "falsegreen-skill",
+      "description": "Analyze test files for false-positive smells using the J1-J6 judgment framework",
+      "skillFile": "SKILL.md"
+    }
+  ],
+  "keywords": [
+    "testing",
+    "test-smells",
+    "code-quality",
+    "false-positive",
+    "python",
+    "typescript",
+    "javascript"
+  ],
+  "models": {
+    "recommended": "gpt-4o",
+    "fast": "gpt-4o-mini",
+    "deep": "o3"
+  }
+}

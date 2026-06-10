@@ -1,0 +1,42 @@
+{
+  "name": "falsegreen-skill",
+  "description": "LLM-based semantic analysis for false-positive test detection. Applies the J1-J6 judgment framework across Python, TypeScript, and JavaScript.",
+  "version": "0.1.0",
+  "platform": "gemini",
+  "author": {
+    "name": "Vinicius Queiroz",
+    "url": "https://github.com/vinicq"
+  },
+  "homepage": "https://github.com/vinicq/falsegreen-skill",
+  "repository": "https://github.com/vinicq/falsegreen-skill",
+  "license": "MIT",
+  "entrypoint": "GEMINI.md",
+  "skills": [
+    {
+      "name": "falsegreen-skill",
+      "description": "Analyze test files for false-positive smells using the J1-J6 judgment framework",
+      "skillFile": "SKILL.md"
+    }
+  ],
+  "keywords": [
+    "testing",
+    "test-smells",
+    "code-quality",
+    "false-positive",
+    "python",
+    "typescript",
+    "javascript"
+  ],
+  "models": {
+    "recommended": "gemini-2.5-pro",
+    "fast": "gemini-2.0-flash",
+    "deep": "gemini-2.5-pro",
+    "deep_config": { "thinking_budget": 16384 }
+  },
+  "context_window": 1000000,
+  "features": {
+    "long_context": true,
+    "thinking_mode": true,
+    "thinking_budget_default": 8192
+  }
+}

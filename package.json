@@ -15,13 +15,22 @@
     "url": "https://github.com/vinicq/falsegreen-skill"
   },
   "license": "MIT",
+  "scripts": {
+    "version": "node -e \"const fs=require('fs');const v=require('./package.json').version;['.claude-plugin/plugin.json','.codex-plugin/plugin.json','.gemini-plugin/plugin.json','.universal-plugin/plugin.json'].forEach(f=>{const p=JSON.parse(fs.readFileSync(f));p.version=v;fs.writeFileSync(f,JSON.stringify(p,null,2)+'\\n')});\" && git add .claude-plugin/ .codex-plugin/ .gemini-plugin/ .universal-plugin/"
+  },
   "files": [
     "SKILL.md",
+    "AGENTS.md",
     "reference.md",
+    "GEMINI.md",
+    "llm.md",
     "contexts/",
     "examples/",
     "schema/",
     ".claude-plugin/",
+    ".codex-plugin/",
+    ".gemini-plugin/",
+    ".universal-plugin/",
     "models.yaml"
   ]
 }

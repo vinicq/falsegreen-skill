@@ -1,0 +1,19 @@
+{
+  "displayName": "falsegreen-skill",
+  "shortDescription": "Detect false-positive tests with the J1-J6 judgment framework",
+  "longDescription": "falsegreen-skill applies six structural judgments (J1-J6) to each test to determine whether it can actually fail when the code breaks. Covers Python (complete C1-C37 falsegreen catalog), TypeScript, and JavaScript. Gemini's 1M-token context window enables whole-suite analysis in a single pass, including cross-file case 15 (order-dependent test) detection.",
+  "categories": ["code-quality", "testing", "static-analysis"],
+  "keywords": ["test-smells", "false-positive", "python", "typescript", "javascript", "j1-j6", "falsegreen"],
+  "pricing": "free",
+  "license": "MIT",
+  "author": {
+    "name": "Vinicius Queiroz",
+    "url": "https://github.com/vinicq"
+  },
+  "homepage": "https://github.com/vinicq/falsegreen-skill",
+  "supportedLanguages": ["Python", "TypeScript", "JavaScript"],
+  "invocation": "analyze this test file for false-positive smells",
+  "requirements": {
+    "geminiModel": "gemini-2.5-pro"
+  }
+}

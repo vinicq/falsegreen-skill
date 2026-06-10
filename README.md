@@ -225,6 +225,19 @@ mutation testing pass.
 
 ## How to use
 
+## Installation
+
+Claude Code installs via npm; Codex and Gemini CLIs work from a local clone of this repo.
+
+| Platform | Command |
+|---|---|
+| Claude Code | `npm install falsegreen-skill` (plugin auto-discovered from `node_modules`) |
+| OpenAI Codex CLI | Clone repo — `AGENTS.md` is auto-loaded |
+| Gemini CLI | Clone repo — `GEMINI.md` is auto-loaded |
+| Cursor | Copy contents of `contexts/cursor.md` to `.cursor/rules/falsegreen-skill.mdc` |
+| Any LLM | Use `llm.md` as system prompt |
+| API (any provider) | See `contexts/general.md` for a universal Python snippet |
+
 ### Claude Code (primary path)
 
 Install [Claude Code](https://github.com/anthropics/claude-code), then invoke
