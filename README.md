@@ -281,8 +281,15 @@ false-positive smells, and the J1-J6 protocol runs automatically.
 falsegreen-skill/
   SKILL.md          the skill protocol (language and LLM agnostic)
   reference.md      per-language case catalog and framework cues
-  providers.md      multi-LLM invocation guide and Cursor setup
+  providers.md      multi-LLM invocation guide (API snippets)
   CREDITS.md        the research this skill builds on
+  contexts/         ready-to-use context files per platform
+    claude.md       Claude Code CLI, Claude.ai, Anthropic API
+    codex.md        ChatGPT, OpenAI API, structured output, batch
+    gemini.md       Google AI Studio, Gemini API, long context
+    cursor.md       Cursor IDE — full .cursor/rules/ MDC template
+    deepseek.md     DeepSeek Chat, DeepSeek API, R1 reasoning
+    general.md      any LLM — Ollama, Groq, OpenRouter, plain chat
   examples/
     python/
       family_a_never_checks.py       C1, C2, C2b, C3, C4, C4b, C20, C21, CC
