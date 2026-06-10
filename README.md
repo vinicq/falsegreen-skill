@@ -246,7 +246,7 @@ Add the marketplace and install the plugin:
 /plugin install falsegreen-skill@falsegreen
 ```
 
-Then invoke the skill with `/falsegreen-skill:falsegreen`, or just attach a
+Then invoke the skill with `/falsegreen-skill:falsegreen-llm`, or just attach a
 test file and ask for false-positive analysis — the skill triggers on intent.
 The skill identifies the language and framework, classifies the test intent,
 applies the six-judgment protocol, and reports findings with case numbers,
@@ -305,9 +305,9 @@ falsegreen-skill/
   .codex-plugin/        Codex CLI plugin manifest
   .agents/plugins/      Codex CLI marketplace catalog
   skills/
-    falsegreen/         shared skill entry point (Claude Code + Codex plugins)
+    falsegreen-llm/     shared skill entry point (Claude Code + Codex plugins)
   bin/
-    falsegreen.js       zero-dependency CLI (npx falsegreen-skill)
+    falsegreen-llm.js   zero-dependency CLI (npx falsegreen-skill)
   docs/
     cli.md              CLI usage guide
   schema/

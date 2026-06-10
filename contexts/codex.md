@@ -5,6 +5,28 @@ structured output, Codex CLI, and batch pipelines.
 
 ---
 
+## Installation (Codex CLI)
+
+Two official paths:
+
+1. **Plugin marketplace:**
+
+   ```bash
+   codex plugin marketplace add vinicq/falsegreen-skill
+   ```
+
+   The plugin manifest lives at `.codex-plugin/plugin.json`, the marketplace
+   catalog at `.agents/plugins/marketplace.json`, and the shared skill at
+   `skills/falsegreen-llm/SKILL.md`.
+
+2. **Clone the repo.** `AGENTS.md` at the repo root loads automatically when
+   Codex starts a session inside the clone.
+
+Note: OpenAI deprecated `~/.codex/prompts/` custom prompts in favor of skills.
+Use one of the two paths above instead.
+
+---
+
 ## Model recommendations
 
 | Use case | Model |
@@ -250,9 +272,11 @@ print(f"\nSUMMARY: {s['tests_reviewed']} reviewed, {s['high']} high, {s['low']} 
 
 ## 4. Codex CLI
 
-If you use OpenAI's [Codex CLI](https://github.com/openai/codex) for
-terminal-based AI workflows, you can run the falsegreen-skill by supplying
-the protocol as context.
+If you installed the plugin or cloned this repo (see Installation at the top),
+the skill loads automatically: the plugin registers
+`skills/falsegreen-llm/SKILL.md`, and a cloned repo exposes `AGENTS.md`, which
+Codex reads at session start. The options below cover running the skill in a
+project that has neither.
 
 ### Per-session context
 
@@ -270,8 +294,8 @@ codex --context SKILL.md < tests/test_example.py
 
 ### Project-level configuration
 
-Create a `codex.md` file at the root of your project (Codex CLI reads it
-automatically when present). Add a section that points Codex to the skill:
+Add a section to your project's `AGENTS.md` (Codex CLI reads it automatically
+when present) that points Codex to the skill:
 
 ```markdown
 ## Test quality analysis
@@ -290,7 +314,7 @@ Then invoke:
 codex "analyze tests/test_example.py for false-positive smells"
 ```
 
-Codex will load the project `codex.md` context and apply the protocol.
+Codex will load the project `AGENTS.md` context and apply the protocol.
 
 ---
 

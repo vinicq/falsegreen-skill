@@ -23,13 +23,17 @@ invoke the skill on each supported provider and how to integrate it with Cursor.
 
 ### Via Claude Code (primary path)
 
-Install Claude Code, then load the skill in a session:
+Install the plugin, then invoke the skill:
 
 ```
-/falsegreen-skill
+/plugin marketplace add vinicq/falsegreen-skill
+/plugin install falsegreen-skill@falsegreen
+/falsegreen-skill:falsegreen-llm
 ```
 
-Attach a test file or paste a snippet. The skill reads SKILL.md automatically.
+Attach a test file or paste a snippet, or just ask in natural language
+("analyze this test file for false-positive smells"). The skill loads
+`skills/falsegreen-llm/SKILL.md` automatically.
 
 ### Via API (programmatic)
 

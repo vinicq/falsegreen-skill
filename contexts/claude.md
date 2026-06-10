@@ -18,18 +18,27 @@ SKILL.md protocol and J1-J6 judgment framework.
 
 ## Mode 1: Claude Code (CLI)
 
-Claude Code is the primary path. The skill is registered as `/falsegreen-skill`
-and loaded directly from SKILL.md in the repo.
+Claude Code is the primary path. The skill ships as a Claude Code plugin and
+loads from `skills/falsegreen-llm/SKILL.md`.
 
 ### Setup
 
-Clone this repo or add it to your Claude Code project. The skill command is
-available once Claude Code loads the project context.
+Install the plugin from the marketplace:
+
+```
+/plugin marketplace add vinicq/falsegreen-skill
+/plugin install falsegreen-skill@falsegreen
+```
+
+After install, the skill is available as the namespaced command
+`/falsegreen-skill:falsegreen-llm`. It also triggers on natural-language
+intent, so a plain request like "analyze this test file for false-positive
+smells" works without the slash command.
 
 ### Basic usage
 
 ```
-/falsegreen-skill
+/falsegreen-skill:falsegreen-llm
 ```
 
 Then say what to analyze:
@@ -44,15 +53,15 @@ You do not need to paste code manually.
 ### Useful prompts
 
 ```
-/falsegreen-skill analyze tests/unit/ — focus on J2 and J3
+/falsegreen-skill:falsegreen-llm analyze tests/unit/ - focus on J2 and J3
 ```
 
 ```
-/falsegreen-skill I only care about HIGH confidence findings
+/falsegreen-skill:falsegreen-llm I only care about HIGH confidence findings
 ```
 
 ```
-/falsegreen-skill run J1 only across the entire test suite
+run J1 only across the entire test suite, using the falsegreen protocol
 ```
 
 ### Pre-pass with the falsegreen scanner (Python)
@@ -86,8 +95,9 @@ findings block. A coordinator agent merges results and deduplicates.
 In Claude Code:
 
 ```
-/falsegreen-skill For each file in tests/, spawn a subagent that applies the
-full J1-J6 protocol and returns findings as JSON. Merge and summarize at the end.
+/falsegreen-skill:falsegreen-llm For each file in tests/, spawn a subagent that
+applies the full J1-J6 protocol and returns findings as JSON. Merge and
+summarize at the end.
 ```
 
 ---

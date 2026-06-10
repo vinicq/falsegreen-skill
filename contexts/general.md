@@ -29,6 +29,9 @@ Use the self-contained template at the end of this document.
 That is the complete integration. No SDK, no library, no configuration file
 required.
 
+For any OpenAI-compatible provider, the zero-dependency CLI is the fastest
+path: `npx falsegreen-skill analyze <files>` (see `docs/cli.md`).
+
 ---
 
 ## OpenAI-compatible APIs

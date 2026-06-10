@@ -15,6 +15,21 @@ playground to the Python API to enterprise Vertex AI.
 
 ---
 
+## Gemini CLI extension
+
+Install the skill as a Gemini CLI extension:
+
+```bash
+gemini extensions install https://github.com/vinicq/falsegreen-skill
+```
+
+The manifest `gemini-extension.json` at the repo root registers the extension
+and loads `GEMINI.md` as persistent context (`contextFileName`). After install,
+every Gemini CLI session carries the J1-J6 protocol; ask in natural language,
+for example "analyze tests/ for false-positive smells".
+
+---
+
 ## Google AI Studio (aistudio.google.com)
 
 AI Studio is the fastest way to try the skill without writing any code.
