@@ -15,7 +15,7 @@
   "tags": ["testing", "test-smells", "code-quality", "false-positive", "python", "typescript", "javascript"],
   "languages": ["Python", "TypeScript", "JavaScript"],
   "entrypoints": {
-    "claude": "CLAUDE.md is loaded via .claude-plugin/plugin.json",
+    "claude": "SKILL.md",
     "codex": "AGENTS.md",
     "gemini": "GEMINI.md",
     "universal": "llm.md"
@@ -38,7 +38,7 @@
   },
   "models": {
     "structural_pass": {
-      "minimum": "7B instruction-following",
+      "minimum": "13B code-tuned or 32B instruction-following",
       "recommended": "gpt-4o-mini or equivalent"
     },
     "semantic_pass": {

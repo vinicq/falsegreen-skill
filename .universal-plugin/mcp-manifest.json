@@ -5,9 +5,17 @@
   "description": "False-positive test detection via J1-J6 semantic judgment",
   "capabilities": {
     "prompts": true,
-    "resources": false,
+    "resources": true,
     "tools": false
   },
+  "resources": [
+    {
+      "uri": "file:///SKILL.md",
+      "name": "falsegreen-skill protocol",
+      "description": "Complete J1-J6 protocol to load as system prompt before invoking analyze-test-file",
+      "mimeType": "text/markdown"
+    }
+  ],
   "prompts": [
     {
       "name": "analyze-test-file",
@@ -31,7 +39,6 @@
       ]
     }
   ],
-  "system_prompt_file": "SKILL.md",
   "schema": {
     "output": "schema/report.json"
   }

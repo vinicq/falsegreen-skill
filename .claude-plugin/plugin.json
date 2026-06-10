@@ -2,6 +2,20 @@
   "name": "falsegreen-skill",
   "description": "LLM-based semantic analysis for false-positive test detection. Applies the J1-J6 judgment framework across Python, TypeScript, and JavaScript.",
   "version": "0.1.0",
+  "platform": "claude",
+  "entrypoint": "SKILL.md",
+  "skills": [
+    {
+      "name": "falsegreen-skill",
+      "description": "Analyze test files for false-positive smells using the J1-J6 judgment framework",
+      "skillFile": "SKILL.md"
+    }
+  ],
+  "models": {
+    "recommended": "claude-sonnet-4-6",
+    "fast": "claude-haiku-4-5",
+    "deep": "claude-opus-4-8"
+  },
   "author": {
     "name": "Vinicius Queiroz",
     "url": "https://github.com/vinicq"

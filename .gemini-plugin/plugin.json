@@ -37,6 +37,6 @@
   "features": {
     "long_context": true,
     "thinking_mode": true,
-    "thinking_budget_default": 8192
+    "thinking_budget_standard": 8192
   }
 }

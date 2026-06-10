@@ -10,8 +10,8 @@ first. The companion [falsegreen](https://github.com/vinicq/falsegreen) scanner
 is a faster batch alternative for Python; results must be consistent with this
 skill. For TypeScript and JavaScript, this skill is the primary detection tool.
 
-Invoke with `/falsegreen-skill` inside Claude Code. Attach a test file or
-paste a test snippet.
+Invoke by attaching a test file or pasting a test snippet and asking for
+false-positive analysis.
 
 ---
 
