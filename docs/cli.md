@@ -59,7 +59,7 @@ falsegreen-skill analyze tests/test_payment.py \
   --model qwen2.5-coder:32b
 ```
 
-The same pattern works for OpenRouter, Kimi, Mistral, and DeepSeek: pass their
+The same pattern works for configured OpenAI-compatible providers: pass their
 base URL and model name, and set `FALSEGREEN_API_KEY` to the provider key.
 
 ## Commands
@@ -70,8 +70,9 @@ falsegreen-skill --help
 falsegreen-skill --version
 ```
 
-Multiple files are analyzed in separate API calls, each printed under a
-`=== {filename} ===` header.
+Multiple files are analyzed in separate API calls. Plain-text output is printed
+under a `=== {filename} ===` header. With `--json`, the CLI validates each model
+response against the canonical schema and emits one aggregate JSON report.
 
 ## Flags
 
@@ -80,7 +81,7 @@ Multiple files are analyzed in separate API calls, each printed under a
 | `--provider <name>` | `anthropic`, `openai`, `gemini`, or `openai-compatible` | `anthropic` |
 | `--model <model>` | Model override. Required for `openai-compatible` | per provider (see below) |
 | `--base-url <url>` | API base URL. Required for `openai-compatible` | none |
-| `--json` | Output a JSON report conforming to `schema/report.json` | off |
+| `--json` | Validate and output a JSON report conforming to `schema/report.json` | off |
 | `--conventions <file>` | Conventions YAML/text block injected per SKILL.md Step 0 | none |
 | `--max-tokens <n>` | Max output tokens per request | `4096` |
 | `--fail-on-high` | Exit with code 2 when any HIGH finding is present. Requires `--json` | off |
@@ -102,7 +103,7 @@ Default models: `anthropic` uses `claude-sonnet-4-6`, `openai` uses `gpt-4o`,
 | Code | Meaning |
 |---|---|
 | 0 | Analysis completed (findings may still exist; this is an analysis tool, not a gate) |
-| 1 | Error: missing file, missing API key, bad flag, non-2xx API response |
+| 1 | Error: missing file, missing API key, bad flag, invalid JSON, schema mismatch, non-2xx API response |
 | 2 | `--fail-on-high` was set and the JSON report contains at least one HIGH finding |
 
 ## CI usage
@@ -126,8 +127,10 @@ findings. GitHub Actions example:
     path: falsegreen-report.json
 ```
 
-The step fails (exit 2) only when the model reports a HIGH-confidence finding.
-LOW findings and clean tests keep the pipeline green.
+The step fails with exit 1 if the model returns invalid JSON or fields that do
+not match `schema/report.json`. It fails with exit 2 only when the validated
+report contains a HIGH-confidence finding. LOW findings and clean tests keep
+the pipeline green.
 
 ## Project conventions
 

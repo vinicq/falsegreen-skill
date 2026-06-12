@@ -25,14 +25,6 @@ const FENCE_BY_EXT = {
   '.jsx': 'javascript',
   '.mjs': 'javascript',
   '.cjs': 'javascript',
-  '.java': 'java',
-  '.cs': 'csharp',
-  '.go': 'go',
-  '.rb': 'ruby',
-  '.php': 'php',
-  '.kt': 'kotlin',
-  '.rs': 'rust',
-  '.swift': 'swift',
 };
 
 // ---------------------------------------------------------------- helpers
@@ -56,7 +48,7 @@ Options:
                         (anthropic: claude-sonnet-4-6, openai: gpt-4o, gemini: gemini-2.5-pro)
   --base-url <url>      Base URL for the openai-compatible provider
                         (Groq, Ollama, OpenRouter, Kimi, Mistral, DeepSeek)
-  --json                Request JSON output conforming to schema/report.json
+  --json                Validate and output JSON conforming to schema/report.json
   --conventions <file>  Path to a conventions YAML/text block (SKILL.md Step 0)
   --max-tokens <n>      Max output tokens (default 4096)
   --fail-on-high        Exit 2 when any HIGH finding is present (requires --json)
@@ -307,9 +299,101 @@ function extractJson(text) {
   }
 }
 
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function validateReport(report, label) {
+  const errors = [];
+  const judgments = new Set(['J1', 'J2', 'J3', 'J4', 'J5', 'J6']);
+  const confidences = new Set(['HIGH', 'LOW']);
+  const languages = new Set(['Python', 'TypeScript', 'JavaScript']);
+  const intents = new Set(['spec', 'char', 'regression', 'behavior']);
+  const findingKeys = new Set([
+    'case',
+    'judgment',
+    'confidence',
+    'language',
+    'intent',
+    'test',
+    'finding',
+    'evidence',
+    'oracle',
+    'fix_hint',
+  ]);
+
+  function add(pathName, message) {
+    errors.push(`${pathName}: ${message}`);
+  }
+
+  if (!isPlainObject(report)) {
+    return [`${label}: report must be a JSON object`];
+  }
+  if (!Array.isArray(report.findings)) add('findings', 'must be an array');
+  if (!isPlainObject(report.summary)) add('summary', 'must be an object');
+  if (typeof report.language !== 'string') add('language', 'must be a string');
+  if (typeof report.framework !== 'string') add('framework', 'must be a string');
+
+  if (isPlainObject(report.summary)) {
+    for (const key of ['tests_reviewed', 'high', 'low', 'clean']) {
+      if (!Number.isInteger(report.summary[key]) || report.summary[key] < 0) {
+        add(`summary.${key}`, 'must be a non-negative integer');
+      }
+    }
+  }
+
+  if (Array.isArray(report.findings)) {
+    report.findings.forEach((finding, index) => {
+      const prefix = `findings[${index}]`;
+      if (!isPlainObject(finding)) {
+        add(prefix, 'must be an object');
+        return;
+      }
+      for (const key of Object.keys(finding)) {
+        if (!findingKeys.has(key)) add(`${prefix}.${key}`, 'is not allowed by schema/finding.json');
+      }
+      if (!(typeof finding.case === 'string' || Number.isInteger(finding.case))) add(`${prefix}.case`, 'must be a string or integer');
+      if (!judgments.has(finding.judgment)) add(`${prefix}.judgment`, 'must be one of J1-J6');
+      if (!confidences.has(finding.confidence)) add(`${prefix}.confidence`, 'must be HIGH or LOW');
+      if (!languages.has(finding.language)) add(`${prefix}.language`, 'must be Python, TypeScript, or JavaScript');
+      if (!intents.has(finding.intent)) add(`${prefix}.intent`, 'must be spec, char, regression, or behavior');
+      if (!isPlainObject(finding.test) || typeof finding.test.name !== 'string') {
+        add(`${prefix}.test.name`, 'must be a string');
+      }
+      if (typeof finding.finding !== 'string') add(`${prefix}.finding`, 'must be a string');
+      if (!Array.isArray(finding.evidence) || finding.evidence.some((line) => typeof line !== 'string')) {
+        add(`${prefix}.evidence`, 'must be an array of strings');
+      }
+      if (typeof finding.fix_hint !== 'string') add(`${prefix}.fix_hint`, 'must be a string');
+      if ((finding.case === 18 || finding.case === '18') && typeof finding.oracle !== 'string') {
+        add(`${prefix}.oracle`, 'is required for case 18');
+      }
+    });
+  }
+
+  return errors.map((error) => `${label}: ${error}`);
+}
+
 function hasHighFinding(report) {
   if (!report || !Array.isArray(report.findings)) return false;
   return report.findings.some((f) => f && f.confidence === 'HIGH');
+}
+
+function aggregateReports(reports) {
+  const languages = new Set(reports.map((report) => report.language).filter(Boolean));
+  const frameworks = new Set(reports.map((report) => report.framework).filter(Boolean));
+  return {
+    findings: reports.flatMap((report) => report.findings),
+    summary: {
+      tests_reviewed: reports.reduce((sum, report) => sum + report.summary.tests_reviewed, 0),
+      high: reports.reduce((sum, report) => sum + report.summary.high, 0),
+      low: reports.reduce((sum, report) => sum + report.summary.low, 0),
+      clean: reports.reduce((sum, report) => sum + report.summary.clean, 0),
+    },
+    language: languages.size === 1 ? [...languages][0] : 'mixed',
+    framework: frameworks.size === 1 ? [...frameworks][0] : 'mixed',
+    scan_date: new Date().toISOString(),
+  };
 }
 
 // --------------------------------------------------------------- analyze
@@ -339,24 +423,32 @@ async function runAnalyze(opts) {
   const system = buildSystemPrompt(opts);
   const multi = opts.files.length > 1;
   let anyHigh = false;
+  const reports = [];
 
   for (const file of opts.files) {
     const content = fs.readFileSync(file, 'utf8');
     const user = buildUserMessage(path.basename(file), content, conventionsText);
     const output = await analyzeOne(opts, system, user);
 
-    if (multi) process.stdout.write(`=== ${file} ===\n`);
-    process.stdout.write(output.trim() + '\n');
-    if (multi) process.stdout.write('\n');
-
-    if (opts.json && opts.failOnHigh) {
+    if (opts.json) {
       const report = extractJson(output);
       if (report === null) {
-        process.stderr.write(`warning: could not parse JSON output for ${file}; HIGH check skipped\n`);
-      } else if (hasHighFinding(report)) {
-        anyHigh = true;
+        fail(`could not parse JSON output for ${file}`);
       }
+      const validationErrors = validateReport(report, file);
+      if (validationErrors.length > 0) fail(validationErrors.join('\n'));
+      reports.push(report);
+      if (hasHighFinding(report)) anyHigh = true;
+    } else {
+      if (multi) process.stdout.write(`=== ${file} ===\n`);
+      process.stdout.write(output.trim() + '\n');
+      if (multi) process.stdout.write('\n');
     }
+  }
+
+  if (opts.json) {
+    const report = reports.length === 1 ? reports[0] : aggregateReports(reports);
+    process.stdout.write(JSON.stringify(report, null, 2) + '\n');
   }
 
   if (anyHigh) process.exit(2);
