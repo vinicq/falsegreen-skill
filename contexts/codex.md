@@ -339,6 +339,26 @@ codex "analyze tests/test_example.py for false-positive smells"
 
 Codex will load the project `AGENTS.md` context and apply the protocol.
 
+### Test discovery
+
+When the plugin is installed or `AGENTS.md` is present, Codex can find test
+files automatically — you do not need to list paths. Say:
+
+- "find and analyze all test files in this project"
+- "run falsegreen on every test under tests/"
+- "check the component tests in src/__tests__/"
+
+Codex runs shell commands to discover files by pattern:
+
+| Language | Patterns |
+|---|---|
+| Python | `test_*.py`, `*_test.py` |
+| TypeScript / TSX | `*.test.ts`, `*.spec.ts`, `*.test.tsx`, `*.spec.tsx` |
+| JavaScript / JSX | `*.test.js`, `*.spec.js`, `*.test.jsx`, `*.spec.jsx` |
+
+Frontend component tests (React, Vue, Angular) match the same patterns and are
+analyzed with the same J1-J6 protocol as backend tests.
+
 ---
 
 ## 5. Batch processing

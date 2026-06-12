@@ -47,8 +47,11 @@ Then say what to analyze:
 analyze tests/
 ```
 
-Claude Code has file system access and will read each test file autonomously.
-You do not need to paste code manually.
+Claude Code discovers test files automatically using its built-in Glob and Read
+tools — no need to paste code or list paths manually. It searches for
+`test_*.py`, `*_test.py`, `*.test.ts`, `*.spec.ts`, `*.test.tsx`,
+`*.spec.tsx`, `*.test.js`, and `*.spec.js`. Backend modules and frontend
+component tests (React, Vue, Angular) are found in the same pass.
 
 ### Useful prompts
 

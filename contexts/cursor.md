@@ -263,6 +263,23 @@ look at @test_auth.py and @test_payments.py — any false-positive risks?
 
 Cursor reads the files and runs the skill across both.
 
+### Folder-level discovery
+
+To analyze an entire test directory, use Composer or ask in Chat:
+
+```
+analyze all test files in tests/ for false-positive smells using falsegreen-skill
+```
+
+```
+check every *.test.tsx file in src/ with the J1-J6 protocol
+```
+
+Cursor searches the workspace for matching files. Frontend component tests
+(`*.test.tsx`, `*.spec.tsx`, `*.test.jsx`) are included automatically —
+React, Vue, and Angular component tests use the same J1-J6 framework as
+backend tests.
+
 ---
 
 ## Composer mode (batch analysis)

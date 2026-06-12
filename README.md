@@ -350,8 +350,13 @@ false-positive smells, and the J1-J6 protocol runs automatically.
 | Language | Frameworks |
 |---|---|
 | Python | pytest, unittest |
-| TypeScript | Jest, Vitest, Mocha + Chai |
-| JavaScript | Jest, Vitest, Mocha + Chai, Jasmine |
+| TypeScript | Jest, Vitest, Mocha + Chai, React Testing Library, Vue Test Utils, Angular TestBed |
+| JavaScript | Jest, Vitest, Mocha + Chai, Jasmine, React Testing Library |
+
+Frontend component tests — React, Vue, Angular, Svelte — use the same J1-J6
+framework as backend tests. The structural failures are identical: a J4 weak
+assertion on a rendered component is the same smell as a J4 on a service
+method. See `examples/typescript/component_tests.ts` for annotated examples.
 
 ---
 

@@ -26,6 +26,26 @@ Attach a test file or paste a snippet. For Python projects, you can also paste
 the output of the `falsegreen` static scanner first; the skill will skip the
 structural pass and go directly to semantic adjudication.
 
+### Test discovery
+
+Codex has shell tools and can locate test files automatically. You do not need
+to list paths or paste file contents. Say:
+
+- "find and analyze all test files in this project"
+- "run falsegreen on every test file under tests/"
+- "check only the component tests in src/__tests__/"
+
+Codex runs shell commands to discover files by pattern:
+
+| Language | Patterns |
+|---|---|
+| Python | `test_*.py`, `*_test.py` |
+| TypeScript / TSX | `*.test.ts`, `*.spec.ts`, `*.test.tsx`, `*.spec.tsx` |
+| JavaScript / JSX | `*.test.js`, `*.spec.js`, `*.test.jsx`, `*.spec.jsx` |
+
+Backend and frontend component tests (React, Vue, Angular) are included in
+the same discovery pass — no extra configuration needed.
+
 ---
 
 ## Protocol (compact)

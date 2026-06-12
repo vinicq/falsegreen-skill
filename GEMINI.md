@@ -21,6 +21,20 @@ Say any of the following:
 
 You can attach a single file, paste a snippet, or point to a directory.
 
+### Test discovery
+
+Gemini CLI loads the protocol via the extension context on every session. Its
+file tools let it read test files without you pasting them manually. Say:
+
+- "find and analyze all tests in this project"
+- "run falsegreen on the tests/ directory"
+- "check the component tests under src/__tests__/"
+
+Gemini discovers files by pattern (`test_*.py`, `*.test.ts`, `*.spec.ts`,
+`*.test.tsx`, `*.spec.tsx`, `*.test.js`, `*.spec.js`, `*.spec.jsx`) and reads
+each before applying the protocol. Frontend component tests are included — no
+separate invocation needed.
+
 ---
 
 ## Long-context advantage
