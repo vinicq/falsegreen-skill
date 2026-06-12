@@ -68,12 +68,12 @@ before proceeding to the semantic judgments. These patterns are organized in
 
 | Family | Codes | What to look for |
 |---|---|---|
-| A — never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, C22, CC | assertion unreachable, missing, swallowed, or uncollected |
+| A — never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, CC | assertion unreachable, missing, swallowed, or uncollected |
 | B — weak/always-true | C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34 | tautology, truthiness-only, self-compare, broad exception, string repr |
 | C — checks own setup | C19, C28, C29 | pytest.raises wraps too much, binding unread, env mutation |
 | D — external state | C17, C23, C24, C27, C30, C31, C32, C35 | skip-on-failure, hard path, shared mutable, try/pass, flaky |
 | E — wrong thing | C33, C36, C37 | metric not asserted, fail without reason, duplicate case |
-| Diagnostic (opt-in) | D1, D3, D4, D5, D6, M2 | apply only when user requests diagnostic pass |
+| Optional / diagnostic (opt-in) | C22, D1, D3, D4, D5, D6, M2 | apply only when user requests diagnostic pass |
 
 Report each structural finding with its code number and confidence level before
 proceeding to Steps 3-6.
@@ -203,9 +203,10 @@ append the note to the existing SUMMARY using what you already know from the ana
 | 15 | J6 | Passes only if another test ran first | Semantic |
 | 18 | J2 | Expected value contradicts what the code should do | Semantic + adversarial verify |
 
-Cases 1-9, 13, 14, 16, 17, 19-22 are handled by the falsegreen scanner (Python)
-or by language-specific static analysis. This skill adjudicates them when the
-scanner output needs review, and handles them directly for non-Python languages.
+Structural codes C1-C37 are handled by the falsegreen scanner (Python) or by
+language-specific static analysis. This skill adjudicates scanner findings when
+review is needed, and handles the same patterns directly for non-Python
+languages.
 
 Full case catalog with language examples: see `reference.md`.
 

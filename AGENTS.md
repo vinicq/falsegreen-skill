@@ -10,7 +10,7 @@ while the code is wrong, tests that check the wrong thing, or tests that
 borrow correctness from elsewhere.
 
 Full protocol: `SKILL.md`. Language patterns catalog: `reference.md`.
-API integration guide: `contexts/codex.md`. Structured output schema: `schema/finding.json`.
+API integration guide: `contexts/codex.md`. Structured output schema: `schema/report.json`.
 
 ---
 
@@ -44,12 +44,12 @@ Scan against all falsegreen pattern families in order:
 
 | Family | Codes | What to look for |
 |---|---|---|
-| A - never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, C22, CC | assertion unreachable, missing, swallowed, or uncollected |
+| A - never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, CC | assertion unreachable, missing, swallowed, or uncollected |
 | B - weak/always-true | C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34 | tautology, truthiness-only, self-compare, broad exception, string repr |
 | C - checks own setup | C19, C28, C29 | pytest.raises wraps too much, binding unread, env mutation |
 | D - external state | C17, C23, C24, C27, C30, C31, C32, C35 | skip-on-failure, hard path, shared mutable, try/pass, flaky |
 | E - wrong thing | C33, C36, C37 | metric not asserted, fail without reason, duplicate case |
-| Diagnostic (opt-in) | D1, D3, D4, D5, D6, M2 | apply only when user requests |
+| Optional / diagnostic (opt-in) | C22, D1, D3, D4, D5, D6, M2 | apply only when user requests |
 
 Report each structural finding before proceeding to Steps 3-6.
 
@@ -189,4 +189,4 @@ Full patterns with examples are in `reference.md`.
 - `SKILL.md` - complete protocol with all steps, edge cases, and multi-agent mode
 - `reference.md` - full case catalog with per-language patterns and look-alike exemptions
 - `contexts/codex.md` - OpenAI API integration, structured output, batch processing
-- `schema/finding.json` - JSON schema for structured output per finding
+- `schema/report.json` - JSON schema for structured output reports

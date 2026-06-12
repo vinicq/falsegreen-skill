@@ -8,8 +8,8 @@ description: Analyze test files for false-positive smells, meaning tests that pa
 This skill is a thin entry point. The canonical protocol lives at the plugin
 root. Read these files before judging any test:
 
-1. `SKILL.md` at the plugin root (in Claude Code: `${CLAUDE_PLUGIN_ROOT}/SKILL.md`;
-   relative to this file: `../../SKILL.md`). It defines Steps 0-7 and the six
+1. `SKILL.md` at the plugin root (relative to this file: `../../SKILL.md`).
+   It defines Steps 0-7 and the six
    judgments J1-J6.
 2. `reference.md` at the plugin root: the per-language pattern catalog with
    look-alike exemptions. Consult it before flagging anything as HIGH.

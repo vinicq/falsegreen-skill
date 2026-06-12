@@ -57,15 +57,15 @@ The six-judgment framework (J1-J6) makes this rule concrete:
 | J5 | Is the test coupled to implementation internals? | Positional mock args, private method testing |
 | J6 | Does the test pass in isolation, without ordering? | Shared mutable state, test-order dependency |
 
-A test is flagged HIGH when it fails more than one judgment and there is no
-legitimate exemption. A test is flagged LOW when it fails one judgment but
+A test is flagged HIGH only when the first failed judgment has no plausible
+legitimate interpretation. A test is flagged LOW when the smell is likely but
 has plausible intent. Everything else is PASS.
 
 **Precision over recall.** One wrong flag on a legitimate test costs more
 goodwill than a missed smell. Exemptions are explicit:
 
-- Case 18 requires a cited independent oracle (spec, docstring, API contract).
-  Without a citation, the finding is downgraded to LOW.
+- Semantic case 18 requires a cited independent oracle (spec, docstring, API
+  contract). Without a citation, do not report case 18.
 - Characterization tests — intentionally freezing current behavior — are not
   false positives.
 - Boolean predicates (`isinstance`, `.exists()`, `.is_dir()`) are not weak assertions.
@@ -230,12 +230,13 @@ mutation testing pass.
 | Platform | How |
 |---|---|
 | Claude Code | `/plugin marketplace add vinicq/falsegreen-skill` then `/plugin install falsegreen-skill@falsegreen` |
+| Claude.ai / Anthropic API Skills | `npm run build:targets`, then package `dist/claude-agent-skill/` as the standalone skill |
 | OpenAI Codex CLI | `codex plugin marketplace add vinicq/falsegreen-skill` — or clone the repo: `AGENTS.md` is auto-loaded |
 | Gemini CLI | `gemini extensions install https://github.com/vinicq/falsegreen-skill` |
+| Gemini Agent Skill | workspace skill at `.gemini/skills/falsegreen-skill/SKILL.md`, or `npm run build:targets` for `dist/gemini-skill/` |
 | Cursor | Copy contents of `contexts/cursor.md` to `.cursor/rules/falsegreen-skill.mdc` |
-| CLI (any provider) | `npx falsegreen-skill analyze tests/test_example.py` — see [docs/cli.md](docs/cli.md) |
-| Any LLM | Use `llm.md` as system prompt |
-| API (any provider) | See `contexts/general.md` for a universal Python snippet |
+| CLI | `npx falsegreen-skill analyze tests/test_example.py` — see [docs/cli.md](docs/cli.md) |
+| API | Use the defined provider guides in `contexts/claude.md`, `contexts/codex.md`, and `contexts/gemini.md` |
 
 ### Claude Code (primary path)
 
@@ -263,11 +264,11 @@ falsegreen tests/
 If you provide the scanner output, the skill uses it as the structural pass
 and applies semantic judgment on top. Without it, the skill runs everything.
 
-### Other LLM providers
+### Defined API providers
 
-This skill is not tied to Claude. The SKILL.md protocol and J1-J6 framework run
-on any instruction-following LLM. Supported providers: Anthropic, OpenAI, Google
-Gemini, Meta LLaMA (Groq/Ollama/Together), Alibaba Qwen, Moonshot Kimi.
+This skill is not tied to Claude. The maintained provider paths are Anthropic,
+OpenAI/Codex, Google Gemini, and the configured CLI providers listed in
+`providers.md`.
 
 See [providers.md](providers.md) for per-provider invocation code and Cursor setup.
 
@@ -296,11 +297,12 @@ falsegreen-skill/
   SKILL.md              the skill protocol (language and LLM agnostic)
   AGENTS.md             Codex CLI context (auto-loaded from project root)
   GEMINI.md             Gemini CLI context (auto-loaded, extension contextFileName)
-  llm.md                self-contained universal context for any LLM
+  llm.md                self-contained prompt context used by CLI/API examples
   reference.md          per-language case catalog and framework cues
   providers.md          multi-LLM invocation guide (API snippets)
   CREDITS.md            the research this skill builds on
   gemini-extension.json Gemini CLI extension manifest
+  .gemini/              Gemini Agent Skill entry point
   .claude-plugin/       Claude Code plugin manifest + marketplace catalog
   .codex-plugin/        Codex CLI plugin manifest
   .agents/plugins/      Codex CLI marketplace catalog
@@ -308,8 +310,12 @@ falsegreen-skill/
     falsegreen-llm/     shared skill entry point (Claude Code + Codex plugins)
   bin/
     falsegreen-llm.js   zero-dependency CLI (npx falsegreen-skill)
+  scripts/
+    validate-package.mjs validate manifests, frontmatter, and schema naming
+    build-targets.mjs    generate standalone Claude/Gemini skill packages
   docs/
     cli.md              CLI usage guide
+    packaging.md        target packaging and release checklist
   schema/
     finding.json        JSON Schema for a single finding
     report.json         JSON Schema for a full report
@@ -318,8 +324,6 @@ falsegreen-skill/
     codex.md            ChatGPT, OpenAI API, structured output, batch
     gemini.md           Google AI Studio, Gemini API, long context
     cursor.md           Cursor IDE — full .cursor/rules/ MDC template
-    deepseek.md         DeepSeek Chat, DeepSeek API, R1 reasoning
-    general.md          any LLM — Ollama, Groq, OpenRouter, plain chat
   examples/
     python/
       family_a_never_checks.py       C1, C2, C2b, C3, C4, C4b, C20, C21, CC
