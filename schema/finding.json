@@ -4,7 +4,7 @@
   "title": "FalsegreenFinding",
   "description": "A single finding produced by the falsegreen-skill J1-J6 analysis.",
   "type": "object",
-  "required": ["case", "judgment", "confidence", "language", "test", "finding", "evidence", "fix_hint"],
+  "required": ["case", "judgment", "confidence", "language", "intent", "test", "finding", "evidence", "fix_hint"],
   "properties": {
     "case": {
       "description": "Case number from the skill catalog. Integer (e.g., 10) or prefixed string (e.g., \"C1\").",
@@ -27,6 +27,11 @@
       "description": "Programming language of the test under analysis.",
       "type": "string",
       "enum": ["Python", "TypeScript", "JavaScript"]
+    },
+    "intent": {
+      "description": "Test intent classification from Step 3.",
+      "type": "string",
+      "enum": ["spec", "char", "regression", "behavior"]
     },
     "test": {
       "description": "Identity of the test function or method where the finding was detected.",
@@ -61,7 +66,7 @@
       "minItems": 1
     },
     "oracle": {
-      "description": "Citation of the independent oracle (spec, docstring, API contract) used to establish the correct expected value. Required when case is 18.",
+      "description": "Citation of the independent oracle (spec, docstring, API contract) used to establish the correct expected value. Required only when case is the semantic case 18, not structural code C18.",
       "type": "string"
     },
     "fix_hint": {
@@ -74,13 +79,13 @@
       "case": {
         "oneOf": [
           { "type": "integer", "const": 18 },
-          { "type": "string", "enum": ["18", "C18"] }
+          { "type": "string", "enum": ["18"] }
         ]
       }
     }
   },
   "then": {
-    "required": ["case", "judgment", "confidence", "language", "test", "finding", "evidence", "oracle", "fix_hint"]
+    "required": ["case", "judgment", "confidence", "language", "intent", "test", "finding", "evidence", "oracle", "fix_hint"]
   },
   "additionalProperties": false
 }

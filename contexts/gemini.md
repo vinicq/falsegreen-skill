@@ -28,6 +28,21 @@ and loads `GEMINI.md` as persistent context (`contextFileName`). After install,
 every Gemini CLI session carries the J1-J6 protocol; ask in natural language,
 for example "analyze tests/ for false-positive smells".
 
+## Gemini Agent Skill
+
+The repo also ships a canonical Gemini Agent Skill entry point at
+`.gemini/skills/falsegreen-skill/SKILL.md`. Use it as a workspace skill when
+you want Gemini's skill discovery rather than extension-wide context.
+
+For a standalone package, run:
+
+```bash
+npm run build:targets
+```
+
+Then install or package `dist/gemini-skill/falsegreen-skill/` according to the
+Gemini CLI skill workflow.
+
 ---
 
 ## Google AI Studio (aistudio.google.com)
@@ -224,9 +239,19 @@ schema = types.Schema(
                     "judgment": types.Schema(type=types.Type.STRING),
                     "confidence": types.Schema(type=types.Type.STRING),
                     "language": types.Schema(type=types.Type.STRING),
-                    "test_name": types.Schema(type=types.Type.STRING),
+                    "intent": types.Schema(type=types.Type.STRING),
+                    "test": types.Schema(
+                        type=types.Type.OBJECT,
+                        properties={
+                            "name": types.Schema(type=types.Type.STRING),
+                        },
+                    ),
                     "finding": types.Schema(type=types.Type.STRING),
-                    "evidence": types.Schema(type=types.Type.STRING),
+                    "evidence": types.Schema(
+                        type=types.Type.ARRAY,
+                        items=types.Schema(type=types.Type.STRING),
+                    ),
+                    "oracle": types.Schema(type=types.Type.STRING),
                     "fix_hint": types.Schema(type=types.Type.STRING),
                 },
             ),
@@ -235,12 +260,13 @@ schema = types.Schema(
             type=types.Type.OBJECT,
             properties={
                 "tests_reviewed": types.Schema(type=types.Type.INTEGER),
-                "findings_total": types.Schema(type=types.Type.INTEGER),
-                "findings_high": types.Schema(type=types.Type.INTEGER),
-                "findings_low": types.Schema(type=types.Type.INTEGER),
+                "high": types.Schema(type=types.Type.INTEGER),
+                "low": types.Schema(type=types.Type.INTEGER),
                 "clean": types.Schema(type=types.Type.INTEGER),
             },
         ),
+        "language": types.Schema(type=types.Type.STRING),
+        "framework": types.Schema(type=types.Type.STRING),
     },
 )
 
@@ -295,7 +321,7 @@ For thinking mode on Vertex AI, pass `generation_config` with
 | Single file analysis | `google-genai` SDK, `gemini-2.5-pro` |
 | Full test suite (large project) | `google-genai` SDK, long context, all files in one request |
 | Case 18 adversarial verify | `gemini-2.5-pro` with `thinking_budget=8192` |
-| Batch scoring (Dataset B, CI) | `gemini-2.0-flash`, validate against benchmark first |
+| Batch scoring / CI | `gemini-2.0-flash`, validate against a public benchmark first |
 | Structured output for tooling | `response_mime_type="application/json"` with `response_schema` |
 | Enterprise / GCP-native | Vertex AI client, same model names |
 

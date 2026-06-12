@@ -151,15 +151,23 @@ schema.
         "items": {
           "type": "object",
           "properties": {
-            "case_id":        { "type": "string" },
-            "judgment_failed":{ "type": "string", "enum": ["J1","J2","J3","J4","J5","J6"] },
+            "case":           { "type": "string" },
+            "judgment":       { "type": "string", "enum": ["J1","J2","J3","J4","J5","J6"] },
             "confidence":     { "type": "string", "enum": ["HIGH","LOW"] },
-            "test_name":      { "type": "string" },
+            "language":       { "type": "string", "enum": ["Python","TypeScript","JavaScript"] },
+            "intent":         { "type": "string", "enum": ["spec","char","regression","behavior"] },
+            "test":           {
+              "type": "object",
+              "properties": { "name": { "type": "string" } },
+              "required": ["name"],
+              "additionalProperties": false
+            },
             "finding":        { "type": "string" },
-            "evidence":       { "type": "string" },
+            "evidence":       { "type": "array", "items": { "type": "string" } },
+            "oracle":         { "type": "string" },
             "fix_hint":       { "type": "string" }
           },
-          "required": ["case_id","judgment_failed","confidence","test_name","finding","evidence","fix_hint"],
+          "required": ["case","judgment","confidence","language","intent","test","finding","evidence","fix_hint"],
           "additionalProperties": false
         }
       },
@@ -173,9 +181,11 @@ schema.
         },
         "required": ["tests_reviewed","high","low","clean"],
         "additionalProperties": false
-      }
+      },
+      "language": { "type": "string" },
+      "framework": { "type": "string" }
     },
-    "required": ["findings","summary"],
+    "required": ["findings","summary","language","framework"],
     "additionalProperties": false
   },
   "strict": true
@@ -204,15 +214,23 @@ schema = {
                 "items": {
                     "type": "object",
                     "properties": {
-                        "case_id":         {"type": "string"},
-                        "judgment_failed": {"type": "string", "enum": ["J1","J2","J3","J4","J5","J6"]},
+                        "case":            {"type": "string"},
+                        "judgment":        {"type": "string", "enum": ["J1","J2","J3","J4","J5","J6"]},
                         "confidence":      {"type": "string", "enum": ["HIGH","LOW"]},
-                        "test_name":       {"type": "string"},
+                        "language":        {"type": "string", "enum": ["Python","TypeScript","JavaScript"]},
+                        "intent":          {"type": "string", "enum": ["spec","char","regression","behavior"]},
+                        "test":            {
+                            "type": "object",
+                            "properties": {"name": {"type": "string"}},
+                            "required": ["name"],
+                            "additionalProperties": False,
+                        },
                         "finding":         {"type": "string"},
-                        "evidence":        {"type": "string"},
+                        "evidence":        {"type": "array", "items": {"type": "string"}},
+                        "oracle":          {"type": "string"},
                         "fix_hint":        {"type": "string"},
                     },
-                    "required": ["case_id","judgment_failed","confidence","test_name","finding","evidence","fix_hint"],
+                    "required": ["case","judgment","confidence","language","intent","test","finding","evidence","fix_hint"],
                     "additionalProperties": False,
                 },
             },
@@ -227,8 +245,10 @@ schema = {
                 "required": ["tests_reviewed","high","low","clean"],
                 "additionalProperties": False,
             },
+            "language": {"type": "string"},
+            "framework": {"type": "string"},
         },
-        "required": ["findings","summary"],
+        "required": ["findings","summary","language","framework"],
         "additionalProperties": False,
     },
     "strict": True,
@@ -246,7 +266,7 @@ response = client.chat.completions.create(
 report = json.loads(response.choices[0].message.content)
 
 for f in report["findings"]:
-    print(f"CASE {f['case_id']} ({f['judgment_failed']}) - {f['confidence']}: {f['finding']}")
+    print(f"CASE {f['case']} ({f['judgment']}) - {f['confidence']} - {f['test']['name']}: {f['finding']}")
 
 s = report["summary"]
 print(f"\nSUMMARY: {s['tests_reviewed']} reviewed, {s['high']} high, {s['low']} low, {s['clean']} clean")
@@ -256,12 +276,15 @@ print(f"\nSUMMARY: {s['tests_reviewed']} reviewed, {s['high']} high, {s['low']} 
 
 | Field | Description |
 |---|---|
-| `case_id` | Pattern code: `C1`, `C3`, `10`, `18`, etc. |
-| `judgment_failed` | The first judgment that failed: `J1` through `J6` |
+| `case` | Pattern code: `C1`, `C3`, `10`, `18`, etc. |
+| `judgment` | The first judgment that failed: `J1` through `J6` |
 | `confidence` | `HIGH` (no plausible legitimate interpretation) or `LOW` (likely smell) |
-| `test_name` | Name of the test function |
+| `language` | `Python`, `TypeScript`, or `JavaScript` |
+| `intent` | `spec`, `char`, `regression`, or `behavior` |
+| `test.name` | Name of the test function |
 | `finding` | One sentence describing what is wrong |
-| `evidence` | The specific line(s) that triggered the finding |
+| `evidence` | Array of specific line(s) that triggered the finding |
+| `oracle` | Required only for semantic case `18`; not used for structural code `C18` |
 | `fix_hint` | One sentence suggestion |
 | `summary.tests_reviewed` | Total number of test functions analyzed |
 | `summary.high` | Count of HIGH-confidence findings |
@@ -272,11 +295,11 @@ print(f"\nSUMMARY: {s['tests_reviewed']} reviewed, {s['high']} high, {s['low']} 
 
 ## 4. Codex CLI
 
-If you installed the plugin or cloned this repo (see Installation at the top),
-the skill loads automatically: the plugin registers
-`skills/falsegreen-llm/SKILL.md`, and a cloned repo exposes `AGENTS.md`, which
-Codex reads at session start. The options below cover running the skill in a
-project that has neither.
+If you installed the plugin, Codex discovers `skills/falsegreen-llm/SKILL.md`
+through `.codex-plugin/plugin.json`. If you only cloned this repo, Codex reads
+`AGENTS.md` as project guidance; that is useful, but it is not the same as an
+installed skill. The options below cover running the protocol in a project that
+has neither.
 
 ### Per-session context
 
@@ -343,15 +366,23 @@ SCHEMA = {
                 "items": {
                     "type": "object",
                     "properties": {
-                        "case_id":         {"type": "string"},
-                        "judgment_failed": {"type": "string", "enum": ["J1","J2","J3","J4","J5","J6"]},
+                        "case":            {"type": "string"},
+                        "judgment":        {"type": "string", "enum": ["J1","J2","J3","J4","J5","J6"]},
                         "confidence":      {"type": "string", "enum": ["HIGH","LOW"]},
-                        "test_name":       {"type": "string"},
+                        "language":        {"type": "string", "enum": ["Python","TypeScript","JavaScript"]},
+                        "intent":          {"type": "string", "enum": ["spec","char","regression","behavior"]},
+                        "test":            {
+                            "type": "object",
+                            "properties": {"name": {"type": "string"}},
+                            "required": ["name"],
+                            "additionalProperties": False,
+                        },
                         "finding":         {"type": "string"},
-                        "evidence":        {"type": "string"},
+                        "evidence":        {"type": "array", "items": {"type": "string"}},
+                        "oracle":          {"type": "string"},
                         "fix_hint":        {"type": "string"},
                     },
-                    "required": ["case_id","judgment_failed","confidence","test_name","finding","evidence","fix_hint"],
+                    "required": ["case","judgment","confidence","language","intent","test","finding","evidence","fix_hint"],
                     "additionalProperties": False,
                 },
             },
@@ -366,8 +397,10 @@ SCHEMA = {
                 "required": ["tests_reviewed","high","low","clean"],
                 "additionalProperties": False,
             },
+            "language": {"type": "string"},
+            "framework": {"type": "string"},
         },
-        "required": ["findings","summary"],
+        "required": ["findings","summary","language","framework"],
         "additionalProperties": False,
     },
     "strict": True,
@@ -414,7 +447,7 @@ if __name__ == "__main__":
             print(f"\n{result['file']}")
             for f in result["findings"]:
                 if f["confidence"] == "HIGH":
-                    print(f"  CASE {f['case_id']} ({f['judgment_failed']}) - {f['test_name']}: {f['finding']}")
+                    print(f"  CASE {f['case']} ({f['judgment']}) - {f['test']['name']}: {f['finding']}")
 ```
 
 **Practical notes:**

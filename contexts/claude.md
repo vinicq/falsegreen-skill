@@ -104,13 +104,21 @@ summarize at the end.
 
 ## Mode 2: Claude.ai chat
 
-Claude.ai has no file system access. You supply the protocol as context and
-attach or paste the test file.
+Claude.ai can use a custom Agent Skill package where that feature is available.
+Build the standalone package first:
+
+```bash
+npm run build:targets
+```
+
+Then package or upload `dist/claude-agent-skill/` using Claude.ai's custom
+skills workflow. If custom skills are not available in your account, fall back
+to pasting the protocol manually.
 
 ### Step-by-step
 
 1. Open a new conversation on claude.ai.
-2. Copy the full content of `SKILL.md` and paste it at the start of your
+2. If the Agent Skill is not installed, copy the full content of `SKILL.md` and paste it at the start of your
    first message, wrapped in a code block or between clear delimiters.
 3. Attach the test file (use the attachment button) or paste the test code
    directly after the protocol.
@@ -310,7 +318,7 @@ handles the full pass.
 All three modes produce the same output structure defined in SKILL.md Step 6:
 
 ```
-CASE {number} ({J1-J6}) - {HIGH | LOW} - {language}
+CASE {number} ({J1-J6}) - {HIGH | LOW} - {language} - {intent}
 
 Test: {function name, line range}
 Finding: {one sentence}

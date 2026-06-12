@@ -193,7 +193,7 @@ Never report case 18 based on pattern-matching alone.
 For each finding:
 
 ```
-CASE {number} ({J1-J6}) - {HIGH | LOW} - {language}
+CASE {number} ({J1-J6}) - {HIGH | LOW} - {language} - {intent}
 
 Test: {function name, line range}
 Finding: {one sentence}
