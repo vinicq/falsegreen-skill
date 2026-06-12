@@ -9,6 +9,7 @@
   "homepage": "https://github.com/vinicq/falsegreen-skill",
   "repository": "https://github.com/vinicq/falsegreen-skill",
   "license": "MIT",
+  "skills": "./skills/",
   "keywords": [
     "testing",
     "test-smells",
