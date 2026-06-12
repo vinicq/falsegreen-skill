@@ -1,61 +1,58 @@
-# CLAUDE.md — falsegreen-skill
+# CLAUDE.md - falsegreen-skill
 
-Contexto de projeto para Claude Code, Codex e qualquer LLM que abrir este repo.
-
----
-
-## O que é este projeto
-
-`falsegreen-skill` é uma skill LLM semântica para detecção de test smells false-positive.
-**Não é estática nem exclusiva do Claude Code.** Roda em qualquer LLM provider.
-
-Companion do scanner determinístico [falsegreen](https://github.com/vinicq/falsegreen) (Python AST).
+Project context for Claude Code and other agents opening this repository.
 
 ---
 
-## Topologia do ecossistema
+## What This Project Is
 
-| Repo | Visibilidade | Papel |
-|---|---|---|
-| `falsegreen` (`C:\Users\vinic\projetos-edge\falsegreen`) | público | Scanner Python AST, C1-C37, v0.3.0 PyPI |
-| **`falsegreen-skill`** (este repo) | **público** | Skill LLM, produto público |
-| `falsegreen-skill-audit` (`C:\Users\vinic\projetos-edge\falsegreen-skill-audit`) | privado | Agentes, pesquisa, Dataset B, artigo |
-| `falsegreen-audit` (`C:\Users\vinic\projetos-edge\falsegreen-audit`) | privado | Artigo do scanner Python |
+`falsegreen-skill` is a public LLM skill for finding false-positive tests:
+tests that stay green even when the implementation is wrong.
 
----
+It is not Claude-specific. The same protocol is packaged for Claude Code,
+Codex, Gemini, Cursor, plain LLM prompts, API usage, and the npm CLI.
 
-## O que pertence a este repo
-
-**Fica aqui:**
-- `SKILL.md` — protocolo J1-J6, casos 1-22
-- `reference.md` — catálogo por linguagem, padrões de detecção
-- `providers.md` — invocação multi-LLM (Anthropic/OpenAI/Gemini/LLaMA/Qwen/Kimi) + Cursor
-- `examples/` — testes ruins e limpos por linguagem
-
-**Não fica aqui (vai em falsegreen-skill-audit):**
-- `.agents/` — bloqueado no `.gitignore`
-- Datasets, adjudicação, scripts de coleta, benchmarks internos, rascunhos de artigo
+The companion `falsegreen` project is the deterministic Python scanner. This
+repository is the semantic, multi-host skill layer.
 
 ---
 
-## Providers suportados
+## Public Repo Boundary
 
-Detalhes de invocação em `providers.md`.
+This repo should contain only public product assets:
 
-| Provider | Modelo default |
-|---|---|
-| Anthropic Claude | claude-sonnet-4-6 |
-| OpenAI | gpt-4o |
-| Google Gemini | gemini-2.5-pro |
-| Meta LLaMA (Groq) | llama-3.3-70b-versatile |
-| Alibaba Qwen (OpenRouter) | Qwen2.5-72B-Instruct |
-| Moonshot Kimi | kimi-k2-0711-instruct |
-| Cursor | `.cursor/rules/falsegreen-skill.mdc` |
+- `SKILL.md` - canonical J1-J6 protocol and structural catalog rules.
+- `reference.md` - per-language pattern catalog and look-alike exemptions.
+- `schema/` - canonical machine-readable output contracts.
+- `skills/` - plugin skill entry points.
+- `.claude-plugin/`, `.codex-plugin/`, `.gemini/`, `.agents/plugins/` - host packaging metadata.
+- `contexts/` - host-specific usage guides.
+- `bin/` and `scripts/` - CLI and packaging/validation scripts.
+- `examples/` - public examples only.
+
+Do not add private datasets, adjudication notes, unpublished paper drafts,
+internal agent outputs, or benchmark artifacts here.
 
 ---
 
-## Desenvolvimento e pesquisa
+## Maintenance Rules
 
-Todo trabalho de desenvolvimento, construção de agentes, coleta de dados e pipeline
-do artigo fica em `falsegreen-skill-audit` (privado). Ver o CLAUDE.md daquele repo
-para o contexto completo de agentes, Dataset B e pipeline do professor-smells.
+- Keep `SKILL.md`, `llm.md`, `GEMINI.md`, and host contexts consistent when the
+  protocol changes.
+- Treat `schema/finding.json` and `schema/report.json` as the source of truth
+  for JSON output.
+- Limit supported languages in public docs to Python, TypeScript, and
+  JavaScript unless the catalog is expanded.
+- Prefer thin host entry points that reference the canonical protocol instead
+  of duplicating the full catalog.
+- Run `npm run validate` before release.
+- Run `npm run build:targets` when preparing standalone Claude/Gemini skill
+  packages.
+
+---
+
+## Default Model Guidance
+
+Model names in docs are examples, not a guarantee of current availability.
+Before a release, validate `models.yaml` and provider-specific context files
+against the providers being documented.

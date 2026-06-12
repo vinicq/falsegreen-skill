@@ -1,4 +1,4 @@
-# falsegreen-skill — universal context
+# falsegreen-skill — self-contained prompt context
 
 **LLM skill for false-positive test detection.** Applies the J1-J6 judgment
 framework across Python, TypeScript, and JavaScript.
@@ -62,7 +62,7 @@ Scan against all falsegreen patterns organized by family:
 | C — checks own setup | C19, C28, C29 | pytest.raises wraps too much, binding unread, env mutation |
 | D — external state | C17, C23, C24, C27, C30, C31, C32, C35 | skip-on-failure, hard path, shared mutable, try/pass, flaky |
 | E — wrong thing | C33, C36, C37 | metric not asserted, fail without reason, duplicate case |
-| Diagnostic (opt-in) | D1, D3, D4, D5, D6, M2 | apply only when user requests diagnostic pass |
+| Optional / diagnostic (opt-in) | C22, D1, D3, D4, D5, D6, M2 | apply only when user requests diagnostic pass |
 
 Report each structural finding with code number and confidence before Step 3.
 
@@ -295,10 +295,11 @@ Every finding has these fields:
 - `test`: function name and line range
 - `finding`: one sentence describing the problem
 - `evidence`: the specific lines that triggered the finding
-- `oracle`: cited source (case 18 only)
+- `oracle`: cited source, required only for semantic case `18`; structural code
+  `C18` is the `str()`/`repr()` comparison smell and does not require `oracle`
 - `fix_hint`: one sentence suggestion
 
-For machine-readable output, see `schema/finding.json`.
+For machine-readable output, see `schema/report.json`.
 
 ---
 
@@ -316,8 +317,9 @@ For machine-readable output, see `schema/finding.json`.
 
 - `reference.md` — full per-language pattern catalog with examples and look-alike
   exemptions for Python, TypeScript, and JavaScript
-- `contexts/general.md` — universal Python API usage snippet for any
-  OpenAI-compatible provider
+- `contexts/claude.md`, `contexts/codex.md`, `contexts/gemini.md` — maintained
+  provider-specific API and host guides
+- `contexts/cursor.md` — Cursor rule template
 - `schema/finding.json` — JSON Schema for a single finding (structured output)
 - `schema/report.json` — JSON Schema for a full analysis report
 - `SKILL.md` — canonical protocol (this file is a self-contained copy)

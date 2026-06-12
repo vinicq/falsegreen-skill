@@ -1,8 +1,8 @@
 # Multi-LLM invocation guide
 
-falsegreen-skill is designed to run on any LLM provider. The SKILL.md protocol and
-the J1-J6 judgment framework are provider-agnostic. This document covers how to
-invoke the skill on each supported provider and how to integrate it with Cursor.
+falsegreen-skill is packaged for defined provider paths. The SKILL.md protocol
+and the J1-J6 judgment framework are provider-agnostic, but this document only
+covers maintained providers and host integrations.
 
 ---
 
@@ -53,8 +53,8 @@ response = client.messages.create(
 print(response.content[0].text)
 ```
 
-For structured JSON output, use tool use with the canonical schema from
-`schema/finding.json` in this repo.
+For structured JSON output, use tool use with the canonical report schema from
+`schema/report.json` in this repo.
 
 ---
 
@@ -73,7 +73,7 @@ response = client.chat.completions.create(
         {"role": "system", "content": skill_protocol},
         {"role": "user", "content": test_code}
     ],
-    response_format={"type": "json_object"}  # use the schema from schema/finding.json
+    response_format={"type": "json_object"}  # use the schema from schema/report.json
 )
 print(response.choices[0].message.content)
 ```
@@ -183,56 +183,10 @@ print(response.choices[0].message.content)
 
 ## Cursor
 
-Cursor is an AI-native code editor that integrates Claude and GPT. Use
-falsegreen-skill in Cursor via project rules.
-
-### Setup
-
-Create `.cursor/rules/falsegreen-skill.mdc` in your project:
-
-```markdown
----
-description: LLM-based false-positive test smell detection (falsegreen-skill)
-globs:
-  - "**/*.test.ts"
-  - "**/*.spec.ts"
-  - "**/*.test.js"
-  - "**/*.spec.js"
-  - "**/*_test.py"
-  - "**/*.test.py"
-  - "**/test_*.py"
-alwaysApply: false
----
-
-When asked to analyze a test file for quality issues, apply the falsegreen-skill
-protocol (J1-J6 judgments, cases 1-22):
-
-1. Detect language and framework (Python/TS/JS/Java/C#/PHP/Ruby/C++)
-2. For Python: suggest running `falsegreen <file>` first for structural checks
-3. Classify test intent: spec/TDD, characterization, regression, or behavior
-4. Apply the six judgments (J1-J6) per test
-5. Report each finding as: CASE N (JX) - HIGH|LOW - language / Test / Finding / Evidence / Fix hint
-6. End with SUMMARY: tests reviewed / findings / clean
-
-Precision-first: never report case 18 without citing an independent oracle (spec,
-docstring, API contract). A wrong HIGH finding is worse than a missed LOW one.
-
-Full protocol and case catalog: https://github.com/vinicq/falsegreen-skill
-```
-
-### Usage
-
-1. Open a test file in Cursor.
-2. Open Cursor chat (`Ctrl+L` or `Cmd+L`).
-3. Type: `analyze this test file for false-positive smells`
-4. Cursor injects the rule context and applies the J1-J6 protocol.
-
-### Cursor model selection
-
-Cursor supports Claude and GPT models. For falsegreen-skill:
-- `claude-sonnet-4-6` - default; best balance of precision and speed
-- `gpt-4o` - solid alternative, slightly less precise on case 18
-- Use the "long context" model option for files with many test functions
+Cursor is an AI-native code editor. Install falsegreen-skill as a project rule
+by following the instructions in [`contexts/cursor.md`](contexts/cursor.md).
+That file contains the complete `.cursor/rules/falsegreen-skill.mdc` template,
+usage patterns for Chat and Composer, and model selection guidance.
 
 ---
 
@@ -320,7 +274,7 @@ or gpt-4o-mini. Precision may be lower for edge cases.
 For **deep case 18 analysis** (expected value contradicts spec): claude-opus-4-8
 or OpenAI o3. Both support extended chain-of-thought.
 
-For **cost-sensitive batch analysis** (Dataset B collection): LLaMA via Groq
+For **cost-sensitive batch analysis**: LLaMA via Groq
 (free tier available). Validate results against the benchmark before trusting at scale.
 
 For **local/offline use**: Ollama with llama-3.3-70b or Qwen2.5-72B. Quality
