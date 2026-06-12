@@ -50,6 +50,7 @@ Options:
                         (Groq, Ollama, OpenRouter, Kimi, Mistral, DeepSeek)
   --json                Validate and output JSON conforming to schema/report.json
   --conventions <file>  Path to a conventions YAML/text block (SKILL.md Step 0)
+  --temperature <n>     Sampling temperature 0.0-1.0 (default 0.2). Ignored for OpenAI o-series.
   --max-tokens <n>      Max output tokens (default 4096)
   --fail-on-high        Exit 2 when any HIGH finding is present (requires --json)
 
@@ -79,6 +80,7 @@ function parseArgs(argv) {
     conventions: null,
     maxTokens: 4096,
     failOnHigh: false,
+    temperature: 0.2,
   };
 
   let i = 0;
@@ -115,6 +117,13 @@ function parseArgs(argv) {
         opts.maxTokens = n;
         break;
       }
+      case '--temperature': {
+        const raw = requireValue(argv, ++i, arg);
+        const t = parseFloat(raw);
+        if (!Number.isFinite(t) || t < 0 || t > 1) fail(`--temperature expects a float between 0 and 1, got "${raw}"`);
+        opts.temperature = t;
+        break;
+      }
       case '--fail-on-high':
         opts.failOnHigh = true;
         break;
@@ -134,6 +143,10 @@ function parseArgs(argv) {
 function requireValue(argv, i, flag) {
   if (i >= argv.length || argv[i].startsWith('--')) fail(`${flag} requires a value`);
   return argv[i];
+}
+
+function isReasoningModel(model) {
+  return /^o[134]/.test(model);
 }
 
 // ------------------------------------------------------------ prompt build
@@ -234,6 +247,7 @@ async function callAnthropic(opts, system, user) {
     {
       model: opts.model,
       max_tokens: opts.maxTokens,
+      temperature: opts.temperature,
       system,
       messages: [{ role: 'user', content: user }],
     }
@@ -242,17 +256,24 @@ async function callAnthropic(opts, system, user) {
 }
 
 async function callOpenAIStyle(baseUrl, apiKey, opts, system, user) {
+  const reasoning = isReasoningModel(opts.model);
+  const body = {
+    model: opts.model,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: user },
+    ],
+  };
+  if (reasoning) {
+    body.max_completion_tokens = opts.maxTokens;
+  } else {
+    body.max_tokens = opts.maxTokens;
+    body.temperature = opts.temperature;
+  }
   const data = await postJson(
     `${baseUrl.replace(/\/+$/, '')}/chat/completions`,
     { authorization: `Bearer ${apiKey}` },
-    {
-      model: opts.model,
-      max_tokens: opts.maxTokens,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-    }
+    body
   );
   return data.choices[0].message.content;
 }
@@ -266,7 +287,7 @@ async function callGemini(opts, system, user) {
   const data = await postJson(url, { 'x-goog-api-key': getApiKey('gemini') }, {
     system_instruction: { parts: [{ text: system }] },
     contents: [{ parts: [{ text: user }] }],
-    generationConfig: { maxOutputTokens: opts.maxTokens },
+    generationConfig: { maxOutputTokens: opts.maxTokens, temperature: opts.temperature },
   });
   return data.candidates[0].content.parts[0].text;
 }

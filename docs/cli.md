@@ -83,11 +83,13 @@ response against the canonical schema and emits one aggregate JSON report.
 | `--base-url <url>` | API base URL. Required for `openai-compatible` | none |
 | `--json` | Validate and output a JSON report conforming to `schema/report.json` | off |
 | `--conventions <file>` | Conventions YAML/text block injected per SKILL.md Step 0 | none |
+| `--temperature <n>` | Sampling temperature 0.0–1.0. Skipped for OpenAI o-series (o3, o4-mini) | `0.2` |
 | `--max-tokens <n>` | Max output tokens per request | `4096` |
 | `--fail-on-high` | Exit with code 2 when any HIGH finding is present. Requires `--json` | off |
 
 Default models: `anthropic` uses `claude-sonnet-4-6`, `openai` uses `gpt-4o`,
-`gemini` uses `gemini-2.5-pro`.
+`gemini` uses `gemini-2.5-pro`. For deep case 18 analysis, pass `--model claude-opus-4-8`
+(Anthropic) or `--model o3` (OpenAI). When using `o3`, `--temperature` is ignored automatically.
 
 ## Environment variables
 

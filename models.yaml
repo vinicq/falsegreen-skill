@@ -2,6 +2,10 @@
 #
 # Three tiers map analysis passes to model capability requirements.
 # Pick the tier that matches the cases you are running.
+#
+# Temperature: the CLI defaults to 0.2 (--temperature flag). Passed to
+# Anthropic and Gemini. OpenAI o-series (o3, o4-mini) do not accept a
+# temperature parameter; the CLI omits it automatically for those models.
 
 tiers:
 
