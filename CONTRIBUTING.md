@@ -8,12 +8,32 @@ TypeScript, and JavaScript.
 ## 30-second cheat sheet
 
 ```bash
-git clone https://github.com/vinicq/falsegreen-skill
+# 1. Fork the repo on GitHub first (vinicq/falsegreen-skill → your-username/falsegreen-skill)
+# 2. Clone your fork
+git clone https://github.com/<your-username>/falsegreen-skill
 cd falsegreen-skill
 # no runtime dependencies — this is a skill definition, not a package
 ```
 
-Then branch, change, and open a pull request.
+Branch, make your changes, and open a pull request against `vinicq/falsegreen-skill`.
+
+## Validate your changes
+
+Before opening a PR, run:
+
+```bash
+npm run validate
+```
+
+This checks required files, skill frontmatter, manifest JSON, schema field names, and unsupported language claims. It takes under a second.
+
+For CLI changes, also run:
+
+```bash
+node --check bin/falsegreen-llm.js
+```
+
+If you changed `SKILL.md`, check that the same text appears in `llm.md`, `AGENTS.md`, and `GEMINI.md` — they carry the same protocol and must stay in sync.
 
 ## How the skill is built
 

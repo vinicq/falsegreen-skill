@@ -238,6 +238,71 @@ mutation testing pass.
 | CLI | `npx falsegreen-skill analyze tests/test_example.py` — see [docs/cli.md](docs/cli.md) |
 | API | Use the defined provider guides in `contexts/claude.md`, `contexts/codex.md`, and `contexts/gemini.md` |
 
+### Quick example
+
+Given this test that echoes the mock back to itself:
+
+```python
+# tests/test_tax.py
+def test_calculate_tax(mock_calc):
+    mock_calc.return_value = 0.15
+    result = calculate_tax(100, mock_calc)
+    assert result == mock_calc.return_value  # J2: asserting the mock, not behavior
+```
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+npx falsegreen-skill analyze tests/test_tax.py
+```
+
+Output:
+
+```
+CASE 11 (J2) - HIGH - Python - spec
+
+Test: test_calculate_tax (line 3-6)
+Finding: The assertion checks mock_calc.return_value - the same value the
+mock was configured to return. This passes for any return value, including
+wrong ones.
+Evidence:
+  mock_calc.return_value = 0.15
+  assert result == mock_calc.return_value
+Fix hint: Assert against an independently computed expected value, e.g.
+assert result == 15.0 for a 15% tax on 100.
+
+SUMMARY
+Tests reviewed: 1
+Findings: 1 (1 high, 0 low)
+Clean: 0
+```
+
+### Try it on your test suite
+
+Point the CLI at any test file or directory:
+
+```bash
+# single file
+npx falsegreen-skill analyze tests/test_orders.py
+
+# multiple files
+npx falsegreen-skill analyze tests/test_orders.py tests/test_payments.py
+
+# JSON report for CI — exits 2 if any HIGH finding is present
+npx falsegreen-skill analyze tests/test_orders.py --json --fail-on-high
+
+# deep analysis with a stronger model
+npx falsegreen-skill analyze tests/test_orders.py --model claude-opus-4-8
+
+# lower temperature for more deterministic output (default is already 0.2)
+npx falsegreen-skill analyze tests/test_orders.py --temperature 0.0
+```
+
+The skill identifies the language from the file extension. TypeScript and JavaScript work the same way — no extra flags needed.
+
+Full flag reference: [docs/cli.md](docs/cli.md).
+
+---
+
 ### Claude Code (primary path)
 
 Add the marketplace and install the plugin:
