@@ -87,7 +87,7 @@ A failing TDD test is not a false positive. Classify before judging.
 - **J2:** Is the expected value from an independent oracle? Not from current code output or a re-implementation of the formula.
 - **J3:** Is the real unit under test? Mocking the SUT and asserting the mock is not a test.
 - **J4:** Does the assertion verify enough, and the right thing? Not just truthiness or broad exception type.
-- **J5:** Is the test coupled to implementation internals?
+- **J5:** Is the test coupled to implementation internals? Fails when those internals change even though the public contract still holds.
 - **J6:** Does the test pass in isolation? Not order-dependent on siblings or shared mutable state.
 
 Flag only the first failing judgment per test. Do not double-report.

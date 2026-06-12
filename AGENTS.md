@@ -91,8 +91,8 @@ that an exception was raised without verifying its type, does not protect the
 behavior under test.
 
 **J5 - Is the test coupled to implementation internals?**
-Does the test depend on private methods or internal state that could change
-without breaking the public contract?
+Does the test fail when internals change - private methods, internal state,
+call order - even though the public contract still holds?
 
 **J6 - Does the test pass in isolation?**
 Does the test depend on execution order or shared mutable state? A test that
