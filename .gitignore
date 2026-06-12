@@ -10,6 +10,7 @@ build/
 *.log
 .DS_Store
 Thumbs.db
+.claude/settings.local.json
 
 # internal development / research - stays in falsegreen-skill-audit (private)
 # exception: .agents/plugins/ is the Codex CLI plugin marketplace catalog (public)

@@ -10,8 +10,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 - Initial skill definition (`SKILL.md`): LLM-based semantic analysis for
-  false-positive test detection across Python, TypeScript, JavaScript, Java,
-  C#, PHP, Ruby, and C++.
+  false-positive test detection across Python, TypeScript, and JavaScript.
 - Detection reference (`reference.md`): per-language case catalog with J1-J6
   judgment index, framework cues, and language-specific smell patterns.
 - Case catalog covering the 18 cases from the falsegreen methodology, with
