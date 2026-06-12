@@ -26,6 +26,113 @@ contexts that intentionally duplicate protocol details.
 | Cursor | `contexts/cursor.md` | Contains the `.cursor/rules/*.mdc` template. |
 | CLI | `bin/falsegreen-llm.js`, `llm.md`, `schema/` | Supports `--json` validation against the canonical schemas. |
 
+## Manifest Reference
+
+Each host that supports plugin discovery requires one or more manifest files.
+This section documents their structure and field semantics.
+
+### `.claude-plugin/plugin.json` — Claude Code plugin manifest
+
+Official schema: `https://json.schemastore.org/claude-code-plugin-manifest.json`
+
+```json
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "plugin-name",           // required; lowercase, hyphens allowed
+  "displayName": "Plugin Name",    // required; shown in the Claude Code UI
+  "version": "0.1.0",             // required; semver
+  "description": "...",            // required; shown in marketplace search
+  "author": {
+    "name": "Author Name",         // recommended
+    "url": "https://github.com/…"  // optional
+  },
+  "homepage": "https://…",        // optional
+  "repository": "https://…",      // optional
+  "license": "MIT",               // optional
+  "keywords": ["tag1", "tag2"]    // optional; improves discoverability
+}
+```
+
+Skills are declared by placing them under `skills/<name>/SKILL.md` in the
+plugin root. Claude Code discovers them from that directory automatically;
+no explicit `skills` field is needed in `plugin.json`.
+
+### `.claude-plugin/marketplace.json` — Claude Code marketplace catalog
+
+Consumed by `codex plugin marketplace add <owner>/<plugin>` and the Claude
+Code plugin marketplace UI.
+
+```json
+{
+  "name": "catalog-name",          // required; identifies the catalog
+  "owner": { "name": "Author" },   // required
+  "description": "…",              // optional; shown in catalog listings
+  "plugins": [
+    {
+      "name": "plugin-name",       // required; matches plugin.json name
+      "source": "./",              // required; path to plugin root
+      "description": "…",         // recommended; one-line summary
+      "category": "code-quality",  // optional; used for filtering
+      "tags": ["testing", "…"]     // optional; improves search
+    }
+  ]
+}
+```
+
+### `.codex-plugin/plugin.json` — Codex plugin manifest
+
+No official public schema exists for this file. The format below reflects
+the structure consumed by the Codex CLI in practice, derived from working
+plugin examples in the community.
+
+```json
+{
+  "name": "plugin-name",           // required
+  "version": "0.1.0",             // required; semver
+  "description": "…",             // required
+  "author": { "name": "…", "url": "…" },
+  "homepage": "https://…",
+  "repository": "https://…",
+  "license": "MIT",
+  "skills": "./skills/",           // required; path to the skills directory
+  "keywords": ["tag1", "tag2"],
+  "interface": {
+    "displayName": "Plugin Name",
+    "shortDescription": "…",       // shown in Codex plugin list
+    "longDescription": "…",        // shown in plugin detail view
+    "category": "code-quality",    // used for marketplace filtering
+    "defaultPrompt": "…"           // pre-filled prompt when the plugin is invoked
+  }
+}
+```
+
+The `skills` field is required: it tells the Codex CLI where to look for
+`SKILL.md` entry points. Without it, skills in the plugin are not discoverable.
+
+### `.agents/plugins/marketplace.json` — Codex marketplace catalog
+
+No official public schema. This catalog format is recognized by the Codex
+CLI's plugin marketplace resolution when the plugin is installed via
+`codex plugin marketplace add <owner>/<plugin>`.
+
+```json
+{
+  "name": "catalog-name",          // required
+  "owner": { "name": "Author" },   // required
+  "plugins": [
+    {
+      "name": "plugin-name",       // required; matches .codex-plugin/plugin.json name
+      "source": "./",              // required; path to plugin root (relative to this file)
+      "description": "…"          // recommended
+    }
+  ]
+}
+```
+
+The `.agents/` directory is blocked by `.gitignore` for research and internal
+content. The single exception is `.agents/plugins/`, which holds this catalog
+and is explicitly unblocked with `!.agents/plugins/`.
+
 ## Context Policy
 
 The maintained context files are:
