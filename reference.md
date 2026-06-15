@@ -716,6 +716,130 @@ Apply only when the user explicitly asks for diagnostic analysis.
   Silently excluded from the run; the skip annotation is never revisited.
   Maps to the Ignored Test smell. [Jorge 2023, STEEL]
 
+- **HTTP header case sensitivity trap — supertest / node-fetch (J4, HIGH):**
+  `supertest` normalizes all response header names to **lowercase** in
+  `res.headers`. A PascalCase lookup like `res.headers['Content-Type']` or
+  `Object.prototype.hasOwnProperty.call(res.headers, 'Content-Type')` always
+  returns `undefined` / `false`, regardless of whether the server sent that
+  header. Assertions that rely on PascalCase keys are vacuously true (absence
+  check) or silently skipped (presence check). Use the lowercase key
+  `'content-type'` or the `.expect()` helper which handles normalization.
+  Evidence: koajs/koa `respond.test.js` — 12 tests across 9 describe blocks.
+  ```javascript
+  // BAD — always false regardless of server output
+  assert.strictEqual(
+    Object.prototype.hasOwnProperty.call(res.headers, 'Content-Type'), false
+  )
+  // CLEAN
+  assert.strictEqual(
+    Object.prototype.hasOwnProperty.call(res.headers, 'content-type'), false
+  )
+  ```
+
+- **Bitwise NOT coercion masking absent header — `~~undefined === 0` (J4, HIGH):**
+  `~~value` coerces `undefined` and `null` to `0`. When used to convert a
+  response header to an integer, an absent header produces `0` rather than a
+  meaningful error. The assertion then compares against the expected numeric
+  value; if that value happens to be `0`, the test passes silently even though
+  the header was never sent. Use explicit presence checks before numeric
+  conversion.
+  Evidence: koajs/koa `respond.test.js` line ~174.
+  ```javascript
+  // BAD — ~~undefined === 0, masks absent header
+  assert.strictEqual(~~res.header['content-length'], expectedLength)
+  // CLEAN
+  assert.ok(res.header['content-length'] !== undefined, 'header must be present')
+  assert.strictEqual(parseInt(res.header['content-length'], 10), expectedLength)
+  ```
+
+- **Self-referential field oracle — result read-back as expected value (J2, HIGH):**
+  An assertion uses a field from the actual query result as the expected value
+  inside the same `toEqual()` call: `expect(result).toEqual([{ createdAt:
+  result[0]!.createdAt }])`. The comparison is always equal by construction;
+  any encoding, timezone, or type bug in that field is invisible. Common with
+  server-generated timestamps. Use a literal or a known-good fixed date.
+  Evidence: drizzle-team/drizzle-orm `pg-common.ts` — 8-12 occurrences per file.
+  ```typescript
+  // BAD — createdAt always matches itself
+  expect(result).toEqual([{ id: 1, name: 'Alice', createdAt: result[0]!.createdAt }])
+  // CLEAN
+  const knownTime = new Date('2024-01-15T10:00:00.000Z')
+  expect(result).toEqual([{ id: 1, name: 'Alice', createdAt: knownTime }])
+  ```
+
+- **`toHaveBeenCalled()` without argument verification (J4, LOW):**
+  The assertion confirms a callback or spy was invoked but does not verify what
+  arguments it received. The test passes even if the function was called with
+  wrong values, wrong types, or wrong shape. Prefer `toHaveBeenCalledWith()`
+  with a specific argument matcher.
+  Evidence: react-hook-form `controller.test.tsx` — onChange and onBlur handlers.
+  ```typescript
+  // BAD — passes even if onChange was called with wrong value
+  expect(onChange).toHaveBeenCalled()
+  // CLEAN
+  expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ target: { value: 'Alice' } }))
+  ```
+
+- **`resolves.toBeDefined()` as async return contract (J4, LOW):**
+  `await expect(promise).resolves.toBeDefined()` passes for any resolved value
+  except `undefined` — including `null`, `false`, `0`, `''`, or an error
+  object. It does not verify the shape or meaning of the resolved value. If the
+  contract specifies a particular structure, assert against it.
+  Evidence: react-hook-form `useController.test.tsx`.
+  ```typescript
+  // BAD — passes for null, '', {error: true}, anything but undefined
+  await expect(field.onChange(val)).resolves.toBeDefined()
+  // CLEAN — assert the actual contract
+  await expect(field.onChange(val)).resolves.toEqual(expect.objectContaining({ success: true }))
+  ```
+
+- **`Array.every()` aggregation hiding per-input failure (J4, LOW):**
+  Validation tests that feed N inputs through a `.every(fn)` call and assert
+  the resulting boolean. When the test fails, the message is `false !== true`
+  with no indication of which input caused it. Coverage is also one assertion
+  for N cases. Use `it.each` or a `for...of` loop so each input gets its own
+  result.
+  Evidence: colinhacks/zod `string.test.ts` — email, E.164, cuid2 sets.
+  ```typescript
+  // BAD — which email failed?
+  expect(validEmails.every(e => emailSchema.safeParse(e).success)).toBe(true)
+  // CLEAN
+  for (const email of validEmails) {
+    expect(emailSchema.safeParse(email).success, `should accept: ${email}`).toBe(true)
+  }
+  ```
+
+- **Internal field access via underscore naming convention (J5, HIGH):**
+  Fields prefixed or suffixed with `_` (e.g. `control._fields`, `computed.value_`,
+  `store._state`) are implementation internals by convention in most JS/TS
+  libraries. Tests that read or write them couple to the private representation;
+  any refactoring that preserves the public API but renames internals breaks
+  the test. Use the public getter or accessor method instead.
+  Evidence: react-hook-form `controller.test.tsx` (`control._fields`),
+  mobxjs/mobx `observables.js` (`computedValue.value_`).
+  ```typescript
+  // BAD — _fields is a private internal of react-hook-form
+  expect((control as any)._fields?.email?.required).toBeFalsy()
+  // CLEAN — use public API to observe the validation result
+  await trigger('email')
+  expect(formState.errors.email).toBeDefined()
+  ```
+
+- **Sign-then-verify tautology — JWT / HMAC positive test only (J2, LOW):**
+  A test that signs a payload and immediately verifies it with the same key,
+  asserting `verifiedPayload === originalPayload`. This passes even if
+  `verify()` skips the signature check entirely. Severity is LOW when adjacent
+  negative tests (wrong key, tampered token) prove the verification is
+  enforced. Without those negative tests, severity is HIGH.
+  Evidence: honojs/hono `jwt.test.ts`.
+  ```typescript
+  // BAD in isolation (no accompanying negative tests)
+  const token = await JWT.sign(payload, secret, 'HS256')
+  const verified = await JWT.verify(token, secret, 'HS256')
+  expect(verified).toEqual(payload) // passes even without sig verification
+  // CLEAN: add the mitigating negative tests shown in oracle_patterns.ts
+  ```
+
 ---
 
 ### Look-alikes: do NOT flag these TypeScript patterns
