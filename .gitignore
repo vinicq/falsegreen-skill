@@ -16,3 +16,6 @@ Thumbs.db
 # exception: .agents/plugins/ is the Codex CLI plugin marketplace catalog (public)
 .agents/*
 !.agents/plugins/
+
+# pointer to private audit hub - never commit
+CLAUDE.local.md
