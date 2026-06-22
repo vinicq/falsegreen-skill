@@ -926,6 +926,25 @@ The prose below details the higher-prevalence patterns with examples and citatio
 
 ---
 
+## Visual testing (Percy, Chromatic, Playwright screenshots, Storybook)
+
+Visual-regression tools verify appearance, not behavior, and the oracle usually lives
+**outside** the test run:
+
+- **Percy / Chromatic:** `percySnapshot(name)` / `cy.percySnapshot()` captures the DOM or
+  a screenshot and **uploads it**; the diff is computed server-side and **approved by a
+  human in a dashboard**, asynchronously. The local test verifies nothing - a test whose
+  only check is `percySnapshot()` is false-green locally (no runtime oracle; J1/J2). Treat
+  `percySnapshot`/`cy.percySnapshot` as a NON-assertion: a test with only it is
+  no-verification (C2b-equivalent).
+- **Playwright / Storybook screenshots:** `expect(page).toHaveScreenshot()` /
+  `toMatchScreenshot()` is a snapshot whose baseline is generated from the output - if it
+  is the only assertion, that is snapshot-only (JS3 / C14): it detects change, not
+  correctness.
+
+Look-alike - do NOT flag: a visual snapshot **alongside** a behavioral assertion
+(`expect(value).toBe(...)`) is fine; the behavioral check is the oracle.
+
 ## Robot Framework
 
 Detection cues: `.robot` / `.resource` files; sections `*** Test Cases ***`, `*** Keywords ***`,
