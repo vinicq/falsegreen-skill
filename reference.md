@@ -926,6 +926,47 @@ The prose below details the higher-prevalence patterns with examples and citatio
 
 ---
 
+## Robot Framework
+
+Detection cues: `.robot` / `.resource` files; sections `*** Test Cases ***`, `*** Keywords ***`,
+`*** Settings ***`; keyword-driven, tab/space-aligned. Robot runs on Python, but a `.robot`
+file is a DSL, not Python - the static scanners cannot parse it, so this is a semantic,
+text-based pass. Map each finding to J1-J6.
+
+False-green patterns (the verification keyword is the oracle):
+
+- **No verification keyword (J1):** a test case runs keywords but never calls a
+  verification keyword (`Should Be Equal`, `Should Contain`, `Should Be True`,
+  `Page Should Contain*`, `Element Should Be Visible`, or a custom assertion keyword).
+  The keyword equivalent of an assertion-free test.
+- **Empty test case (J1):** only `[Documentation]`/`[Tags]`/setup, no body keywords.
+- **Swallowed failure (J1):** `Run Keyword And Ignore Error` / `Run Keyword And Return Status`
+  wrapping the action without asserting the returned status/message afterward. The test
+  stays green whether or not the keyword failed.
+- **Status captured, never asserted (J4):** `${status} =    Run Keyword And Return Status    ...`
+  where `${status}` is never checked with `Should Be True`/`Should Be Equal`.
+- **Always-true check (J2):** `Should Be True    ${TRUE}` / `Should Be True    True` /
+  `Should Be Equal    1    1`.
+- **Self-compare (J2):** `Should Be Equal    ${x}    ${x}`.
+- **Sleep as synchronization (J1):** `Sleep    2s` used instead of `Wait Until *`; result
+  depends on timing.
+- **Skipped (J1):** `[Tags]    robot:skip` / `Skip` / `Skip If` that always skips.
+- **Conditional-only verification (J1):** the only verification lives inside a
+  `Run Keyword If` whose condition may never hold.
+
+Look-alikes - do NOT flag:
+- `Run Keyword And Expect Error` / `Run Keyword And Continue On Failure` followed by a
+  check - these ARE asserting.
+- `Wait Until Keyword Succeeds` - legitimate retry for E2E flakiness, not a Sleep smell.
+- Teardown keywords (`[Teardown]`, `Close Browser`) - cleanup, not the oracle.
+- E2E/UI presence keywords (`Page Should Contain Element`) ARE the assertion at the
+  browser layer - do not treat as weak.
+
+These mirror the static codes conceptually: no-verification ≈ C2b, empty ≈ C2,
+swallowed ≈ C3/C27, always-true ≈ C5, self-compare ≈ C7, sleep ≈ C16, skip ≈ C32.
+
+---
+
 ## The oracle hierarchy
 
 The expected value must come from a source independent of the code:

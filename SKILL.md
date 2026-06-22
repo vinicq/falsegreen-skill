@@ -53,10 +53,17 @@ If no conventions block is provided, proceed directly to Step 1.
 ### Step 1: Detect language and framework
 
 Identify:
-- Language: Python / TypeScript / JavaScript
-- Test framework: pytest / unittest (Python) · Jest / Vitest / Mocha+Chai (TS/JS)
-- Layer context: unit test, integration test, UI/E2E, or web layer test?
-  (affects C6 and C14 — see reference.md)
+- Language: Python / TypeScript / JavaScript / Robot Framework
+- Test framework: pytest / unittest (Python) · Jest / Vitest / Mocha+Chai (TS/JS) ·
+  React Testing Library (component render) · Cypress / Playwright (E2E, JS/TS or Python) ·
+  Robot Framework (`.robot` / `.resource`, keyword-driven)
+- Test level: **unit** (isolated function, hook, or component), **integration** (how
+  components or services interact), or **E2E** (the real user journey through UI, DB,
+  and real APIs). The level changes what counts as a valid oracle.
+- Layer context: unit, integration, UI/E2E, or web layer? In **E2E/UI** tests (Cypress,
+  Playwright, Robot Browser/Selenium) the presence of a response, page, or element IS
+  the assertion at that layer - do not flag it as a weak check (affects C6 and C14;
+  see reference.md).
 
 See `reference.md` for framework-detection cues.
 
