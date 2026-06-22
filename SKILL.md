@@ -83,7 +83,27 @@ proceeding to Steps 3-6.
 result and proceed directly to Step 3 for findings the scanner marked as
 needing semantic review. If no scanner output is provided, apply Step 2 fully.
 
-For TypeScript and JavaScript, proceed directly to Step 3.
+For TypeScript and JavaScript, apply the TS/JS catalog below, then proceed to Step 3.
+
+### Step 2b: Apply the TypeScript / JavaScript pattern catalog (TS/JS only)
+
+The companion static scanner for these languages is
+[falsegreen-js](https://github.com/vinicq/falsegreen-js). It shares the C-codes
+where the smell is the same concept and adds JS-specific codes. Apply the catalog,
+then proceed to Step 3 for the semantic judgments no static pass can make.
+
+| Family | Codes | What to look for |
+|---|---|---|
+| A - never checks | C2, C2b, C21, CC, JS2, JS4, JS6, JS9, JS11 | empty test, no assertion, every assertion conditional, commented-out assertion, `expect()` without a matcher, skipped (`it.skip`/`xit`), empty `describe`, dead literal branch, swallowed `try/catch` |
+| B - weak / always-true | C5, C7, C8, C9, C16, C18, JS3 | tautology, self-compare, exact float equality, `toThrow()` with no error type, time/randomness, stringified equality, snapshot-only |
+| C - focus / async | JS1, JS5, JS7 | focused test (`it.only`/`fit`), async query/event not awaited, assertion in a non-awaited callback |
+| D - duplicate | C37 | duplicate `it.each`/`test.each` case |
+| F - query without assert | JS13 | `getBy*`/`queryBy*` query as a loose statement, result never asserted |
+| Optional / diagnostic (opt-in) | D1, D3, D4, D6, D7, M2 | maintainability; apply only when the user requests a diagnostic pass |
+
+If the user has run `falsegreen-js <file>` and provides its JSON output, use that as
+the structural pass and proceed to Step 3 for findings that need semantic review.
+Full TS/JS pattern detail and look-alikes: see `reference.md`.
 
 ### Step 3: Classify test intent
 
@@ -203,10 +223,11 @@ append the note to the existing SUMMARY using what you already know from the ana
 | 15 | J6 | Passes only if another test ran first | Semantic |
 | 18 | J2 | Expected value contradicts what the code should do | Semantic + adversarial verify |
 
-Structural codes C1-C37 are handled by the falsegreen scanner (Python) or by
-language-specific static analysis. This skill adjudicates scanner findings when
-review is needed, and handles the same patterns directly for non-Python
-languages.
+Structural codes are handled by the static scanners - [falsegreen](https://github.com/vinicq/falsegreen)
+for Python (C1-C37) and [falsegreen-js](https://github.com/vinicq/falsegreen-js)
+for TypeScript/JavaScript (shared C-codes plus JS1-JS13). This skill adjudicates
+scanner findings when review is needed, and handles the same patterns directly for
+any language. The five semantic cases above need the LLM regardless of language.
 
 Full case catalog with language examples: see `reference.md`.
 
@@ -249,6 +270,9 @@ Report case 18 HIGH only when the refuter cannot mount a credible defense.
 - It does not suggest code fixes unless asked.
 - It does not run the tests.
 - It does not analyze production code unless the test snippet includes it.
-- It does not flag maintainability smells (bad names, missing messages,
-  Eager Test, Lazy Test). Those are style issues, not false-positive risks.
-  Use `ruff`'s `PT` rules or PyNose for that layer.
+- It does not flag maintainability smells **by default** (bad names, missing
+  messages, Eager Test, Lazy Test, long tests). Those are not false-positive risks.
+  They are available as an **opt-in diagnostic pass** (codes D1/D3/D4/D5/D6/D7/M2),
+  applied only when the user asks for it - mirroring the diagnostic/coupling group
+  in falsegreen and falsegreen-js. For a dedicated linter layer, `ruff`'s `PT` rules
+  (Python) or eslint-plugin-jest (JS/TS) also cover this ground.

@@ -654,6 +654,42 @@ Apply only when the user explicitly asks for diagnostic analysis.
 
 ### TypeScript / JavaScript
 
+**False-green code catalog (shared with the [falsegreen-js](https://github.com/vinicq/falsegreen-js) scanner).**
+Same code id where the smell matches the Python concept; `JS*` codes are
+ecosystem-specific. Runner-agnostic across Jest, Vitest, Mocha+Chai, Jasmine, AVA,
+node:test, Cypress, Playwright, and Testing Library.
+
+| Code | Conf | Pattern |
+|---|---|---|
+| C2 | HIGH | empty test body |
+| C2b | LOW | calls the unit but never asserts |
+| C5 | HIGH | always-true (`expect(true).toBe(true)`, `assert(1)`) |
+| C7 | HIGH | self-compare (`expect(x).toBe(x)`) |
+| C8 | LOW | exact equality on a float |
+| C9 | LOW | `toThrow()` with no error type or message |
+| C16 | LOW | depends on `Date.now`/`Math.random`/fixed timer |
+| C18 | LOW | stringified equality (`String(x)`/`JSON.stringify`/`` `${x}` ``) |
+| C21 | LOW | every assertion is conditional |
+| C37 | LOW | duplicate `it.each`/`test.each` case |
+| CC | LOW | commented-out assertion |
+| JS1 | HIGH | focused test (`it.only`/`fit`) skips the rest of the suite |
+| JS2 | HIGH | `expect(x)` with no matcher |
+| JS3 | LOW | snapshot is the only assertion |
+| JS4 | LOW | skipped test (`it.skip`/`xit`/`it.todo`) |
+| JS5 | LOW | async query/event not awaited (`findBy*`/`waitFor`/user-event) |
+| JS6 | HIGH | empty `describe`/`suite` |
+| JS7 | LOW | assertion in a non-awaited `setTimeout`/`then` callback |
+| JS9 | HIGH | assertion in a dead literal branch (`if(false)`) |
+| JS11 | LOW | `try/catch` swallows the assertion |
+| JS13 | LOW | `getBy*`/`queryBy*` query as a loose statement, never asserted |
+
+**Maintainability group (opt-in, default off).** Not false-green - the test still
+protects. Apply only on a diagnostic pass: D1 assertion roulette, D3 duplicate
+assert, D4 untitled `it.each` cases, D6 `console.*` in a test, D7 anonymous test
+(empty/missing description), M2 over-long test body.
+
+The prose below details the higher-prevalence patterns with examples and citations.
+
 - **Conditional Test - assertion inside branch (J1/C1, HIGH):**
   An `if`/`switch`/ternary inside the test body where the `expect()` or
   `assert` call lives inside the branch. The branch may never fire, leaving

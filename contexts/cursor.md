@@ -107,7 +107,8 @@ proceeding:
 - C36: pytest.fail() with no reason argument (LOW)
 - C37: @parametrize has duplicate argument set (LOW)
 
-For TypeScript and JavaScript, skip Step 2 and proceed directly to Step 3.
+For TypeScript and JavaScript, apply the falsegreen-js code set (shared C-codes
+plus JS1-JS13; see reference.md), then proceed to Step 3 for the semantic judgments.
 
 ### Step 3: Classify test intent
 

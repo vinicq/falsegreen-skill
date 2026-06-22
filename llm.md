@@ -308,8 +308,10 @@ For machine-readable output, see `schema/report.json`.
 - It does not suggest code fixes unless asked.
 - It does not run the tests.
 - It does not analyze production code unless the test snippet includes it.
-- It does not flag maintainability smells (bad names, missing messages, Eager
-  Test, Lazy Test). Use `ruff`'s `PT` rules or PyNose for that.
+- It does not flag maintainability smells by default (bad names, missing messages,
+  Eager Test, Lazy Test, long tests). They are an opt-in diagnostic pass
+  (D1/D3/D4/D5/D6/D7/M2), applied only when asked. `ruff`'s `PT` rules (Python) or
+  eslint-plugin-jest (JS/TS) also cover that layer.
 
 ---
 
