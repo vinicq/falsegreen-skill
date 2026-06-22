@@ -994,6 +994,32 @@ These mirror the static codes: no-Then ≈ C2b, empty ≈ C2, tautological Then 
 
 ---
 
+## Tavern (`*.tavern.yaml`)
+
+Detection cues: `*.tavern.yaml` / `*.tavern.yml`; YAML with `test_name:`, `stages:`, each
+stage holding a `request:` and a `response:`. Tavern is a pytest plugin for HTTP/MQTT API
+testing - the test is YAML (a DSL), executed by pytest. Semantic, text-based pass; the
+`response:` block is the oracle.
+
+False-green patterns:
+
+- **Stage with `request:` but no `response:` (J1/J4):** the call is sent but nothing is
+  verified; the stage passes as long as the request does not error. The API equivalent of
+  an assertion-free test.
+- **`response:` checks only `status_code` (J4):** `response: { status_code: 200 }` with no
+  `json`/`headers`/schema when the body is what matters - "something came back", like C6.
+- **Overly broad status acceptance (J4):** a `status_code` list/range that accepts almost
+  any outcome.
+- **`verify_response_with` external function that does not assert (J3/J4).**
+
+Look-alikes - do NOT flag:
+- A setup-only stage followed by a later stage that does validate the response.
+- `response:` with a `json:` body match or `$ext` schema validation - a real oracle.
+
+Mirror: no-response ≈ C2b, status-only ≈ C6.
+
+---
+
 ## The oracle hierarchy
 
 The expected value must come from a source independent of the code:

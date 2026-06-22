@@ -56,7 +56,8 @@ Identify:
 - Language: Python / TypeScript / JavaScript / Robot Framework
 - Test framework: pytest / unittest (Python) · Jest / Vitest / Mocha+Chai (TS/JS) ·
   React Testing Library (component render) · Cypress / Playwright (E2E, JS/TS or Python) ·
-  Robot Framework (`.robot` / `.resource`, keyword-driven)
+  Robot Framework (`.robot` / `.resource`, keyword-driven) · Tavern (`*.tavern.yaml`, API) ·
+  Gherkin/BDD (`.feature`: Cucumber.js / behave / pytest-bdd)
 - Test level: **unit** (isolated function, hook, or component), **integration** (how
   components or services interact), or **E2E** (the real user journey through UI, DB,
   and real APIs). The level changes what counts as a valid oracle.
