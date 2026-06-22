@@ -952,6 +952,36 @@ Detection cues: `.robot` / `.resource` files; sections `*** Test Cases ***`, `**
 file is a DSL, not Python - the static scanners cannot parse it, so this is a semantic,
 text-based pass. Map each finding to J1-J6.
 
+**What counts as a verification keyword (the oracle), across libraries.** Robot's
+ecosystem has 100+ libraries; the false-green check hinges on recognizing the assertion
+keywords so a real check is not mistaken for "no verification". The dominant convention is
+the word **`Should`**, plus library-specific forms:
+
+- **BuiltIn:** `Should Be Equal`, `Should Be True`, `Should Contain`, `Should Match`,
+  `Should (Not) Be Empty`, `Should Start/End With`, `Length Should Be`,
+  `Should Be Equal As Strings/Numbers`, `Should Contain X Times`.
+- **Collections:** `List Should Contain Value`, `Dictionary Should Contain Key`,
+  `Lists Should Be Equal`, `Length Should Be`.
+- **String:** `Should Be (Lowercase/Uppercase/String)`.
+- **SeleniumLibrary / AppiumLibrary:** `Page Should Contain*`, `Element Should Be Visible`,
+  `Element Text Should Be`, `Title Should Be`, `Location Should Be`,
+  `Element Should (Not) Be Visible`. `Wait Until Page Contains` / `Wait Until Element Is
+  Visible` also verify (they fail on timeout) - do not treat as mere waits.
+- **Browser (Playwright):** the **assertion engine** - `Get *    <selector>    <operator>
+  <expected>` where operator is `==`, `!=`, `contains`, `validate`, `matches`, `>`, `<`,
+  `>=`, `<=`, `*=`, `^=`, `$=`. **A `Get ...` keyword with NO operator is a plain getter -
+  it verifies nothing.** A test whose only Browser step is `Get Text    h1` (no operator,
+  result not passed to a `Should`) is false-green.
+- **RequestsLibrary:** `Status Should Be`, `Request Should Be Successful`.
+- **RESTinstance:** schema keywords assert the response - `Integer`, `Number`, `String`,
+  `Boolean`, `Object`, `Array`, `Null`, `Missing`. `Output` only prints (not a check).
+- **DatabaseLibrary:** `Row Count Should Be Equal`, `Check If (Not) Exists In Database`.
+- A project **custom keyword** whose name contains `Should`/`Verify`/`Assert`/`Check` and
+  that internally calls one of the above.
+
+A test case with none of the above (only actions: `Click`, `Go To`, `Input Text`,
+`Log`, bare `Get *`) verifies nothing.
+
 False-green patterns (the verification keyword is the oracle):
 
 - **No verification keyword (J1):** a test case runs keywords but never calls a

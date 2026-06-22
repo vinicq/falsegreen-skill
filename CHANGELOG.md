@@ -7,6 +7,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- Robot Framework verification-keyword vocabulary across libraries (BuiltIn Should*, Collections, String, SeleniumLibrary, Browser assertion engine, RequestsLibrary, RESTinstance, DatabaseLibrary, AppiumLibrary) so a real check is not mistaken for no-verification; Browser `Get` without an operator flagged as a non-verifying getter.
 - Visual testing note (Percy/Chromatic/Playwright screenshots/Storybook): percySnapshot is a non-assertion (no local oracle); screenshot-only is snapshot-only (JS3/C14).
 - Tavern (`*.tavern.yaml`) semantic catalog: API stages with a request but no response, status-only checks, broad status acceptance.
 - Gherkin/BDD semantic catalog in `reference.md` (.feature: scenario with no Then, non-verifying Then, empty outline, tautological Then) for Cucumber.js/behave/pytest-bdd.
