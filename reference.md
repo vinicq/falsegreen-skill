@@ -967,6 +967,33 @@ swallowed ≈ C3/C27, always-true ≈ C5, self-compare ≈ C7, sleep ≈ C16, sk
 
 ---
 
+## Gherkin / BDD (`.feature`)
+
+Detection cues: `.feature` files; `Feature:`, `Scenario:` / `Scenario Outline:`,
+`Given` / `When` / `Then` / `And` / `But`, `Examples:`. Used by Cucumber.js (JS/TS step
+defs), behave and pytest-bdd (Python step defs), SpecFlow (C#). The `.feature` file is
+Gherkin (a DSL), not code; the step definitions live in `.js`/`.ts`/`.py` and are covered
+by the static scanners. This is a semantic, text-based pass over the scenarios.
+
+False-green patterns (the `Then` step is the oracle):
+
+- **Scenario with no `Then` (J1):** only `Given`/`When` steps - the scenario exercises
+  behavior but never states an expected outcome. The BDD equivalent of an assertion-free test.
+- **`Then` that does not verify (J4):** a `Then` step whose definition only acts or logs
+  (navigates, clicks, prints) without asserting. Needs the step-def body to confirm.
+- **Empty scenario / outline with no `Examples` (J1):** a `Scenario Outline` whose
+  `Examples:` table is empty runs zero times.
+- **Tautological Then (J2):** `Then 1 equals 1` / a step that asserts a constant.
+
+Look-alikes - do NOT flag:
+- A `Then` whose step definition does assert (presence at the UI layer counts for E2E
+  features).
+- `@skip`/`@wip`/`@manual` tagged scenarios - intentionally not run (report as J1 skipped, low).
+
+These mirror the static codes: no-Then ≈ C2b, empty ≈ C2, tautological Then ≈ C5.
+
+---
+
 ## The oracle hierarchy
 
 The expected value must come from a source independent of the code:

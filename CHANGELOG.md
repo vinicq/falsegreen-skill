@@ -7,6 +7,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- Gherkin/BDD semantic catalog in `reference.md` (.feature: scenario with no Then, non-verifying Then, empty outline, tautological Then) for Cucumber.js/behave/pytest-bdd.
 - Robot Framework semantic catalog in `reference.md` (false-green keyword patterns:
   no-verification, swallowed `Run Keyword And Ignore Error`, always-true, self-compare,
   `Sleep`-as-wait, skip, conditional-only verification) + look-alikes.
@@ -17,6 +18,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.1.0] - 2026-06-22
 
 ### Added
+- Gherkin/BDD semantic catalog in `reference.md` (.feature: scenario with no Then, non-verifying Then, empty outline, tautological Then) for Cucumber.js/behave/pytest-bdd.
 - Initial skill definition (`SKILL.md`): LLM-based semantic analysis for
   false-positive test detection across Python, TypeScript, and JavaScript.
 - TypeScript / JavaScript structural catalog in `SKILL.md` (Step 2b) and a
