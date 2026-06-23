@@ -44,11 +44,17 @@ from elsewhere.
 
 Work through these steps in order. Do not skip steps.
 
-### Step 1: Detect language and framework
+### Step 1: Detect language, framework, and level
 
-Identify the language (Python / TypeScript / JavaScript) and test framework
-(pytest / unittest / Jest / Vitest / Mocha+Chai). Identify the layer: unit,
-integration, UI/E2E, or web layer. Layer affects J4 and J6 evaluation.
+Identify the language (Python / TypeScript / JavaScript / Robot Framework) and
+framework (pytest / unittest / Jest / Vitest / Mocha+Chai / Cypress / Playwright /
+Robot). Read the level from signals (the pyramid): unit (boundaries doubled),
+integration (real HTTP client or ORM/driver - API and database), or E2E (browser).
+Strongest signal wins (markers, paths, file names, `conventions:`). The level
+changes the oracle (E2E presence IS the assertion; affects J4/J6); a real API/DB
+call in a unit test is itself the smell. The full catalog for TS/JS (JS1-JS22),
+Robot (R-codes), the new Python codes, and the AI-only S-codes is in `reference.md`.
+Report the level in each finding.
 
 ### Step 2: For Python — apply the structural pattern catalog
 
@@ -334,5 +340,5 @@ pip install falsegreen
 falsegreen tests/
 ```
 
-The scanner covers all Python structural codes (C1-C37) without an LLM. The Cursor
+The scanner covers all Python structural codes (C1-C45) without an LLM. The Cursor
 skill covers semantic cases and TypeScript/JavaScript, where no static scanner exists.

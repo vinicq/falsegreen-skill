@@ -7,6 +7,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- The skill is now a superset of all three static scanners: added the Python codes
+  C38/C39/C41/C42/C43/C44/C45, the JS codes C6/C20/C23/JS8/JS15/JS17/JS18/JS21/JS22, and the
+  Robot codes R3/R4/R5 (plus empty-keyword C2 and IP-URL C23). supertest `.expect()` noted as
+  a real API assertion.
+- New AI-only semantic catalog (S1-S10): patterns no AST or linter can see (intent mismatch,
+  irrelevant oracle, plausible-but-wrong expected value, oracle too coarse to fail, tests the
+  framework not the code, happy-path-only against a stated contract, expected lifted from
+  output, mock value reaching the assertion through indirection, self-fulfilling arrangement,
+  asserts the log not the effect).
+- Documented test-pyramid coverage with level-aware oracle reading (unit / integration with
+  API and database / E2E).
 - Robot Framework verification-keyword vocabulary across libraries (BuiltIn Should*, Collections, String, SeleniumLibrary, Browser assertion engine, RequestsLibrary, RESTinstance, DatabaseLibrary, AppiumLibrary) so a real check is not mistaken for no-verification; Browser `Get` without an operator flagged as a non-verifying getter.
 - Visual testing note (Percy/Chromatic/Playwright screenshots/Storybook): percySnapshot is a non-assertion (no local oracle); screenshot-only is snapshot-only (JS3/C14).
 - Tavern (`*.tavern.yaml`) semantic catalog: API stages with a request but no response, status-only checks, broad status acceptance.

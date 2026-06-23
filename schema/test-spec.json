@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vinicq/falsegreen-skill/schema/test-spec.json",
+  "title": "FalsegreenTestSpec",
+  "description": "A language-neutral test specification used by the skill's authoring mode (Mode B). One spec is rendered into a non-false-green test in any supported stack (Python, TypeScript, JavaScript, Robot Framework).",
+  "type": "object",
+  "required": ["level", "unit", "scenario", "act", "oracle"],
+  "properties": {
+    "level": {
+      "description": "Test pyramid level. Integration covers both API and database tests.",
+      "type": "string",
+      "enum": ["unit", "integration", "e2e"]
+    },
+    "unit": {
+      "description": "What is under test: a function/method (unit), an endpoint or query (integration), or a page/flow (e2e).",
+      "type": "string"
+    },
+    "scenario": {
+      "description": "The single behavior the test verifies, stated as one sentence.",
+      "type": "string"
+    },
+    "arrange": {
+      "description": "Preconditions to set up before the action.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "act": {
+      "description": "The call or interaction the test performs.",
+      "type": "string"
+    },
+    "oracle": {
+      "description": "The independent source of the expected result. Must NOT be the current code output, or the test is a characterization test (false-green by construction).",
+      "type": "object",
+      "required": ["source", "expected"],
+      "properties": {
+        "source": {
+          "description": "Where the expected value comes from.",
+          "type": "string",
+          "enum": ["spec", "contract", "example"]
+        },
+        "expected": {
+          "description": "The expected value or condition, derived from the source.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "doubles": {
+      "description": "Boundaries replaced by a test double (unit/integration only). A real one of these inside a unit test is itself a smell.",
+      "type": "array",
+      "items": { "type": "string", "enum": ["database", "network", "clock", "filesystem"] }
+    },
+    "languages": {
+      "description": "Target stacks to render the spec into. Omit to let the user choose.",
+      "type": "array",
+      "items": { "type": "string", "enum": ["Python", "TypeScript", "JavaScript", "Robot"] }
+    }
+  },
+  "additionalProperties": false
+}

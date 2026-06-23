@@ -8,8 +8,10 @@ scanner.
 
 For Python, this skill applies the complete falsegreen catalog directly — all
 structural and semantic patterns — via LLM analysis, without requiring the
-static scanner to run first. For TypeScript and JavaScript, it is the primary
-detection tool.
+static scanner to run first. For TypeScript, JavaScript, and Robot Framework it
+is the primary detection tool. It is a superset of the three static scanners
+(falsegreen, falsegreen-js, falsegreen-robot) plus semantic patterns only an LLM
+can detect.
 
 ---
 
@@ -203,7 +205,7 @@ maintainability smells in general.
 
 Where there is overlap (Assertion Roulette = D1, Duplicate Assert = D3),
 falsegreen flags them as diagnostic codes — informational, not blocking.
-The structural codes unique to falsegreen (C1-C37) cover patterns that
+The structural codes unique to falsegreen (C1-C45) cover patterns that
 Palomba's taxonomy does not address because they were derived specifically
 from studying how green tests hide broken code in CI.
 
@@ -357,6 +359,23 @@ Frontend component tests — React, Vue, Angular, Svelte — use the same J1-J6
 framework as backend tests. The structural failures are identical: a J4 weak
 assertion on a rendered component is the same smell as a J4 on a service
 method. See `examples/typescript/component_tests.ts` for annotated examples.
+
+### Test levels (the pyramid)
+
+The skill detects the test level and reads the oracle in light of it, the step the static
+scanners cannot fully do. The level changes what counts as a valid check:
+
+- **Unit:** a function or component with its boundaries doubled. A real assertion on the
+  return value is the oracle.
+- **Integration (API and database):** API tests (supertest, `httpx`, a framework TestClient,
+  Tavern) and database tests against a real datastore. The response or the row IS the
+  verification at this level, so the skill does not flag it as a weak check.
+- **E2E:** Cypress, Playwright, Selenium, Robot Browser. The presence of a rendered element
+  or a page state is a real check here.
+
+The level itself is part of the judgment: a real API or database call inside a test that
+claims to be a unit test is a smell (over-mocking inverted, mystery guest), and the skill
+says so rather than accepting the level at face value.
 
 ---
 

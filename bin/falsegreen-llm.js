@@ -25,6 +25,8 @@ const FENCE_BY_EXT = {
   '.jsx': 'javascript',
   '.mjs': 'javascript',
   '.cjs': 'javascript',
+  '.robot': 'robotframework',
+  '.resource': 'robotframework',
 };
 
 // ---------------------------------------------------------------- helpers
@@ -155,6 +157,15 @@ function buildSystemPrompt(opts) {
   const llmPath = path.join(PKG_ROOT, 'llm.md');
   if (!fs.existsSync(llmPath)) fail(`protocol file not found: ${llmPath}`);
   let prompt = fs.readFileSync(llmPath, 'utf8');
+
+  // Append the full per-language catalog so the prompt actually carries the
+  // JS/Robot codes and the AI-only S-series (llm.md only inlines the Python
+  // catalog and points here for the rest). Without this the CLI could not apply
+  // the Robot/TS catalogs it advertises.
+  const refPath = path.join(PKG_ROOT, 'reference.md');
+  if (fs.existsSync(refPath)) {
+    prompt += '\n\n---\n\n# Full detection reference (all languages)\n\n' + fs.readFileSync(refPath, 'utf8');
+  }
 
   if (opts.json) {
     const reportSchema = fs.readFileSync(path.join(PKG_ROOT, 'schema', 'report.json'), 'utf8');
@@ -328,13 +339,15 @@ function validateReport(report, label) {
   const errors = [];
   const judgments = new Set(['J1', 'J2', 'J3', 'J4', 'J5', 'J6']);
   const confidences = new Set(['HIGH', 'LOW']);
-  const languages = new Set(['Python', 'TypeScript', 'JavaScript']);
+  const languages = new Set(['Python', 'TypeScript', 'JavaScript', 'Robot']);
+  const levels = new Set(['unit', 'integration', 'e2e']);
   const intents = new Set(['spec', 'char', 'regression', 'behavior']);
   const findingKeys = new Set([
     'case',
     'judgment',
     'confidence',
     'language',
+    'level',
     'intent',
     'test',
     'finding',
@@ -376,7 +389,8 @@ function validateReport(report, label) {
       if (!(typeof finding.case === 'string' || Number.isInteger(finding.case))) add(`${prefix}.case`, 'must be a string or integer');
       if (!judgments.has(finding.judgment)) add(`${prefix}.judgment`, 'must be one of J1-J6');
       if (!confidences.has(finding.confidence)) add(`${prefix}.confidence`, 'must be HIGH or LOW');
-      if (!languages.has(finding.language)) add(`${prefix}.language`, 'must be Python, TypeScript, or JavaScript');
+      if (!languages.has(finding.language)) add(`${prefix}.language`, 'must be Python, TypeScript, JavaScript, or Robot');
+      if (!levels.has(finding.level)) add(`${prefix}.level`, 'must be unit, integration, or e2e');
       if (!intents.has(finding.intent)) add(`${prefix}.intent`, 'must be spec, char, regression, or behavior');
       if (!isPlainObject(finding.test) || typeof finding.test.name !== 'string') {
         add(`${prefix}.test.name`, 'must be a string');

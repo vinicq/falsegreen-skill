@@ -43,7 +43,7 @@ function buildClaudeAgentSkill() {
   const frontmatter = [
     '---',
     'name: falsegreen-llm',
-    'description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when reviewing Python, TypeScript, or JavaScript tests for weak assertions, vacuous passes, mock misuse, async assertion gaps, or whether a test can actually fail.',
+    'description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when reviewing Python, TypeScript, JavaScript, or Robot Framework tests for weak assertions, vacuous passes, mock misuse, async assertion gaps, or whether a test can actually fail.',
     '---',
     '',
   ].join('\n');
@@ -52,6 +52,7 @@ function buildClaudeAgentSkill() {
   copy('reference.md', `${dir}/reference.md`);
   copy('schema/finding.json', `${dir}/schema/finding.json`);
   copy('schema/report.json', `${dir}/schema/report.json`);
+  copy('schema/test-spec.json', `${dir}/schema/test-spec.json`);
 }
 
 function buildGeminiSkill() {
@@ -59,7 +60,7 @@ function buildGeminiSkill() {
   const skill = [
     '---',
     'name: falsegreen-skill',
-    'description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when reviewing Python, TypeScript, or JavaScript tests for weak assertions, vacuous passes, mock misuse, async assertion gaps, or whether a test can actually fail.',
+    'description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when reviewing Python, TypeScript, JavaScript, or Robot Framework tests for weak assertions, vacuous passes, mock misuse, async assertion gaps, or whether a test can actually fail.',
     '---',
     '',
     '# falsegreen-skill for Gemini',
@@ -77,6 +78,7 @@ function buildGeminiSkill() {
   copy('reference.md', `${dir}/references/reference.md`);
   copy('schema/finding.json', `${dir}/schema/finding.json`);
   copy('schema/report.json', `${dir}/schema/report.json`);
+  copy('schema/test-spec.json', `${dir}/schema/test-spec.json`);
 }
 
 cleanDist();

@@ -7,7 +7,8 @@
     "testing",
     "test-smells",
     "code-quality",
-    "false-positive"
+    "false-positive",
+    "robotframework"
   ],
   "homepage": "https://github.com/vinicq/falsegreen-skill",
   "repository": {
@@ -23,6 +24,8 @@
   },
   "scripts": {
     "validate": "node scripts/validate-package.mjs",
+    "smoke": "node test/smoke.cjs",
+    "test": "node test/smoke.cjs",
     "build:targets": "node scripts/build-targets.mjs",
     "version": "node -e \"const fs=require('fs');const v=require('./package.json').version;['.claude-plugin/plugin.json','.codex-plugin/plugin.json','gemini-extension.json'].forEach(f=>{const p=JSON.parse(fs.readFileSync(f));p.version=v;fs.writeFileSync(f,JSON.stringify(p,null,2)+'\\n')});\" && git add .claude-plugin/ .codex-plugin/ gemini-extension.json"
   },

@@ -4,13 +4,13 @@
   "title": "FalsegreenFinding",
   "description": "A single finding produced by the falsegreen-skill J1-J6 analysis.",
   "type": "object",
-  "required": ["case", "judgment", "confidence", "language", "intent", "test", "finding", "evidence", "fix_hint"],
+  "required": ["case", "judgment", "confidence", "language", "level", "intent", "test", "finding", "evidence", "fix_hint"],
   "properties": {
     "case": {
-      "description": "Case number from the skill catalog. Integer (e.g., 10) or prefixed string (e.g., \"C1\").",
+      "description": "Case from the skill catalog: a semantic case number (e.g., 18), a structural code (C2, C2b, C11a, CC), a JS/TS code (JS21), a Robot code (R3), a diagnostic/coupling code (D1, M2), or an AI-only semantic code (S1).",
       "oneOf": [
         { "type": "integer", "minimum": 1 },
-        { "type": "string", "pattern": "^C?[0-9]+$" }
+        { "type": "string", "pattern": "^(C[0-9]+[a-z]?|CC|JS[0-9]+|R[0-9]+|D[0-9]+|M[0-9]+|S[0-9]+|[0-9]+)$" }
       ]
     },
     "judgment": {
@@ -24,9 +24,14 @@
       "enum": ["HIGH", "LOW"]
     },
     "language": {
-      "description": "Programming language of the test under analysis.",
+      "description": "Programming language or test stack of the test under analysis.",
       "type": "string",
-      "enum": ["Python", "TypeScript", "JavaScript"]
+      "enum": ["Python", "TypeScript", "JavaScript", "Robot"]
+    },
+    "level": {
+      "description": "Test pyramid level inferred in Step 1: unit, integration (API or database), or e2e. The level changes what counts as a valid oracle.",
+      "type": "string",
+      "enum": ["unit", "integration", "e2e"]
     },
     "intent": {
       "description": "Test intent classification from Step 3.",
@@ -85,7 +90,7 @@
     }
   },
   "then": {
-    "required": ["case", "judgment", "confidence", "language", "intent", "test", "finding", "evidence", "oracle", "fix_hint"]
+    "required": ["case", "judgment", "confidence", "language", "level", "intent", "test", "finding", "evidence", "oracle", "fix_hint"]
   },
   "additionalProperties": false
 }

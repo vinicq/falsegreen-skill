@@ -154,7 +154,8 @@ schema.
             "case":           { "type": "string" },
             "judgment":       { "type": "string", "enum": ["J1","J2","J3","J4","J5","J6"] },
             "confidence":     { "type": "string", "enum": ["HIGH","LOW"] },
-            "language":       { "type": "string", "enum": ["Python","TypeScript","JavaScript"] },
+            "language":       { "type": "string", "enum": ["Python","TypeScript","JavaScript","Robot"] },
+            "level":          { "type": "string", "enum": ["unit","integration","e2e"] },
             "intent":         { "type": "string", "enum": ["spec","char","regression","behavior"] },
             "test":           {
               "type": "object",
@@ -167,7 +168,7 @@ schema.
             "oracle":         { "type": "string" },
             "fix_hint":       { "type": "string" }
           },
-          "required": ["case","judgment","confidence","language","intent","test","finding","evidence","fix_hint"],
+          "required": ["case","judgment","confidence","language","level","intent","test","finding","evidence","fix_hint"],
           "additionalProperties": false
         }
       },
@@ -217,7 +218,8 @@ schema = {
                         "case":            {"type": "string"},
                         "judgment":        {"type": "string", "enum": ["J1","J2","J3","J4","J5","J6"]},
                         "confidence":      {"type": "string", "enum": ["HIGH","LOW"]},
-                        "language":        {"type": "string", "enum": ["Python","TypeScript","JavaScript"]},
+                        "language":        {"type": "string", "enum": ["Python","TypeScript","JavaScript","Robot"]},
+                        "level":           {"type": "string", "enum": ["unit","integration","e2e"]},
                         "intent":          {"type": "string", "enum": ["spec","char","regression","behavior"]},
                         "test":            {
                             "type": "object",
@@ -230,7 +232,7 @@ schema = {
                         "oracle":          {"type": "string"},
                         "fix_hint":        {"type": "string"},
                     },
-                    "required": ["case","judgment","confidence","language","intent","test","finding","evidence","fix_hint"],
+                    "required": ["case","judgment","confidence","language","level","intent","test","finding","evidence","fix_hint"],
                     "additionalProperties": False,
                 },
             },
@@ -389,7 +391,8 @@ SCHEMA = {
                         "case":            {"type": "string"},
                         "judgment":        {"type": "string", "enum": ["J1","J2","J3","J4","J5","J6"]},
                         "confidence":      {"type": "string", "enum": ["HIGH","LOW"]},
-                        "language":        {"type": "string", "enum": ["Python","TypeScript","JavaScript"]},
+                        "language":        {"type": "string", "enum": ["Python","TypeScript","JavaScript","Robot"]},
+                        "level":           {"type": "string", "enum": ["unit","integration","e2e"]},
                         "intent":          {"type": "string", "enum": ["spec","char","regression","behavior"]},
                         "test":            {
                             "type": "object",
@@ -402,7 +405,7 @@ SCHEMA = {
                         "oracle":          {"type": "string"},
                         "fix_hint":        {"type": "string"},
                     },
-                    "required": ["case","judgment","confidence","language","intent","test","finding","evidence","fix_hint"],
+                    "required": ["case","judgment","confidence","language","level","intent","test","finding","evidence","fix_hint"],
                     "additionalProperties": False,
                 },
             },

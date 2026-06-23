@@ -2,7 +2,8 @@
 
 LLM-based semantic analysis for false-positive test detection. This skill
 judges whether a test genuinely verifies correct behavior, across Python,
-TypeScript, and JavaScript.
+TypeScript, JavaScript, and Robot Framework, plus semantic patterns no static
+tool can see.
 
 Full protocol: `SKILL.md`. Language patterns: `reference.md`.
 Gemini-specific API guide: `contexts/gemini.md`.
@@ -66,17 +67,22 @@ Work through these steps in order. Do not skip steps.
 **Step 0 (optional):** If the user supplies a `conventions:` block, incorporate
 it before judging. It extends look-alike exemptions, not severity levels.
 
-**Step 1: Detect language and framework.**
-Identify: Python / TypeScript / JavaScript; pytest / unittest / Jest / Vitest /
-Mocha+Chai; unit / integration / web / E2E layer context.
+**Step 1: Detect language, framework, and level.**
+Identify: Python / TypeScript / JavaScript / Robot Framework; pytest / unittest /
+Jest / Vitest / Mocha+Chai / Cypress / Playwright / Robot. Read the level from
+signals (the pyramid): unit (boundaries doubled), integration (real HTTP client
+or ORM/driver - API and database), or E2E (browser). Strongest signal wins
+(markers, paths, file names, `conventions:`). The level changes the oracle: in
+E2E the presence of a page/element IS the assertion; a real API/DB call in a
+unit test is itself the smell. Report the level in each finding.
 
 **Step 2: Python structural pass.**
 If Python, scan against all falsegreen families before semantic judgment:
 
 | Family | Codes | What to look for |
 |---|---|---|
-| A - never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, CC | assertion unreachable, missing, swallowed, or uncollected |
-| B - weak/always-true | C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34 | tautology, truthiness-only, self-compare, broad exception, string repr |
+| A - never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, C38, C39, C43, C45, CC | assertion unreachable, missing, swallowed, uncollected, name-shadowed, returned-not-asserted, mid-test skip, empty parametrize |
+| B - weak/always-true | C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34, C42, C44 | tautology, truthiness-only, self-compare, broad exception, string repr, generator/lambda truthy, numeric tautology |
 | C - checks own setup | C19, C28, C29 | pytest.raises wraps too much, binding unread, env mutation |
 | D - external state | C17, C23, C24, C27, C30, C31, C32, C35 | skip-on-failure, hard path, shared mutable, try/pass, flaky |
 | E - wrong thing | C33, C36, C37 | metric not asserted, fail without reason, duplicate case |

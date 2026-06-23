@@ -188,6 +188,46 @@ def test_apply_discount():
 
 ---
 
+## Patterns only the semantic pass can catch (AI-only)
+
+These need reading the test against its intent, the spec, and the production code. No AST or
+linter sees them, and they are the reason the skill exists on top of the static scanners.
+Each maps to a judgment (J1-J6). Confidence is operator-confirmed (treat as LOW/HIGH by how
+clear the contradiction is); never auto-block on these without showing the reasoning.
+
+- **S1 — Intent mismatch (J4).** The test name or docstring claims to verify X, but the
+  assertion checks Y, or a trivial property. "test_applies_discount" that only asserts the
+  call did not raise. Read the name and the assertion; if they disagree, flag.
+- **S2 — Irrelevant oracle (J4).** The assertion checks a property unrelated to the behavior
+  under test: a test of the computed total that only asserts the response is not null.
+- **S3 — Plausible-but-wrong expected value (J2).** The expected constant looks reasonable
+  but contradicts what the spec implies (off-by-one, wrong rounding, wrong sign). Deeper than
+  C18: the AI derives the correct value from the spec and compares.
+- **S4 — Oracle cannot distinguish correct from a likely bug (J4).** The assertion passes for
+  both the right output and a plausible wrong one: `assert len(result) == 3` when the bug
+  under suspicion also yields three items. The check is too coarse to fail on the real defect.
+- **S5 — Tests the framework, not the code (J3).** The assertion exercises a language or
+  library guarantee (a dict stores a key, the ORM returns what was just saved) instead of the
+  user's logic. Green tells you Python works, not that the unit does.
+- **S6 — Happy-path only against a stated contract (J4).** The spec/docstring promises error
+  handling or boundaries, the test covers only the nominal path. A semantic coverage gap;
+  static tools cannot read the contract.
+- **S7 — Expected lifted from the output (J2).** Beyond C14's golden files: the AI recognizes
+  that the expected value was copied from a run of the current code (a pasted dict, a captured
+  response), so the test can only confirm the code matches itself.
+- **S8 — Mock return reaches the assertion through an indirection (J3).** Deeper than C11:
+  the stub's value flows through one or two trivial steps to the assertion, so the test still
+  echoes the stub rather than verifying real behavior.
+- **S9 — Self-fulfilling arrangement (J2).** The test arranges the exact state it then
+  asserts, with no transformation by the unit under test (a cross-statement C11a).
+- **S10 — Asserts the log, not the effect (J4).** The test checks that a message was logged
+  instead of the state change the message describes.
+
+Look-alikes - do NOT flag: a deliberately narrow unit test whose scope the spec confirms
+(S6 needs a stated broader contract); a constant that the spec genuinely endorses (not S3).
+
+---
+
 ## Language-specific patterns
 
 Paper evidence backs each entry. Abbreviations in brackets identify the
@@ -634,6 +674,24 @@ Apply only when the user explicitly asks for diagnostic analysis.
 
 ---
 
+#### Family additions (catalog sync)
+
+- **C38 — Two tests share a name (J1, HIGH):** two `def test_*` (module or class scope) with
+  the same name. Python binds the later over the earlier, so the first never runs.
+- **C39 — Returns a comparison instead of asserting (J1, HIGH):** `return x == y` in a test.
+  pytest ignores the returned value (PytestReturnNotNoneWarning); nothing is checked.
+- **C41 — Assertion on a None-returning mutator (J4, LOW, semantic):** `assert not lst.sort()`
+  / `assertIsNone(lst.sort())`. Whether it is trivially green depends on the receiver's type,
+  so this is a skill-only judgment, not a static one.
+- **C42 — Assertion on a generator/lambda (J2, HIGH):** `assert (x for x in y)` / `assert
+  lambda: ...`. The object is always truthy. A list/set/dict comprehension is NOT C42 (can be empty).
+- **C43 — Mid-test skip (J1, LOW):** `pytest.skip()` after test logic, with checks below it
+  that then never run. A skip at the top is a legitimate guard.
+- **C44 — Numeric tautology (J2, HIGH):** `len(x) >= 0`, `abs(x) >= 0`, `len(x) > -1`. The
+  comparison is always true.
+- **C45 — Empty parametrize (J1, HIGH):** `@pytest.mark.parametrize("...", [])`. Zero cases
+  are generated, the test never runs.
+
 #### Look-alikes: do NOT flag these Python patterns
 
 - `@pytest.mark.skip` or `@pytest.mark.xfail` on a test with an empty body
@@ -682,6 +740,18 @@ node:test, Cypress, Playwright, and Testing Library.
 | JS9 | HIGH | assertion in a dead literal branch (`if(false)`) |
 | JS11 | LOW | `try/catch` swallows the assertion |
 | JS13 | LOW | `getBy*`/`queryBy*` query as a loose statement, never asserted |
+| C6 | LOW | weak check (`toBeTruthy`/`toBeDefined`, `.length > 0`) |
+| C20 | HIGH | assertion in dead code after `return`/`throw` |
+| C23 | LOW | reads a real file at a literal path / hard-coded URL (mystery guest) |
+| JS8 | LOW | mocks the unit under test and asserts it directly |
+| JS15 | LOW | comparison wrapped in a boolean (`expect(a===b).toBe(true)`) |
+| JS17 | LOW | commented-out test block (`// it(...)`) |
+| JS18 | LOW | `done` callback instead of async/await |
+| JS21 | HIGH | matcher referenced but never called (`expect(x).toBe` with no `()`) |
+| JS22 | HIGH | empty `it.each`/`test.each` table |
+
+Note: supertest / chai-http `.expect()` (`request(app).get("/").expect(200)`) is a real
+assertion at the API layer - do not flag such a test as C2b.
 
 **Maintainability group (opt-in, default off).** Not false-green - the test still
 protects. Apply only on a diagnostic pass: D1 assertion roulette, D3 duplicate
@@ -1002,6 +1072,14 @@ False-green patterns (the verification keyword is the oracle):
 - **Skipped (J1):** `[Tags]    robot:skip` / `Skip` / `Skip If` that always skips.
 - **Conditional-only verification (J1):** the only verification lives inside a
   `Run Keyword If` whose condition may never hold.
+- **No Operation only (J1, R4):** the only step is `No Operation` - the test/keyword runs but
+  does nothing.
+- **Empty [Template] (J1, R5):** a `[Template]` keyword with no data rows generates zero cases.
+- **Test Cases in a .resource (J1, R3):** a `*** Test Cases ***` section in a `.resource`
+  file is invalid; the cases never run.
+- **Empty keyword (J1, C2):** a user keyword with only settings and no steps does nothing.
+- **Hard-coded IP-address URL (J6, C23):** `http://10.0.0.5:8080` in test data ties the test
+  to one machine (a hostname URL is too common in E2E to flag).
 
 Look-alikes - do NOT flag:
 - `Run Keyword And Expect Error` / `Run Keyword And Continue On Failure` followed by a
@@ -1012,7 +1090,8 @@ Look-alikes - do NOT flag:
   browser layer - do not treat as weak.
 
 These mirror the static codes conceptually: no-verification ≈ C2b, empty ≈ C2,
-swallowed ≈ C3/C27, always-true ≈ C5, self-compare ≈ C7, sleep ≈ C16, skip ≈ C32.
+swallowed ≈ C3/C27, always-true ≈ C5, self-compare ≈ C7, sleep ≈ C16, skip ≈ C32,
+No-Operation-only ≈ R4, empty-template ≈ R5, Test-Cases-in-resource ≈ R3, IP-URL ≈ C23.
 
 ---
 
