@@ -943,7 +943,7 @@ The prose below details the higher-prevalence patterns with examples and citatio
   const token = await JWT.sign(payload, secret, 'HS256')
   const verified = await JWT.verify(token, secret, 'HS256')
   expect(verified).toEqual(payload) // passes even without sig verification
-  // CLEAN: add the mitigating negative tests shown in oracle_patterns.ts
+  // CLEAN: add the mitigating negative tests shown in semantic_cases.ts
   ```
 
 ---
