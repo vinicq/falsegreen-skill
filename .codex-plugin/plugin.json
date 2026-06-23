@@ -1,7 +1,7 @@
 {
   "name": "falsegreen-skill",
   "version": "0.1.0",
-  "description": "LLM-based semantic analysis for false-positive test detection. Applies the J1-J6 judgment framework across Python, TypeScript, and JavaScript.",
+  "description": "LLM-based semantic analysis for false-positive test detection. Applies the J1-J6 judgment framework across Python, TypeScript, JavaScript, and Robot Framework, plus semantic patterns no static tool can see.",
   "author": {
     "name": "Vinicius Queiroz",
     "url": "https://github.com/vinicq"
@@ -17,12 +17,13 @@
     "false-positive",
     "python",
     "typescript",
-    "javascript"
+    "javascript",
+    "robotframework"
   ],
   "interface": {
     "displayName": "falsegreen-skill",
     "shortDescription": "Detect false-positive tests with the J1-J6 judgment framework",
-    "longDescription": "falsegreen-skill applies six structural judgments (J1-J6) to each test to determine whether it can actually fail when the code breaks. Covers Python (complete C1-C37 falsegreen catalog), TypeScript, and JavaScript. Provides HIGH/LOW confidence findings with evidence and fix hints.",
+    "longDescription": "falsegreen-skill applies six structural judgments (J1-J6) to each test to determine whether it can actually fail when the code breaks. Covers the full falsegreen catalog for Python, TypeScript, JavaScript, and Robot Framework, plus semantic patterns only an LLM can detect. Provides HIGH/LOW confidence findings with evidence and fix hints.",
     "category": "code-quality",
     "defaultPrompt": "Analyze this test file for false-positive smells"
   }

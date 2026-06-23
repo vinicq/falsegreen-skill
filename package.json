@@ -7,7 +7,8 @@
     "testing",
     "test-smells",
     "code-quality",
-    "false-positive"
+    "false-positive",
+    "robotframework"
   ],
   "homepage": "https://github.com/vinicq/falsegreen-skill",
   "repository": {

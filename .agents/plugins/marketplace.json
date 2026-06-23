@@ -7,7 +7,7 @@
     {
       "name": "falsegreen-skill",
       "source": "./",
-      "description": "Detect false-positive tests (tests that pass even when the code breaks) across Python, TypeScript, and JavaScript. HIGH/LOW confidence findings with evidence and fix hints."
+      "description": "Detect false-positive tests (tests that pass even when the code breaks) across Python, TypeScript, JavaScript, and Robot Framework. HIGH/LOW confidence findings with evidence and fix hints."
     }
   ]
 }
