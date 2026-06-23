@@ -79,18 +79,40 @@ Identify:
 - Test level — read it from the signals below, do not guess. The level changes what
   counts as a valid oracle.
 
-**How to tell the level (strongest signal wins):**
+**How to tell the level.** Read it from the signals; do not guess. Apply this
+precedence (strongest signal wins), in order:
 
-| Signal class | Unit | Integration (API / database) | E2E |
+1. **A doubled boundary beats an import.** If an interceptor or fake wraps the boundary -
+   Python `responses`/`respx`/`requests-mock`/`vcr`/`moto`/`fakeredis`/`mongomock`/`pyfakefs`/
+   `unittest.mock`/`monkeypatch`; JS/TS `msw`/`nock`/`fetch-mock`/`axios-mock-adapter`/
+   `jest.mock`/`vi.mock`/`aws-sdk-client-mock` - the test is **unit/component** even when a
+   real client (`requests`, `axios`, `boto3`, SQLAlchemy) is imported. The mock IS the boundary.
+2. **Else a real boundary makes it integration.** A real HTTP client / in-process test client,
+   DB driver/ORM, queue, cache, or storage SDK that touches a real (even ephemeral or
+   containerized) collaborator.
+3. **Else a browser/mobile driver makes it E2E.**
+4. **No signal → unit.** Real I/O (disk, clock, network) in a test with no integration signal
+   is itself the smell, not the level.
+
+| Signal | Unit (and component) | Integration | E2E |
 |---|---|---|---|
-| Explicit marker / path | `tests/unit/`, no marker | `@pytest.mark.integration`, `tests/integration/` | `@pytest.mark.e2e`, `tests/e2e/`, `cypress/`, `.e2e.`/`.cy.` |
-| Doubles | mock/patch the boundaries (`unittest.mock`, `jest.mock`, `vi.mock`) | real client/driver, no double | no double at all |
-| API cues | none | HTTP client: `requests`/`httpx`, `TestClient` (FastAPI/Flask), supertest `request(app)`, RequestsLibrary/RESTinstance; asserts `status_code`/body | full app behind the browser |
-| Database cues | repository/in-memory fake | real ORM/driver: SQLAlchemy, Django ORM, Prisma, TypeORM, Knex, psycopg, DatabaseLibrary; session/transaction/testcontainer | DB reached through the UI |
-| UI/browser cues | none | none | Playwright `page.`, Cypress `cy.`, Selenium `driver.`, Robot `Open Browser`/Browser library; selectors, navigation |
+| Path / marker | `tests/unit/`, none, co-located `*.test.ts` | `tests/integration/`, `*.int.test.ts`, `@pytest.mark.integration`/`functional`/`db`/`django_db` | `tests/e2e/`, `cypress/e2e/`, `*.e2e-spec.ts`, `*.cy.ts`, `@pytest.mark.e2e`/`acceptance`, `playwright.config` |
+| Doubles | mock/patch or intercept the boundary (rule 1) | real client/driver, no double | no double at all |
+| Component render | RTL / Vue Test Utils / Angular TestBed / `cy.mount` / Storybook with mocked network, `jsdom`/`happy-dom` - counts as unit for the oracle | — | full app in a real browser |
+| API | none, or HTTP intercepted | in-process test client (FastAPI/Starlette `TestClient`, Flask/Django/DRF client, supertest `request(app)`, Nest TestingModule) or a real client to a live URL; gRPC/GraphQL/WebSocket; RequestsLibrary/RESTinstance; asserts status/body | full app behind the browser |
+| Database / store | repository or in-memory fake, mocked client | real ORM/driver (SQLAlchemy, Django ORM, Prisma, TypeORM, Drizzle, Knex, psycopg, asyncpg, mongoose, pymongo, redis, ioredis), `testcontainers`, session/transaction; `sqlite :memory:` and `*-memory-server` lean integration | DB reached through the UI |
+| Other I/O | mocked | real queue (Kafka, RabbitMQ, SQS, bullmq), object storage (real S3, not moto/localstack), email/SMTP, subprocess, cache | — |
+| UI / browser | none | none | Playwright `page.`/`expect(page)`, Cypress `cy.visit`, WebdriverIO `browser.`, Puppeteer, Selenium `driver.`, Robot SeleniumLibrary/Browser/AppiumLibrary; selectors, navigation |
 
-A `conventions:` block (Step 0) with `test_layer_overrides` wins over inferred signals.
-When the signals conflict or are absent, treat it as unit and say so in the report.
+A `conventions:` block (Step 0) with `test_layer_overrides` wins over all of this. Markers like
+`smoke`/`slow`/`asyncio`/`anyio` are level-neutral: do not read a layer from them. When an
+explicit marker/path says one level but the test mocks the whole boundary, trust the reality
+(rule 1) and note the mismatch. When no signal is present, treat it as unit and say so.
+
+**Robot Framework:** the level is dominated by the imported Library in `*** Settings ***` -
+SeleniumLibrary / Browser / AppiumLibrary → E2E; RequestsLibrary / RESTinstance / RPA.HTTP →
+API integration; DatabaseLibrary → DB; SSH/FTP/Imap/Process → system integration. Robot suites
+are rarely unit. The full per-framework cue list lives in `reference.md`.
 
 **Why the level matters:** in E2E/UI tests the presence of a response, page, or element IS
 the assertion at that layer - do not flag it as a weak check (affects C6 and C14). The level

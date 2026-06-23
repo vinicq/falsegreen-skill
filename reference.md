@@ -11,8 +11,6 @@ Supported languages: **Python, TypeScript, JavaScript.**
 - Imports: `import pytest`, `import unittest`, `from unittest.mock import`
 - Decorators: `@pytest.mark.*`, `@patch`, `@mock.patch`
 - Assertion style: `assert`, `self.assert*`
-- Layer cues: `django.test`, `flask.testing`, `httpx`, `fastapi.testclient`
-  imply web layer. `playwright`, `selenium` imply browser layer.
 
 ### TypeScript / JavaScript
 - Imports: `import { describe, it, expect } from '@jest/globals'`,
@@ -20,8 +18,72 @@ Supported languages: **Python, TypeScript, JavaScript.**
 - Global functions: `describe()`, `it()`, `test()`, `expect()`, `beforeEach()`
 - Mock cues: `jest.fn()`, `jest.spyOn()`, `jest.mock()`, `vi.fn()`,
   `vi.spyOn()`, `sinon.stub()`, `sinon.spy()`
-- Layer cues: `@testing-library/react`, `@testing-library/vue`,
-  `supertest`, `playwright`, `cypress` imply web/browser layer.
+
+## Level detection cues (the full list)
+
+Read the level from signals; do not guess. Precedence (strongest signal wins):
+**(1)** a doubled/intercepted boundary keeps the test at unit/component even if a real client
+is imported - the mock IS the boundary; **(2)** else a real boundary makes it integration;
+**(3)** else a browser/mobile driver makes it E2E; **(4)** no signal → unit (and real I/O in
+an unsignalled test is itself the smell, not the level). A `conventions:` block overrides all
+of this. `smoke`/`slow`/`asyncio`/`anyio` markers are level-neutral.
+
+### Doubles that keep a test at unit/component (rule 1 - they beat the import)
+- Python: `unittest.mock`/`patch`/`MagicMock`/`AsyncMock`, `monkeypatch` (incl. `setenv`),
+  `pytest-mock`, `responses`, `requests-mock`, `httpretty`, `respx`, `aioresponses`,
+  `vcrpy`/`pytest-recording`, `moto`/`@mock_aws`, `fakeredis`, `mongomock`, `pyfakefs`,
+  FastAPI `dependency_overrides`, Django locmem email, `celery` eager. `freezegun`/`time-machine`
+  double the clock (level-neutral).
+- JS/TS: `jest.mock`/`vi.mock`/`jest.fn`/`vi.spyOn`/`sinon`, `msw`/`@mswjs`, `nock`
+  (`disableNetConnect`), `fetch-mock`, `axios-mock-adapter`, `jest-fetch-mock`,
+  `aws-sdk-client-mock`, `nodemailer-mock`, `prismock`, fake repository, fake timers.
+
+### Integration cues (rule 2 - real boundary, no double)
+- Python API / in-process test clients: FastAPI/Starlette `TestClient` (httpx-backed),
+  `httpx.AsyncClient`/`ASGITransport`, Flask `test_client`, Werkzeug `Client`, Django
+  `Client`/`RequestFactory`/DRF `APIClient`, webtest `TestApp`, aiohttp `test_utils`, Tornado
+  `AsyncHTTPTestCase`, Sanic/Falcon. Real network: `urllib`/`urllib3`/`http.client`. WebSocket:
+  `websockets`/`websocket-client`. gRPC: real `grpc` stub (vs `grpc_testing` = double).
+  GraphQL: `gql`/`schema.execute()`.
+- Python DB / store: SQLAlchemy (sync + `AsyncSession`), Django ORM, `psycopg`/`asyncpg`,
+  `pymysql`/`aiomysql`, `oracledb`, `sqlmodel`/`peewee`/`pony`/`tortoise`, `pymongo`/`motor`,
+  `redis`/`redis.asyncio`, `alembic`/migrations, `testcontainers`, `pytest-postgresql`/`-mysql`,
+  `@pytest.mark.django_db`/`transactional_db`. `sqlite :memory:` leans integration.
+- Python other I/O: queues (`kombu`/`celery` real broker, `pika`, `kafka-python`/`aiokafka`),
+  real `boto3` S3 (not moto), real filesystem (vs pyfakefs), `subprocess`, real SMTP.
+- JS/TS API: supertest `request(app)` in-process, Nest `Test.createTestingModule` + supertest,
+  `fetch`/`undici`/`got`/`axios`/`ky` to a live URL, Apollo `executeOperation`, `graphql-request`,
+  tRPC caller, `@grpc/grpc-js`, `ws`/`socket.io-client` to a started server.
+- JS/TS DB / store: `pg`/`postgres`, `mysql2`, `better-sqlite3`, `mongodb`/`mongoose`,
+  `ioredis`/`redis`, `cassandra-driver`; ORMs Prisma/TypeORM/Sequelize/Drizzle/Kysely/MikroORM/
+  Knex/Objection; `testcontainers`. In-memory (`mongodb-memory-server`, sqlite `:memory:`,
+  `pg-mem`) leans integration (real query engine), not unit.
+- JS/TS other I/O: `amqplib`/`kafkajs`/`bullmq`, real `@aws-sdk/client-s3` (vs aws-sdk-client-mock),
+  `nodemailer` to a real SMTP stub.
+
+### Component layer (folds to unit for the oracle)
+React/Vue/Angular/Svelte render with mocked network: `@testing-library/*` `render`/`screen`/
+`userEvent`, Vue Test Utils `mount`/`shallowMount`, Angular `TestBed`+`ComponentFixture`,
+Cypress component (`cy.mount`, `cypress/component/`), Playwright CT `mount`, Storybook play.
+`testEnvironment: jsdom`/`happy-dom` is a component/unit signal; `node` leans unit/integration.
+
+### E2E cues (rule 3)
+Playwright `page.`/`expect(page)`/`test({ page })`, Cypress `cy.visit`/`cypress/e2e/`,
+WebdriverIO `browser.`/`$()`, Puppeteer `page.`, Nightwatch, TestCafe, `selenium-webdriver`
+(`driver.`/`By.`/`WebDriverWait`), pytest-playwright fixtures, Splinter, helium. Mobile: Detox
+(`device.`/`element(by.id())`), Appium.
+
+### Robot Framework
+The imported Library in `*** Settings ***` is the dominant level signal; Robot suites are
+rarely unit.
+- E2E: `SeleniumLibrary` (`Open Browser`, `Click Element`), `Browser` (`New Page`, Playwright-based),
+  `AppiumLibrary` (`Open Application`, mobile), `Selenium2Library` (legacy), `RPA.Browser.*`.
+- API integration: `RequestsLibrary` (`Create Session`, `GET On Session`), `RESTinstance`/`REST`,
+  `HttpLibrary.HTTP`, `RPA.HTTP`.
+- DB integration: `DatabaseLibrary` (`Connect To Database`, `Query`).
+- System integration: `SSHLibrary`, `FTPLibrary`, `ImapLibrary`, `Process` (subprocess),
+  `OperatingSystem` (files), MQTT/Kafka libraries.
+- Tags: `[Tags] e2e`/`integration`/`smoke`/`api`. RPA suites are E2E/system.
 
 ---
 
