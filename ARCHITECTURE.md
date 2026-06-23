@@ -67,7 +67,7 @@ lines up with the static scanners and the two can be reconciled on the same test
 - **Static** mechanical patterns are faster to catch with the deterministic scanners
   ([falsegreen](https://github.com/vinicq/falsegreen) for Python,
   [falsegreen-js](https://github.com/vinicq/falsegreen-js) for JS/TS,
-  [falsegreen-robot](https://github.com/vinicq/falsegreen-robot) for Robot). For Python the
+  [robotframework-falsegreen](https://github.com/vinicq/robotframework-falsegreen) for Robot). For Python the
   skill can apply the full catalog directly; its results must stay consistent with the
   scanner. For TypeScript and JavaScript the skill is the primary semantic tool on top of
   the JS scanner.

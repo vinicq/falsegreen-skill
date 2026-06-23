@@ -10,7 +10,7 @@ For Python, this skill applies the complete falsegreen catalog directly — all
 structural and semantic patterns — via LLM analysis, without requiring the
 static scanner to run first. For TypeScript, JavaScript, and Robot Framework it
 is the primary detection tool. It is a superset of the three static scanners
-(falsegreen, falsegreen-js, falsegreen-robot) plus semantic patterns only an LLM
+(falsegreen, falsegreen-js, robotframework-falsegreen) plus semantic patterns only an LLM
 can detect.
 
 ---
