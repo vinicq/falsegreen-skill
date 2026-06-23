@@ -1,13 +1,23 @@
 # falsegreen-skill — self-contained prompt context
 
 **LLM skill for false-positive test detection.** Applies the J1-J6 judgment
-framework across Python, TypeScript, and JavaScript.
+framework across Python, TypeScript, JavaScript, and Robot Framework, plus
+semantic patterns no static tool can see.
 
-For Python, this skill covers the complete falsegreen catalog (C1-C37, semantic
+For Python, this skill covers the complete falsegreen catalog (C1-C45, semantic
 cases, diagnostic codes) without requiring the static scanner to run first. For
-TypeScript and JavaScript, it is the primary detection tool.
+TypeScript, JavaScript, and Robot Framework it is the primary detection tool, and
+a superset of the three static scanners.
 
 Invoke by attaching a test file and asking for false-positive analysis.
+
+**Two intents, one skill.** Same J1-J6 and catalog, two directions: *review* an
+existing test (the Protocol below) or *create* one. To author: ask the user for
+level (unit / integration / e2e), language, and the behavior + independent oracle;
+build one neutral spec per level; render it in the requested language with the
+level's oracle (unit = return value; integration = status + body / row; e2e =
+visible state); then **run this same Protocol on your generated test and revise
+until it reports nothing**. A generated test must pass its own review.
 
 ---
 
@@ -42,14 +52,26 @@ conventions:
 Conventions extend look-alike exemptions but do not disable severity levels.
 HIGH findings that survive exemptions are still reported as HIGH.
 
-### Step 1: Detect language and framework
+### Step 1: Detect language, framework, and level
 
-- Language: Python / TypeScript / JavaScript
-- Framework: pytest / unittest (Python), Jest / Vitest / Mocha+Chai (TS/JS)
-- Layer: unit, integration, UI/E2E, or web layer (affects C6 and C14 exemptions)
+- Language: Python / TypeScript / JavaScript / Robot Framework
+- Framework: pytest / unittest (Python), Jest / Vitest / Mocha+Chai / Cypress / Playwright
+  (TS/JS), Robot Framework (`.robot`/`.resource`)
+- Level — read it from signals, do not guess (the pyramid):
+  - **Unit:** boundaries doubled (`unittest.mock`, `jest.mock`, `vi.mock`); SUT called directly.
+  - **Integration / API:** HTTP client (`requests`/`httpx`, `TestClient`, supertest
+    `request(app)`, RequestsLibrary/RESTinstance); asserts status/body.
+  - **Integration / database:** real ORM/driver (SQLAlchemy, Django ORM, Prisma, TypeORM,
+    Knex, psycopg, DatabaseLibrary); session/transaction/testcontainer.
+  - **E2E:** browser (Playwright `page.`, Cypress `cy.`, Selenium `driver.`, Robot Browser).
+  - Strongest signal wins: markers (`@pytest.mark.integration`/`e2e`), paths
+    (`tests/unit|integration|e2e`, `cypress/`), file names (`.e2e.`, `.cy.`), `conventions:`.
+  The level changes the oracle: in E2E/UI the presence of a page/element IS the assertion
+  (affects C6/C14). A real API/DB call inside a *unit* test is itself the smell (J3/J6).
 
 Python cues: `import pytest`, `import unittest`, `@pytest.mark.*`, `@patch`
 TS/JS cues: `describe()`, `it()`, `test()`, `expect()`, `jest.fn()`, `vi.fn()`
+Robot cues: `*** Test Cases ***` / `*** Keywords ***`, `Should *` keywords, `.robot`/`.resource`
 
 ### Step 2: Apply the full Python pattern catalog (Python only)
 
@@ -57,11 +79,11 @@ Scan against all falsegreen patterns organized by family:
 
 | Family | Codes | What to look for |
 |---|---|---|
-| A — never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, CC | assertion unreachable, missing, swallowed, or uncollected |
-| B — weak/always-true | C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34 | tautology, truthiness-only, self-compare, broad exception, string repr |
+| A — never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, C38, C39, C43, C45, CC | assertion unreachable, missing, swallowed, uncollected, name-shadowed, returned-not-asserted, skipped mid-test, empty parametrize |
+| B — weak/always-true | C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34, C42, C44 | tautology, truthiness-only, self-compare, broad exception, string repr, generator/lambda truthy, numeric tautology |
 | C — checks own setup | C19, C28, C29 | pytest.raises wraps too much, binding unread, env mutation |
 | D — external state | C17, C23, C24, C27, C30, C31, C32, C35 | skip-on-failure, hard path, shared mutable, try/pass, flaky |
-| E — wrong thing | C33, C36, C37 | metric not asserted, fail without reason, duplicate case |
+| E — wrong thing | C33, C36, C37, C41 | metric not asserted, fail without reason, duplicate case, None-returning mutator |
 | Optional / diagnostic (opt-in) | C22, D1, D3, D4, D5, D6, M2 | apply only when user requests diagnostic pass |
 
 Report each structural finding with code number and confidence before Step 3.
@@ -69,7 +91,11 @@ Report each structural finding with code number and confidence before Step 3.
 If the user provides existing `falsegreen` scanner output, use it as the
 structural pass result and proceed directly to Step 3.
 
-For TypeScript and JavaScript, skip Step 2 and proceed to Step 3.
+For TypeScript / JavaScript and Robot Framework, apply their catalogs from
+`reference.md` (JS1-JS22, the shared C-codes, and the Robot R-codes), then proceed
+to Step 3. The full multi-stack catalog and the AI-only semantic codes (S1-S10)
+live in `reference.md`; this file carries the Python catalog inline as the most
+common case.
 
 ### Step 3: Classify test intent
 
@@ -137,22 +163,23 @@ Never report case 18 based on pattern-matching alone.
 For each finding:
 
 ```
-CASE {number} ({J1-J6}) - {HIGH|LOW} - {language} - {intent: spec|char|regression|behavior}
+CASE {number} ({J1-J6}) - {HIGH|LOW} - {language} - {level: unit|integration|e2e} - {intent: spec|char|regression|behavior}
 
 Test: {function name, line range}
 Finding: {one sentence describing what is wrong}
 Evidence: {the specific line(s) that triggered this}
 Oracle: {for case 18 only: cite the independent oracle}
-Fix hint: {one sentence suggestion}
+Fix hint: {where and how to improve the code or test, one sentence}
 ```
 
-Then a summary block:
+Then a summary block (the status report):
 
 ```
 SUMMARY
 Tests reviewed: N
-Findings: M (H high, L low)
+Findings: M (H high, L low)   by level: unit U / integration I / e2e E
 Clean: N-M
+Top fixes: the HIGH findings, each with its code and one-line remediation
 ```
 
 Use HIGH only when there is no plausible legitimate interpretation.
@@ -184,6 +211,10 @@ project, add it to the conventions: block (Step 0) to suppress future findings.
 | C4b | Test class with `__init__` (pytest skips it) | LOW |
 | C20 | Assertion after unconditional `return`/`raise` | HIGH |
 | C21 | Every assertion is inside a conditional; none runs unconditionally | LOW |
+| C38 | Two tests share a name; the later silently overrides the first | HIGH |
+| C39 | Test `return`s a comparison instead of asserting it | HIGH |
+| C43 | `pytest.skip()` after test logic, with checks below it | LOW |
+| C45 | Empty `@pytest.mark.parametrize` list (zero cases) | HIGH |
 | CC | Commented-out assertion | LOW |
 
 ### Family B — check is weak or always true
@@ -204,6 +235,8 @@ project, add it to the conventions: block (Step 0) to suppress future findings.
 | C18 | `str()`/`repr()` comparison | LOW |
 | C25 | `@pytest.mark.xfail` without `strict=True` | LOW |
 | C34 | Suboptimal assertion form: `== True`, `== None`, `not x in y` | LOW |
+| C42 | Assert on a generator expression / lambda (always truthy) | HIGH |
+| C44 | Numeric tautology: `len(x) >= 0`, `abs(x) >= 0` | HIGH |
 
 ### Family C — test checks its own setup
 
@@ -233,12 +266,16 @@ project, add it to the conventions: block (Step 0) to suppress future findings.
 | C33 | ML metric computed but never asserted | LOW |
 | C36 | `pytest.fail()` without reason | LOW |
 | C37 | Duplicate case in `@pytest.mark.parametrize` | LOW |
+| C41 | Assert on a None-returning mutator (`assert not lst.sort()`) | LOW |
 
 ---
 
-## Semantic cases — all three languages
+## Semantic cases — all three languages and Robot
 
-Semantic cases require LLM judgment. No static rule can detect them.
+Semantic cases require LLM judgment. No static rule can detect them. The five
+numbered cases below are the core; the AI-only S-series (S1-S10) in `reference.md`
+extends them (intent mismatch, irrelevant oracle, plausible-but-wrong expected
+value, oracle too coarse to fail, tests the framework not the code, and more).
 
 | Case | Judgment | Name |
 |---|---|---|
@@ -318,7 +355,8 @@ For machine-readable output, see `schema/report.json`.
 ## References
 
 - `reference.md` — full per-language pattern catalog with examples and look-alike
-  exemptions for Python, TypeScript, and JavaScript
+  exemptions for Python, TypeScript, JavaScript, and Robot Framework, plus the
+  AI-only semantic codes (S-series)
 - `contexts/claude.md`, `contexts/codex.md`, `contexts/gemini.md` — maintained
   provider-specific API and host guides
 - `contexts/cursor.md` — Cursor rule template
