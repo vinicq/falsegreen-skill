@@ -11,6 +11,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   C38/C39/C41/C42/C43/C44/C45, the JS codes C6/C20/C23/JS8/JS15/JS17/JS18/JS21/JS22, and the
   Robot codes R3/R4/R5 (plus empty-keyword C2 and IP-URL C23). supertest `.expect()` noted as
   a real API assertion.
+- Examples parity (#9): the TypeScript and JavaScript examples are now family-based, mirroring
+  the Python layout (`family_a_never_checks`, `family_b_weak_always_true`,
+  `family_c_checks_own_setup`, `family_d_external_state`, `family_e_wrong_thing`,
+  `semantic_cases`, `diagnostic_codes`), each code with a BAD example and a CLEAN look-alike.
+  The earlier thematic TS files and the JS samples were folded into these; the TS-only
+  `type_aware.ts` (branded types, generics, expectTypeOf) stays as it has no Python analogue.
 - New AI-only semantic catalog (S1-S10): patterns no AST or linter can see (intent mismatch,
   irrelevant oracle, plausible-but-wrong expected value, oracle too coarse to fail, tests the
   framework not the code, happy-path-only against a stated contract, expected lifted from

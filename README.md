@@ -358,7 +358,8 @@ false-positive smells, and the J1-J6 protocol runs automatically.
 Frontend component tests — React, Vue, Angular, Svelte — use the same J1-J6
 framework as backend tests. The structural failures are identical: a J4 weak
 assertion on a rendered component is the same smell as a J4 on a service
-method. See `examples/typescript/component_tests.ts` for annotated examples.
+method. See the family-based examples under `examples/typescript/` (for instance
+`family_a_never_checks.ts`, which carries the Testing Library patterns) for annotated cases.
 
 ### Test levels (the pyramid)
 
