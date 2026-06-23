@@ -56,5 +56,17 @@ try {
   langEnum.includes('Robot') ? ok('finding.json language enum includes Robot') : bad('finding.json language enum missing Robot');
 } catch (e) { bad('finding.json checks failed: ' + e.message); }
 
+// 6. The CLI --json validator accepts the schema-required `level` field and
+// validates its enum (regression guard for the P1 Codex fix).
+try {
+  const src = fs.readFileSync(CLI, 'utf8');
+  /findingKeys\s*=\s*new Set\(\[[\s\S]*?'level'[\s\S]*?\]\)/.test(src)
+    ? ok('CLI validator allows the level field')
+    : bad('CLI validateReport findingKeys is missing level');
+  /levels\s*=\s*new Set\(\['unit', 'integration', 'e2e'\]\)/.test(src)
+    ? ok('CLI validates the level enum')
+    : bad('CLI is missing the level enum check');
+} catch (e) { bad('CLI level checks failed: ' + e.message); }
+
 if (failures) { process.stdout.write(`\n${failures} smoke failure(s)\n`); process.exit(1); }
 process.stdout.write('\nsmoke ok\n');

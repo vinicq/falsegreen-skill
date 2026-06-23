@@ -340,12 +340,14 @@ function validateReport(report, label) {
   const judgments = new Set(['J1', 'J2', 'J3', 'J4', 'J5', 'J6']);
   const confidences = new Set(['HIGH', 'LOW']);
   const languages = new Set(['Python', 'TypeScript', 'JavaScript', 'Robot']);
+  const levels = new Set(['unit', 'integration', 'e2e']);
   const intents = new Set(['spec', 'char', 'regression', 'behavior']);
   const findingKeys = new Set([
     'case',
     'judgment',
     'confidence',
     'language',
+    'level',
     'intent',
     'test',
     'finding',
@@ -388,6 +390,7 @@ function validateReport(report, label) {
       if (!judgments.has(finding.judgment)) add(`${prefix}.judgment`, 'must be one of J1-J6');
       if (!confidences.has(finding.confidence)) add(`${prefix}.confidence`, 'must be HIGH or LOW');
       if (!languages.has(finding.language)) add(`${prefix}.language`, 'must be Python, TypeScript, JavaScript, or Robot');
+      if (!levels.has(finding.level)) add(`${prefix}.level`, 'must be unit, integration, or e2e');
       if (!intents.has(finding.intent)) add(`${prefix}.intent`, 'must be spec, char, regression, or behavior');
       if (!isPlainObject(finding.test) || typeof finding.test.name !== 'string') {
         add(`${prefix}.test.name`, 'must be a string');
