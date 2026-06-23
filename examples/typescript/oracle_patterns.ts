@@ -5,6 +5,7 @@
  * Patterns covered:
  *   - Self-referential timestamp oracle (result read-back as its own expected value)
  *   - Sign-then-verify tautology (JWT / HMAC)
+ *   - Re-implemented production formula (expected computed the same way as the SUT)
  *   - Unawaited DML before assertion (race condition masked by driver serialization)
  *
  * Evidence: drizzle-team/drizzle-orm (pg-common.ts, sqlite-common.ts),
@@ -166,5 +167,36 @@ describe('async DDL before assertion (J1 - unawaited DML)', () => {
     await db.insert('users').values({ id: 1, name: 'Alice' });
     const [user] = await db.select().from('users');
     expect(user.name).toBe('Alice');
+  });
+});
+
+
+// ─── J2 (case 12): expected re-implements the production formula ──────────────
+//
+// BAD: the test computes the expected value with the same formula the SUT uses.
+// Both sides agree on the same arithmetic, so a wrong formula in the SUT is
+// mirrored in the expectation and the test never fails. This is case 12 — a
+// dependent oracle dressed up as an independent one.
+//
+// If calculateTotal(p, r) = p + p * r, recomputing `p + p * r` in the test
+// proves nothing: change the SUT to p + p * r * 2 and update nothing else, and
+// the test still has to be rewritten by hand to catch it.
+
+import { calculateTotal } from './calculator';
+
+describe('calculateTotal (case 12 - re-implemented formula)', () => {
+  it('BAD: expected uses the same formula as the SUT', () => {
+    const price = 100;
+    const taxRate = 0.1;
+    const expected = price + price * taxRate; // identical to the implementation
+    expect(calculateTotal(price, taxRate)).toBe(expected); // case 12 - tautology
+  });
+
+  // CLEAN: the oracle is an independent, hand-computed value from the spec.
+  // "$100 at 10% tax is $110" is a fact about the domain, not a re-run of the code.
+  it('CLEAN: expected is a literal taken from the spec', () => {
+    expect(calculateTotal(100, 0.1)).toBe(110);
+    expect(calculateTotal(0, 0.2)).toBe(0);
+    expect(calculateTotal(50, 0)).toBe(50);
   });
 });
