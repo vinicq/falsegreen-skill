@@ -1,6 +1,6 @@
 """
 Family A — The test never checks anything.
-Codes: C1, C2, C2b, C3, C4, C4b, C20, C21, CC
+Codes: C1, C2, C2b, C3, C4, C4b, C20, C21, C38, C39, C43, C45, CC
 
 The assertion is skipped, missing, swallowed, or the test is never collected
 by the runner. The test is green regardless of whether the code is correct.
@@ -177,3 +177,60 @@ def test_cc_commented():
 def test_cc_clean():
     result = compute()
     assert result == 42
+
+
+# ─── C38: two tests share a name; the later overrides the first ──────────────
+
+# BAD: the first test_login never runs — Python binds the second over it
+def test_login():
+    assert authenticate("alice", "pw1") is True   # C38 — shadowed below, never runs
+
+def test_login():  # noqa: F811
+    assert authenticate("bob", "pw2") is True
+
+# CLEAN: distinct names
+def test_login_alice():
+    assert authenticate("alice", "pw1") is True
+
+def test_login_bob():
+    assert authenticate("bob", "pw2") is True
+
+
+# ─── C39: returns a comparison instead of asserting it ───────────────────────
+
+# BAD: pytest ignores the returned value (PytestReturnNotNoneWarning)
+def test_c39_returns_comparison():
+    return add(2, 2) == 4    # C39 — the comparison runs but nothing checks it
+
+# CLEAN: assert it
+def test_c39_clean():
+    assert add(2, 2) == 4
+
+
+# ─── C43: pytest.skip() after test logic strands the checks below it ─────────
+
+# BAD: the arrange ran, then skip — the assertion never executes
+def test_c43_mid_test_skip():
+    result = build_report()
+    pytest.skip("not ready")     # C43 — assertion below is dead
+    assert result.total == 100
+
+# CLEAN: guard at the top with a condition
+def test_c43_clean():
+    if not feature_enabled():
+        pytest.skip("feature off in this environment")
+    result = build_report()
+    assert result.total == 100
+
+
+# ─── C45: empty parametrize list — the test runs zero times ──────────────────
+
+# BAD: zero cases generated, the test is collected but never runs
+@pytest.mark.parametrize("n", [])
+def test_c45_empty_params(n):    # C45 — never executes
+    assert process(n) > 0
+
+# CLEAN: populate the table
+@pytest.mark.parametrize("n", [1, 2, 3])
+def test_c45_clean(n):
+    assert process(n) > 0

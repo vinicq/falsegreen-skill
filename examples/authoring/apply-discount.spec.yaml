@@ -1,0 +1,15 @@
+# Authoring mode (Mode B): the single, language-neutral base.
+# One spec, rendered into a non-false-green test in every stack below.
+# Conforms to schema/test-spec.json.
+level: unit
+unit: apply_discount(price, rate)
+scenario: a 15% discount on 200 returns 170
+arrange:
+  - price = 200
+  - rate = 0.15
+act: result = apply_discount(200, 0.15)
+oracle:
+  source: spec          # the expected value comes from the spec, NOT the code
+  expected: "170 (200 minus 15% = 200 - 30)"
+doubles: []             # pure function, nothing to double
+languages: [Python, TypeScript, JavaScript, Robot]

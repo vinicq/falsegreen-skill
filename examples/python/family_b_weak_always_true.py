@@ -1,6 +1,6 @@
 """
 Family B — The check is weak or always true.
-Codes: C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34
+Codes: C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34, C42, C44
 
 The assertion passes by construction, accepts almost any output, or checks
 an implementation detail rather than a meaningful property.
@@ -312,3 +312,34 @@ def test_c34_clean():
     assert not is_valid()
     assert get_result() is None
     assert get_result() is not None
+
+
+# ─── C42: assert on a generator expression / lambda (always truthy) ──────────
+
+# BAD: the generator object is truthy regardless of its contents
+def test_c42_genexpr():
+    assert (x for x in get_items())   # C42 — always passes, even if get_items() is empty
+
+# BAD: a lambda object is always truthy
+def test_c42_lambda():
+    assert lambda: compute()          # C42 — never calls compute(), always truthy
+
+# CLEAN: materialize and compare
+def test_c42_clean():
+    items = list(get_items())
+    assert items == [1, 2, 3]
+
+
+# ─── C44: numeric tautology (len()/abs() is never negative) ──────────────────
+
+# BAD: len() is never negative, so this is always true
+def test_c44_len_ge_zero():
+    assert len(get_items()) >= 0      # C44 — passes for any input
+
+# BAD: abs() >= 0 is always true
+def test_c44_abs():
+    assert abs(compute()) >= 0        # C44
+
+# CLEAN: compare to a real expected count
+def test_c44_clean():
+    assert len(get_items()) == 3
