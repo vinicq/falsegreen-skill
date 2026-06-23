@@ -1,6 +1,6 @@
 ---
 name: falsegreen-llm
-description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when the user asks to review tests for false positives, weak assertions, mock misuse, test smells, or asks whether a test can actually fail. Covers Python (pytest, unittest), TypeScript, and JavaScript (Jest, Vitest, Mocha).
+description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when the user asks to review tests for false positives, weak assertions, mock misuse, test smells, or asks whether a test can actually fail. Covers Python (pytest, unittest), TypeScript, JavaScript (Jest, Vitest, Mocha), and Robot Framework.
 ---
 
 # falsegreen-llm: false-positive test detection
@@ -22,7 +22,7 @@ behavior), then apply the six judgments: J1 does the assertion run, J2 is the
 expected value from an independent oracle, J3 is the real unit under test, J4
 does the assertion verify enough, J5 is the test coupled to implementation
 internals, J6 does the test pass in isolation. For Python, also run the full
-structural catalog (families A-E, codes C1-C37). Flag only the first failing
+structural catalog (families A-E, codes C1-C45). Flag only the first failing
 judgment per test.
 
 ## Non-negotiable rules

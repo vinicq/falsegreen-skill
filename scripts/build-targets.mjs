@@ -43,7 +43,7 @@ function buildClaudeAgentSkill() {
   const frontmatter = [
     '---',
     'name: falsegreen-llm',
-    'description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when reviewing Python, TypeScript, or JavaScript tests for weak assertions, vacuous passes, mock misuse, async assertion gaps, or whether a test can actually fail.',
+    'description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when reviewing Python, TypeScript, JavaScript, or Robot Framework tests for weak assertions, vacuous passes, mock misuse, async assertion gaps, or whether a test can actually fail.',
     '---',
     '',
   ].join('\n');
@@ -59,7 +59,7 @@ function buildGeminiSkill() {
   const skill = [
     '---',
     'name: falsegreen-skill',
-    'description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when reviewing Python, TypeScript, or JavaScript tests for weak assertions, vacuous passes, mock misuse, async assertion gaps, or whether a test can actually fail.',
+    'description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when reviewing Python, TypeScript, JavaScript, or Robot Framework tests for weak assertions, vacuous passes, mock misuse, async assertion gaps, or whether a test can actually fail.',
     '---',
     '',
     '# falsegreen-skill for Gemini',
