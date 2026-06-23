@@ -190,5 +190,5 @@ for complex domain logic.
 
 `CASE {number} ({J1-J6}) - {HIGH | LOW} - {language} - {intent: spec|char|regression|behavior}`
 
-HIGH only when there is no plausible legitimate interpretation. Precision over
-recall: a wrong HIGH is worse than a missed LOW.
+HIGH only when there is no plausible legitimate interpretation.
+Precision over recall: a wrong HIGH finding is worse than a missed LOW one.

@@ -1,0 +1,55 @@
+name: ci
+
+# Issue #6: validate manifests, CLI syntax, and guard protocol drift.
+# The package ships prompt assets + a zero-dependency CLI, so CI is lightweight:
+# every JSON must parse, the CLI must be syntactically valid and pass the offline
+# smoke test, and the precision rule must stay identical across the four protocol
+# files (they drifted once - C22 and the precision wording).
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Validate package (manifests, schemas, files)
+        run: npm run validate
+      - name: CLI syntax + offline smoke
+        run: npm test
+      - name: Build standalone targets
+        run: npm run build:targets
+
+  protocol-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: The precision rule must be identical across the 4 protocol files
+        run: |
+          rule='Precision over recall'
+          j5='coupled to implementation internals'
+          missing=0
+          for f in SKILL.md llm.md AGENTS.md GEMINI.md; do
+            if ! grep -qi "$rule" "$f"; then
+              echo "::error file=$f::missing the shared precision rule (\"$rule\")"
+              missing=1
+            fi
+            # The J5 question must be present (and identically worded) in every file.
+            # Checking per file - a corpus-wide sort -u | wc -l passes even when
+            # only one of the four files carries the phrase.
+            if ! grep -qi "$j5" "$f"; then
+              echo "::error file=$f::missing or drifted J5 wording (\"$j5\")"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] && echo "protocol files are consistent"
+          exit $missing
