@@ -28,6 +28,35 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Step 1 now detects Robot Framework, Cypress/Playwright (E2E), and React Testing
   Library, and classifies test level (unit / integration / E2E) with the E2E/UI
   presence-is-the-assertion rule.
+- Host context guides in `contexts/` (Claude, Codex, Gemini, Cursor) with per-host
+  invocation instructions, and a ready-made Cursor rule at
+  `.cursor/rules/falsegreen-skill.mdc` generated from `contexts/cursor.md` by
+  `scripts/sync-cursor-mdc.mjs`. (#11, #23)
+- Zero-dependency CLI (`bin/falsegreen-llm.js`) with `--json` report validation
+  (including the required `level` field) and a `--temperature` flag with
+  provider-specific handling.
+- CI (`ci.yml`): validates manifests and schemas, checks CLI syntax plus an
+  offline smoke test, builds the standalone targets, and guards protocol drift -
+  the precision rule and the J5 wording must be present in each of SKILL.md,
+  llm.md, AGENTS.md, and GEMINI.md. (#6, #23)
+- TypeScript examples reorganized into per-pattern family files: async patterns,
+  component tests, oracle failures, structural mocks, type-aware checks, and weak
+  assertions.
+
+### Changed
+- `providers.md` trimmed to a cross-provider API reference (model table, raw SDK
+  snippets for providers without a host guide, case 18 two-pass, provider
+  selection); per-host wiring now points into `contexts/` instead of being
+  duplicated. (#12)
+- `models.yaml` documented as a human-facing tier reference - nothing loads it at
+  runtime, since the CLI stays zero-dependency. (#12)
+- `llm.md` header now states its role (self-contained protocol) versus the
+  `contexts/` host guides. (#12)
+
+### Removed
+- `examples/typescript/bad_tests_sample.ts`; its unique case 12 (expected value
+  re-implements the production formula) folded into `oracle_patterns.ts`, the
+  other patterns already covered by the family files. (#12)
 
 ## [0.1.0] - 2026-06-22
 

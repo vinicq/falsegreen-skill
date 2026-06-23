@@ -1,5 +1,11 @@
 # falsegreen-skill model tier routing
 #
+# Role: human-facing reference. Nothing in the package loads this file at
+# runtime - the CLI keeps the package zero-dependency and ships its own model
+# defaults, so adding a YAML parser to wire this in is out. Treat it as the
+# canonical tier-to-model mapping that providers.md and the host contexts are
+# validated against before a release (see CLAUDE.md "Default Model Guidance").
+#
 # Three tiers map analysis passes to model capability requirements.
 # Pick the tier that matches the cases you are running.
 #

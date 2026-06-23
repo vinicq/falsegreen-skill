@@ -2,7 +2,21 @@
 
 falsegreen-skill is packaged for defined provider paths. The SKILL.md protocol
 and the J1-J6 judgment framework are provider-agnostic, but this document only
-covers maintained providers and host integrations.
+covers maintained providers.
+
+**What lives where.** This file is the cross-provider API reference: the model
+table, raw SDK snippets for providers with no dedicated host guide (OpenAI,
+Groq/LLaMA, Qwen, Kimi), the case 18 two-pass procedure, and provider selection.
+Per-host wiring lives in `contexts/` and is not duplicated here:
+
+| Host | Guide |
+|---|---|
+| Claude Code / Claude.ai / Anthropic API | [`contexts/claude.md`](contexts/claude.md) |
+| OpenAI Codex CLI | [`contexts/codex.md`](contexts/codex.md) |
+| Gemini CLI / extension | [`contexts/gemini.md`](contexts/gemini.md) |
+| Cursor | [`contexts/cursor.md`](contexts/cursor.md) |
+
+Model tiers are defined once in [`models.yaml`](models.yaml).
 
 ---
 
@@ -19,23 +33,11 @@ covers maintained providers and host integrations.
 
 ---
 
-## Anthropic (Claude Code / API)
+## Anthropic (Claude)
 
-### Via Claude Code (primary path)
-
-Install the plugin, then invoke the skill:
-
-```
-/plugin marketplace add vinicq/falsegreen-skill
-/plugin install falsegreen-skill@falsegreen
-/falsegreen-skill:falsegreen-llm
-```
-
-Attach a test file or paste a snippet, or just ask in natural language
-("analyze this test file for false-positive smells"). The skill loads
-`skills/falsegreen-llm/SKILL.md` automatically.
-
-### Via API (programmatic)
+For Claude Code, Claude.ai, and the full Anthropic API path (plugin install,
+prompt caching, extended thinking for case 18), see
+[`contexts/claude.md`](contexts/claude.md). The minimal API call:
 
 ```python
 import anthropic
@@ -84,6 +86,9 @@ first user message instead.
 ---
 
 ## Google Gemini
+
+For the Gemini CLI and extension path, see
+[`contexts/gemini.md`](contexts/gemini.md). The minimal API call:
 
 ```python
 import google.generativeai as genai

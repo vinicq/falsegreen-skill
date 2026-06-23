@@ -1,5 +1,12 @@
 # falsegreen-skill — self-contained prompt context
 
+> **Role of this file.** `llm.md` is the self-contained protocol: paste it whole
+> into a system prompt or a plain chat and it works with no other file. The host
+> guides in `contexts/` (claude, codex, gemini, cursor) are the opposite - thin
+> per-host invocation instructions that point back at the canonical protocol.
+> Use this file when you need the protocol inline; use `contexts/` when you need
+> to wire the skill into a specific tool.
+
 **LLM skill for false-positive test detection.** Applies the J1-J6 judgment
 framework across Python, TypeScript, JavaScript, and Robot Framework, plus
 semantic patterns no static tool can see.
