@@ -305,7 +305,7 @@ avoids redundant input token charges for the protocol text.
 The falsegreen static scanner (Python AST) and this skill are designed to work
 together:
 
-1. Run `falsegreen tests/` for fast structural detection (C1-C37, CC, D1-D6, M2).
+1. Run `falsegreen tests/` for fast structural detection (C1-C45, CC, D1-D6, M2).
 2. Pass the scanner output to Claude as context.
 3. Claude applies semantic judgment (cases 10, 11, 12, 15, 18) and adjudicates
    any structural findings that need human-level interpretation.

@@ -2,7 +2,8 @@
 
 **LLM-based semantic analysis for false-positive test detection.** This skill
 judges whether a test genuinely verifies correct behavior, across Python,
-TypeScript, and JavaScript.
+TypeScript, JavaScript, and Robot Framework - and catches semantic patterns no
+static tool can see.
 
 For Python, this skill applies the complete falsegreen catalog directly — all
 structural and semantic patterns — without requiring the static scanner to run
@@ -21,6 +22,23 @@ A test is useful only if it fails when the code breaks. Every pattern this
 skill looks for is a variation on tests that do not fail: tests that pass
 while the code is wrong, tests that check the wrong thing, or tests that
 borrow correctness from elsewhere.
+
+---
+
+## Two intents, one skill
+
+This is one skill with one source of truth (the J1-J6 judgments and the catalog
+in `reference.md`), used in two directions. Pick the intent from what the user asks:
+
+- **Review** an existing test ("analyze / check / is this test real?") -> **Mode A**
+  (the Protocol below): detect false-green smells and report them.
+- **Create** a test ("write / generate a unit|integration|e2e test for X in
+  <language>") -> **Mode B** (Authoring mode, at the end of this file): generate the
+  test, then run Mode A on your own output until it is clean.
+
+Generation does not have its own rules. The test you write must pass the same
+J1-J6 it would be judged by, so it is born non-false-green. The developer chooses
+the language and the pyramid level; the catalog is the guard either way.
 
 ---
 
@@ -58,15 +76,28 @@ Identify:
   React Testing Library (component render) · Cypress / Playwright (E2E, JS/TS or Python) ·
   Robot Framework (`.robot` / `.resource`, keyword-driven) · Tavern (`*.tavern.yaml`, API) ·
   Gherkin/BDD (`.feature`: Cucumber.js / behave / pytest-bdd)
-- Test level: **unit** (isolated function, hook, or component), **integration** (how
-  components or services interact), or **E2E** (the real user journey through UI, DB,
-  and real APIs). The level changes what counts as a valid oracle.
-- Layer context: unit, integration, UI/E2E, or web layer? In **E2E/UI** tests (Cypress,
-  Playwright, Robot Browser/Selenium) the presence of a response, page, or element IS
-  the assertion at that layer - do not flag it as a weak check (affects C6 and C14;
-  see reference.md).
+- Test level — read it from the signals below, do not guess. The level changes what
+  counts as a valid oracle.
 
-See `reference.md` for framework-detection cues.
+**How to tell the level (strongest signal wins):**
+
+| Signal class | Unit | Integration (API / database) | E2E |
+|---|---|---|---|
+| Explicit marker / path | `tests/unit/`, no marker | `@pytest.mark.integration`, `tests/integration/` | `@pytest.mark.e2e`, `tests/e2e/`, `cypress/`, `.e2e.`/`.cy.` |
+| Doubles | mock/patch the boundaries (`unittest.mock`, `jest.mock`, `vi.mock`) | real client/driver, no double | no double at all |
+| API cues | none | HTTP client: `requests`/`httpx`, `TestClient` (FastAPI/Flask), supertest `request(app)`, RequestsLibrary/RESTinstance; asserts `status_code`/body | full app behind the browser |
+| Database cues | repository/in-memory fake | real ORM/driver: SQLAlchemy, Django ORM, Prisma, TypeORM, Knex, psycopg, DatabaseLibrary; session/transaction/testcontainer | DB reached through the UI |
+| UI/browser cues | none | none | Playwright `page.`, Cypress `cy.`, Selenium `driver.`, Robot `Open Browser`/Browser library; selectors, navigation |
+
+A `conventions:` block (Step 0) with `test_layer_overrides` wins over inferred signals.
+When the signals conflict or are absent, treat it as unit and say so in the report.
+
+**Why the level matters:** in E2E/UI tests the presence of a response, page, or element IS
+the assertion at that layer - do not flag it as a weak check (affects C6 and C14). The level
+itself can be the smell: a real API or database call inside a test that presents as a unit
+test is a mystery-guest / over-mocking-inverted finding (J3/J6), not a valid integration test.
+
+See `reference.md` for framework- and level-detection cues.
 
 ### Step 2: Apply the full Python pattern catalog (Python only)
 
@@ -76,11 +107,11 @@ before proceeding to the semantic judgments. These patterns are organized in
 
 | Family | Codes | What to look for |
 |---|---|---|
-| A — never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, CC | assertion unreachable, missing, swallowed, or uncollected |
-| B — weak/always-true | C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34 | tautology, truthiness-only, self-compare, broad exception, string repr |
+| A — never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, C38, C39, C43, C45, CC | assertion unreachable, missing, swallowed, uncollected, name-shadowed, returned-not-asserted, skipped mid-test, empty parametrize |
+| B — weak/always-true | C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34, C42, C44 | tautology, truthiness-only, self-compare, broad exception, string repr, generator/lambda always truthy, numeric tautology |
 | C — checks own setup | C19, C28, C29 | pytest.raises wraps too much, binding unread, env mutation |
 | D — external state | C17, C23, C24, C27, C30, C31, C32, C35 | skip-on-failure, hard path, shared mutable, try/pass, flaky |
-| E — wrong thing | C33, C36, C37 | metric not asserted, fail without reason, duplicate case |
+| E — wrong thing | C33, C36, C37, C41 | metric not asserted, fail without reason, duplicate case, assert on a None-returning mutator |
 | Optional / diagnostic (opt-in) | C22, D1, D3, D4, D5, D6, M2 | apply only when user requests diagnostic pass |
 
 Report each structural finding with its code number and confidence level before
@@ -182,13 +213,13 @@ Never report case 18 based on gut feeling or pattern-matching alone.
 For each finding, output:
 
 ```
-CASE {number} ({J1-J6}) - {confidence: HIGH | LOW} - {language} - {intent: spec|char|regression|behavior}
+CASE {number} ({J1-J6}) - {confidence: HIGH | LOW} - {language} - {level: unit|integration|e2e} - {intent: spec|char|regression|behavior}
 
 Test: {function name, line range}
 Finding: {one sentence describing what is wrong}
 Evidence: {the specific line(s) that triggered this}
 Oracle: {for case 18 only: cite the independent oracle}
-Fix hint: {one sentence suggestion}
+Fix hint: {where and how to improve the code or test, one sentence}
 ```
 
 Intent is the classification from Step 3. Include it in every finding - it is required for dataset analysis.
@@ -232,12 +263,125 @@ append the note to the existing SUMMARY using what you already know from the ana
 | 18 | J2 | Expected value contradicts what the code should do | Semantic + adversarial verify |
 
 Structural codes are handled by the static scanners - [falsegreen](https://github.com/vinicq/falsegreen)
-for Python (C1-C37) and [falsegreen-js](https://github.com/vinicq/falsegreen-js)
+for Python (C1-C45) and [falsegreen-js](https://github.com/vinicq/falsegreen-js)
 for TypeScript/JavaScript (shared C-codes plus JS1-JS13). This skill adjudicates
 scanner findings when review is needed, and handles the same patterns directly for
 any language. The five semantic cases above need the LLM regardless of language.
 
 Full case catalog with language examples: see `reference.md`.
+
+---
+
+# Authoring mode (generate tests, not only detect)
+
+Everything above is **analysis mode** (Mode A): given a test, judge it. When the
+user asks to **write or create tests** instead, switch to **authoring mode**
+(Mode B). The catalog becomes a generation guard: a test you write must pass the
+same J1-J6 it would be judged by, so it cannot be false-green by construction.
+
+## Step A1: Ask before you write
+
+Do not generate a test from the code's current output - that produces a
+characterization test, which is false-green by design. Ask the user for what only
+they can supply:
+
+1. **Which pyramid level?** unit / integration (API or database) / E2E. (If they
+   say "all", produce one per level.)
+2. **Which language(s) / framework(s)?** Python, TypeScript, JavaScript, Robot -
+   or "every stack the project uses".
+3. **What behavior, and what is the independent oracle?** the spec, contract, or
+   the expected value and where it comes from. This is mandatory: without an
+   oracle you can only freeze current behavior.
+4. **Which boundaries are doubled?** database, network, clock (unit/integration).
+
+If the user already gave any of these, do not re-ask it.
+
+## Step A2: Build one language-neutral test spec (the single base)
+
+Capture the answers in one canonical spec, independent of language, conforming to
+`schema/test-spec.json`:
+
+```yaml
+level: unit | integration | e2e
+unit: <function / endpoint / page under test>
+scenario: <one behavior, stated as a sentence>
+arrange: [<preconditions>]
+act: <the call or interaction>
+oracle:
+  source: spec | contract | example
+  expected: <value or condition, derived from the source - NOT from the code>
+doubles: [database, network, clock]   # only for unit/integration
+```
+
+One spec, then rendered into every requested language. The spec is the single
+source so the tests stay equivalent across stacks.
+
+**Multiple levels for one feature.** Do not write a single test that "covers all
+levels" - that is a category error. Each level tests a different thing with a
+different oracle and different doubles. When the user wants unit AND integration
+AND E2E, produce **one spec per level** (a small scenario x level matrix):
+
+- unit: the pure logic, boundaries doubled; oracle = return value. Many of these.
+- integration: the endpoint/query with a real client or driver, no double on the
+  crossed boundary; oracle = status + body, or the row read back. Fewer.
+- e2e: the journey through the UI; oracle = visible page state. Very few.
+
+Rules: elicit the oracle per level (it differs); do not repeat the unit-level
+assertion at e2e (wrong layer, redundant); respect pyramid shape - if the user
+asks for an e2e test where a unit test would catch the defect, say so before
+generating (inverted-pyramid warning). A real API/DB call is valid at integration
+but is itself a smell at unit (J3/J6).
+
+## Step A3: Emit per language, with the level-appropriate oracle
+
+Render the spec into each framework. The oracle form depends on the level:
+
+- **unit:** assert the return value / state against `oracle.expected`.
+- **integration / API:** assert status AND the response body (not status alone).
+- **integration / database:** assert the persisted row, read back independently.
+- **E2E:** assert the visible page state / element (presence is the oracle here).
+
+Robot emits a `.robot` test; extract any reusable step into a `.resource`
+keyword (never put `*** Test Cases ***` in a `.resource` - that is R3).
+
+## Step A4: Validate the draft with Mode A (close the loop)
+
+This is the unification: do not invent a separate check. **Run Mode A (Steps 1-6)
+on the test you just generated**, at its level, as if a developer had handed it to
+you for review. Concretely, confirm it trips no catalog code:
+
+- J1: at least one assertion runs unconditionally (no C1/C20/C21/JS9...).
+- J2: the expected value comes from the oracle, not the code (no C5/C7/C14/C18).
+- J3: the real unit is exercised at the stated level (no over-mock; a real
+  API/DB call belongs to integration, not unit).
+- J4: the assertion checks the right, specific thing (no C6/C9 weak check).
+- J5/J6: not coupled to internals; passes in isolation.
+
+If the Mode A pass returns any finding, revise the test and run Mode A again.
+Repeat until the analysis is clean. Only emit a test that passes its own review -
+that is what makes generation and validation one skill, not two.
+
+## Step A5: Output
+
+For each generated test, output the language, level, the cited oracle, the test
+code, and one line confirming it passes the self-check. End with the canonical
+test-spec so the user can regenerate it in another language later.
+
+---
+
+# Where outputs go
+
+- **Analysis report (Mode A):** printed to the conversation (a host) or stdout
+  (the CLI). It is not written to a file by default. The CLI emits text, or
+  `--json` (conforming to `schema/report.json`); persist it by redirecting
+  (`... --json > report.json`) and wire `--fail-on-high` into CI (exit 2). A
+  persisted report is a run artifact: keep it in a gitignored path
+  (`.falsegreen/`, `reports/`), never commit it.
+- **Generated tests (Mode B):** written into the project's existing test tree by
+  level and framework convention - `tests/unit/`, `tests/integration/`,
+  `tests/e2e/`, a `*.test.ts` beside the source, a `.robot` suite with shared
+  steps in a `.resource`. Propose the path and confirm with the user; never
+  invent a new dump location.
 
 ---
 

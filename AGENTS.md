@@ -2,7 +2,8 @@
 
 LLM-based semantic analysis for false-positive test detection. This skill
 judges whether a test genuinely verifies correct behavior, across Python,
-TypeScript, and JavaScript.
+TypeScript, JavaScript, and Robot Framework, plus semantic patterns no static
+tool can see.
 
 A test is useful only if it fails when the code breaks. Every pattern this
 skill looks for is a variation on tests that do not fail: tests that pass
@@ -52,11 +53,15 @@ the same discovery pass — no extra configuration needed.
 
 Work through these steps in order.
 
-### Step 1: Detect language and framework
+### Step 1: Detect language, framework, and level
 
-Identify the language (Python / TypeScript / JavaScript), the test framework
-(pytest / unittest / Jest / Vitest / Mocha+Chai), and the layer context (unit,
-integration, UI/E2E, web layer). Layer affects C6 and C14 exemptions.
+Identify the language (Python / TypeScript / JavaScript / Robot Framework), the
+test framework (pytest / unittest / Jest / Vitest / Mocha+Chai / Cypress /
+Playwright / Robot), and the level from signals (the pyramid): unit (boundaries
+doubled), integration (real HTTP client or ORM/driver - API and database), or
+E2E (browser). Strongest signal wins (markers, paths, file names, `conventions:`).
+The level changes the oracle (E2E presence IS the assertion; affects C6/C14); a
+real API/DB call in a unit test is itself the smell. Report the level per finding.
 
 ### Step 2: Apply the Python structural catalog (Python only)
 
@@ -64,16 +69,17 @@ Scan against all falsegreen pattern families in order:
 
 | Family | Codes | What to look for |
 |---|---|---|
-| A - never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, CC | assertion unreachable, missing, swallowed, or uncollected |
-| B - weak/always-true | C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34 | tautology, truthiness-only, self-compare, broad exception, string repr |
+| A - never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, C38, C39, C43, C45, CC | assertion unreachable, missing, swallowed, uncollected, name-shadowed, returned-not-asserted, mid-test skip, empty parametrize |
+| B - weak/always-true | C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34, C42, C44 | tautology, truthiness-only, self-compare, broad exception, string repr, generator/lambda truthy, numeric tautology |
 | C - checks own setup | C19, C28, C29 | pytest.raises wraps too much, binding unread, env mutation |
 | D - external state | C17, C23, C24, C27, C30, C31, C32, C35 | skip-on-failure, hard path, shared mutable, try/pass, flaky |
-| E - wrong thing | C33, C36, C37 | metric not asserted, fail without reason, duplicate case |
+| E - wrong thing | C33, C36, C37, C41 | metric not asserted, fail without reason, duplicate case, None-returning mutator |
 | Optional / diagnostic (opt-in) | C22, D1, D3, D4, D5, D6, M2 | apply only when user requests |
 
 Report each structural finding before proceeding to Steps 3-6.
 
-For TypeScript and JavaScript, skip to Step 3.
+For TypeScript / JavaScript (JS1-JS22) and Robot Framework (R-codes), apply their
+catalogs from `reference.md`, then proceed to Step 3.
 
 ### Step 3: Classify test intent
 
@@ -170,7 +176,7 @@ Precision over recall: a wrong HIGH finding is worse than a missed LOW one.
 | 15 | J6 | Passes only if another test ran first | Reads shared mutable state written by a sibling test; fails when run alone |
 | 18 | J2 | Expected value contradicts the spec | Asserts a value the independent oracle says is wrong; requires cited oracle before reporting |
 
-Cases from the structural families (C1-C37, CC) apply to Python directly.
+Cases from the structural families (C1-C45, CC) apply to Python directly.
 For TypeScript/JavaScript, apply them by reading the source semantically.
 Full patterns with examples are in `reference.md`.
 
