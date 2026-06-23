@@ -45,7 +45,7 @@ internal agent outputs, or benchmark artifacts here.
   Framework (the catalog covers all four, mirroring the static scanners). Gherkin
   and Tavern are covered as secondary semantic passes in `reference.md`.
 - The skill is a superset of the three static scanners: every structural code in
-  falsegreen / falsegreen-js / falsegreen-robot must appear in `reference.md`,
+  falsegreen / falsegreen-js / robotframework-falsegreen must appear in `reference.md`,
   plus the AI-only semantic codes (S-series).
 - Prefer thin host entry points that reference the canonical protocol instead
   of duplicating the full catalog.
