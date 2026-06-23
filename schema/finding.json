@@ -4,7 +4,7 @@
   "title": "FalsegreenFinding",
   "description": "A single finding produced by the falsegreen-skill J1-J6 analysis.",
   "type": "object",
-  "required": ["case", "judgment", "confidence", "language", "intent", "test", "finding", "evidence", "fix_hint"],
+  "required": ["case", "judgment", "confidence", "language", "level", "intent", "test", "finding", "evidence", "fix_hint"],
   "properties": {
     "case": {
       "description": "Case from the skill catalog: a semantic case number (e.g., 18), a structural code (C2, C2b, C11a, CC), a JS/TS code (JS21), a Robot code (R3), a diagnostic/coupling code (D1, M2), or an AI-only semantic code (S1).",
@@ -90,7 +90,7 @@
     }
   },
   "then": {
-    "required": ["case", "judgment", "confidence", "language", "intent", "test", "finding", "evidence", "oracle", "fix_hint"]
+    "required": ["case", "judgment", "confidence", "language", "level", "intent", "test", "finding", "evidence", "oracle", "fix_hint"]
   },
   "additionalProperties": false
 }
