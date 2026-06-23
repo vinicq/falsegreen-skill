@@ -36,18 +36,20 @@ jobs:
       - name: The precision rule must be identical across the 4 protocol files
         run: |
           rule='Precision over recall'
+          j5='coupled to implementation internals'
           missing=0
           for f in SKILL.md llm.md AGENTS.md GEMINI.md; do
             if ! grep -qi "$rule" "$f"; then
               echo "::error file=$f::missing the shared precision rule (\"$rule\")"
               missing=1
             fi
+            # The J5 question must be present (and identically worded) in every file.
+            # Checking per file - a corpus-wide sort -u | wc -l passes even when
+            # only one of the four files carries the phrase.
+            if ! grep -qi "$j5" "$f"; then
+              echo "::error file=$f::missing or drifted J5 wording (\"$j5\")"
+              missing=1
+            fi
           done
-          # The J5 question must be worded identically everywhere.
-          j5=$(grep -h -oiE 'coupled to implementation internals' SKILL.md llm.md AGENTS.md GEMINI.md | sort -u | wc -l)
-          if [ "$j5" -ne 1 ]; then
-            echo "::error::J5 wording drifted across the protocol files"
-            missing=1
-          fi
           [ "$missing" -eq 0 ] && echo "protocol files are consistent"
           exit $missing

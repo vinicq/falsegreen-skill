@@ -21,10 +21,10 @@ template below. Cursor loads it automatically when you open a matching test file
 
 Copy this file verbatim to `.cursor/rules/falsegreen-skill.mdc`:
 
-```
+````
 ---
 description: falsegreen-skill — false-positive test detection
-globs: ["**/*.test.ts", "**/*.test.js", "**/*.spec.ts", "**/*.spec.js", "**/test_*.py", "**/*_test.py"]
+globs: ["**/*.test.ts", "**/*.test.tsx", "**/*.test.js", "**/*.test.jsx", "**/*.spec.ts", "**/*.spec.tsx", "**/*.spec.js", "**/*.spec.jsx", "**/test_*.py", "**/*_test.py", "**/*.robot", "**/*.resource"]
 alwaysApply: false
 ---
 
@@ -230,7 +230,7 @@ interpretation. A wrong HIGH finding is worse than a missed LOW one.
 4. assert True inside @pytest.mark.skip is not C5. The skip stops it from running.
 5. In web/UI layer tests, truthiness on a response or locator object is NOT C6.
    Presence of a response IS the assertion at that layer.
-```
+````
 
 ---
 

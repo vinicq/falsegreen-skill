@@ -23,7 +23,8 @@
     "falsegreen-skill": "bin/falsegreen-llm.js"
   },
   "scripts": {
-    "validate": "node scripts/validate-package.mjs",
+    "validate": "node scripts/validate-package.mjs && node scripts/sync-cursor-mdc.mjs --check",
+    "sync:cursor": "node scripts/sync-cursor-mdc.mjs",
     "smoke": "node test/smoke.cjs",
     "test": "node test/smoke.cjs",
     "build:targets": "node scripts/build-targets.mjs",
@@ -45,6 +46,7 @@
     "examples/",
     "schema/",
     "scripts/",
+    ".cursor/",
     ".gemini/",
     ".claude-plugin/",
     ".codex-plugin/",
