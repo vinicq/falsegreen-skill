@@ -100,7 +100,7 @@ structural pass result and proceed directly to Step 3.
 
 For TypeScript / JavaScript and Robot Framework, apply their catalogs from
 `reference.md` (JS1-JS22, the shared C-codes, and the Robot R-codes), then proceed
-to Step 3. The full multi-stack catalog and the AI-only semantic codes (S1-S10)
+to Step 3. The full multi-stack catalog and the AI-only semantic codes (S1-S13)
 live in `reference.md`; this file carries the Python catalog inline as the most
 common case.
 
@@ -280,7 +280,7 @@ project, add it to the conventions: block (Step 0) to suppress future findings.
 ## Semantic cases — all three languages and Robot
 
 Semantic cases require LLM judgment. No static rule can detect them. The five
-numbered cases below are the core; the AI-only S-series (S1-S10) in `reference.md`
+numbered cases below are the core; the AI-only S-series (S1-S13) in `reference.md`
 extends them (intent mismatch, irrelevant oracle, plausible-but-wrong expected
 value, oracle too coarse to fail, tests the framework not the code, and more).
 
