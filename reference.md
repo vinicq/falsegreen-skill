@@ -284,9 +284,28 @@ clear the contradiction is); never auto-block on these without showing the reaso
   asserts, with no transformation by the unit under test (a cross-statement C11a).
 - **S10 — Asserts the log, not the effect (J4).** The test checks that a message was logged
   instead of the state change the message describes.
+- **S11 — Negative-only assertion on a security filter (J4).** A test of a sanitizer, redactor,
+  or auth filter that asserts only the bad thing is absent (`secret not in output`,
+  `assert "password" not in response`) passes for the wrong reason when the output is empty or
+  the message was dropped entirely. Require a paired positive assertion that legitimate content
+  survived (the safe field is still present), or treat the negative-only check as HIGH.
+- **S12 — Patches core logic instead of an external edge (J3).** Deeper than case 10's static
+  form: the test patches a private method or a direct collaborator on the class under test - a
+  lambda or mock assigned to a private method, `patch.object` on a local instance, the receiver
+  being the subject under test - so the assertion checks the stub, not the unit's own logic.
+  Ask whether the patched method is an external edge (legitimate) or the unit's core behavior
+  (the smell). Mocking the edge is fine; mocking the core under test is case 10.
+- **S13 — Passes only via shared state a sibling set up (J6).** Beyond C15/C24/`var`-hoisting:
+  the test reads or relies on module-global, fixture, or hoisted state that another test or an
+  import mutates, so it passes only in a given execution order and fails when run alone. The J6
+  question is per-test self-sufficiency, not assertion presence; flag order-dependence the AST
+  cannot prove across files.
 
 Look-alikes - do NOT flag: a deliberately narrow unit test whose scope the spec confirms
-(S6 needs a stated broader contract); a constant that the spec genuinely endorses (not S3).
+(S6 needs a stated broader contract); a constant that the spec genuinely endorses (not S3);
+a sanitizer test that already pairs the negative check with a positive one (not S11); a mock
+on a genuine external edge - DB, network, clock (not S12); a test whose shared state is reset
+by an autouse/`beforeEach` teardown (not S13).
 
 ---
 
