@@ -31,6 +31,9 @@ jobs:
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
+      # OIDC trusted publishing (tokenless auth) needs npm >= 11.5.1; Node 20
+      # ships npm 10, which signs provenance but cannot authenticate via OIDC.
+      - run: npm install -g npm@latest
       # Zero runtime/dev dependencies and no lockfile: the validate and smoke
       # scripts are pure Node, so there is nothing to `npm ci`.
       - run: npm run validate
