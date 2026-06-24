@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-23
+
 ### Added
 - The skill is now a superset of all three static scanners: added the Python codes
   C38/C39/C41/C42/C43/C44/C45, the JS codes C6/C20/C23/JS8/JS15/JS17/JS18/JS21/JS22, and the
@@ -82,5 +84,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Multi-agent adversarial verification protocol for case 18 (bug-freezing).
 - CREDITS.md citing the research base.
 
-[Unreleased]: https://github.com/vinicq/falsegreen-skill/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/vinicq/falsegreen-skill/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/vinicq/falsegreen-skill/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/vinicq/falsegreen-skill/releases/tag/v0.1.0
