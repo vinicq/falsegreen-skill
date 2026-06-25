@@ -59,5 +59,28 @@
       "type": "string"
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "accept requires clean_replica=pass AND mutated_replica=fail.",
+      "if": { "properties": { "verdict": { "const": "accept" } }, "required": ["verdict"] },
+      "then": {
+        "properties": {
+          "clean_replica": { "const": "pass" },
+          "mutated_replica": { "const": "fail" }
+        }
+      }
+    },
+    {
+      "description": "clean_replica=pass AND mutated_replica=fail forces verdict=accept (no rejecting a passing gate).",
+      "if": {
+        "properties": {
+          "clean_replica": { "const": "pass" },
+          "mutated_replica": { "const": "fail" }
+        },
+        "required": ["clean_replica", "mutated_replica"]
+      },
+      "then": { "properties": { "verdict": { "const": "accept" } } }
+    }
+  ]
 }

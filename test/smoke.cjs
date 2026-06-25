@@ -68,5 +68,18 @@ try {
     : bad('CLI is missing the level enum check');
 } catch (e) { bad('CLI level checks failed: ' + e.message); }
 
+// 7. fix-validation.json enforces the accept matrix in-schema, not just in prose:
+// verdict=accept must imply clean_replica=pass AND mutated_replica=fail (Codex P2).
+try {
+  const g = JSON.parse(fs.readFileSync(path.join(ROOT, 'schema/fix-validation.json'), 'utf8'));
+  const accept = (g.allOf || []).find(
+    (s) => s.if && s.if.properties && s.if.properties.verdict && s.if.properties.verdict.const === 'accept');
+  const then = accept && accept.then && accept.then.properties;
+  then && then.clean_replica && then.clean_replica.const === 'pass'
+       && then.mutated_replica && then.mutated_replica.const === 'fail'
+    ? ok('fix-validation.json enforces accept => clean=pass and mutated=fail')
+    : bad('fix-validation.json does not enforce the accept matrix');
+} catch (e) { bad('fix-validation.json matrix check failed: ' + e.message); }
+
 if (failures) { process.stdout.write(`\n${failures} smoke failure(s)\n`); process.exit(1); }
 process.stdout.write('\nsmoke ok\n');
