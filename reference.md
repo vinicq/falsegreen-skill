@@ -810,6 +810,7 @@ node:test, Cypress, Playwright, and Testing Library.
 | C18 | LOW | stringified equality (`String(x)`/`JSON.stringify`/`` `${x}` ``) |
 | C21 | LOW | every assertion is conditional |
 | C37 | LOW | duplicate `it.each`/`test.each` case |
+| C44 | HIGH | numeric tautology on a length (`expect(x.length).toBeGreaterThanOrEqual(0)`) |
 | CC | LOW | commented-out assertion |
 | JS1 | HIGH | focused test (`it.only`/`fit`) skips the rest of the suite |
 | JS2 | HIGH | `expect(x)` with no matcher |
@@ -837,7 +838,8 @@ assertion at the API layer - do not flag such a test as C2b.
 **Maintainability group (opt-in, default off).** Not false-green - the test still
 protects. Apply only on a diagnostic pass: D1 assertion roulette, D3 duplicate
 assert, D4 untitled `it.each` cases, D6 `console.*` in a test, D7 anonymous test
-(empty/missing description), M2 over-long test body.
+(empty/missing description), D8 magic number in an assertion (a bare numeric
+literal instead of a named constant), M2 over-long test body.
 
 The prose below details the higher-prevalence patterns with examples and citations.
 
@@ -1027,6 +1029,22 @@ The prose below details the higher-prevalence patterns with examples and citatio
   // CLEAN: add the mitigating negative tests shown in semantic_cases.ts
   ```
 
+- **Numeric tautology on a length, `.length >= 0` (J2/C44, HIGH):**
+  `expect(x.length).toBeGreaterThanOrEqual(0)` always holds: a `.length` is
+  never negative. The check passes for an empty array, a full one, anything.
+  The subject must be a direct property access ending in `.length`; a derived
+  expression that merely mentions `.length` (`a.length - b.length`) can be
+  negative and is not flagged. The Python form is `len(x) >= 0` (see C44 above).
+  Bound forms against `Infinity` (`toBeLessThan(Infinity)`,
+  `toBeGreaterThan(-Infinity)`) are NOT a tautology: they are false for `NaN`,
+  so they still catch a value that escaped to `NaN` and are not flagged.
+  ```typescript
+  // BAD: length is never negative; always true
+  expect(result.length).toBeGreaterThanOrEqual(0)
+  // CLEAN: assert the actual length
+  expect(result.length).toBe(3)
+  ```
+
 ---
 
 ### Look-alikes: do NOT flag these TypeScript patterns
@@ -1140,14 +1158,38 @@ False-green patterns (the verification keyword is the oracle):
   `Page Should Contain*`, `Element Should Be Visible`, or a custom assertion keyword).
   The keyword equivalent of an assertion-free test.
 - **Empty test case (J1):** only `[Documentation]`/`[Tags]`/setup, no body keywords.
-- **Swallowed failure (J1):** `Run Keyword And Ignore Error` / `Run Keyword And Return Status`
+- **Swallowed failure (J1, C3):** `Run Keyword And Ignore Error` / `Run Keyword And Return Status`
   wrapping the action without asserting the returned status/message afterward. The test
-  stays green whether or not the keyword failed.
-- **Status captured, never asserted (J4):** `${status} =    Run Keyword And Return Status    ...`
-  where `${status}` is never checked with `Should Be True`/`Should Be Equal`.
-- **Always-true check (J2):** `Should Be True    ${TRUE}` / `Should Be True    True` /
+  stays green whether or not the keyword failed. The consolidated catalog tags this RF3;
+  here it shares the id `C3` with the siblings.
+- **Status captured, never asserted (J4, C3):** `${status} =    Run Keyword And Return Status    ...`
+  where `${status}` is never checked with `Should Be True`/`Should Be Equal`. Same C3 id as
+  the swallow form (this is the status-variable variant of RF3).
+- **Always-true check (J2, C5):** `Should Be True    ${TRUE}` / `Should Be True    True` /
   `Should Be Equal    1    1`.
-- **Self-compare (J2):** `Should Be Equal    ${x}    ${x}`.
+- **Should Be True on a string literal (J4, R6):** `Should Be True    some text` passes a
+  non-empty string, not a boolean expression. A non-empty string is always truthy, so the
+  check never fails. Pass a real expression (`${x} > 0`), not a bare literal.
+- **Self-compare (J2, C7):** `Should Be Equal    ${x}    ${x}`.
+- **Catch-all expected error (J4, C9):** `Run Keyword And Expect Error    *` (or
+  `GLOB:*` / `EQUALS:*` / `STARTS:*` / `REGEXP:*` whose pattern is just a star). Any
+  error satisfies it - including one from a typo in the test itself - so the oracle is
+  vacuous. Match the specific message/pattern instead.
+- **Verification after a terminator (J1, C20):** a `Should ...` (or other check) placed
+  after `[Return]`, `Return From Keyword`, `Fail`, or `Pass Execution` in the same block.
+  Nothing after the terminator runs, so the check is dead. Move it before the terminator.
+- **Duplicate [Template] data row (J4, C37):** a `[Template]` test whose data table repeats
+  an earlier row's argument tuple. The duplicate drives the templated keyword with the same
+  inputs and adds no coverage. Remove the repeated row.
+- **Commented-out verification keyword (J1, CC):** a line like `# Should Be Equal    ${a}    ${b}`
+  in the body - the oracle is switched off. Restore the keyword or delete the line.
+- **Forced green (J1, R1):** `Pass Execution` (or `Pass Execution If` with a condition that
+  always holds) forces the test to pass regardless of any check. Remove it; let the checks
+  decide the result.
+- **Hollow verifier keyword (J1, R2):** a user keyword named like an oracle
+  (`Verify *` / `Assert *` / `Should *` / `Check *`) whose body contains no verification
+  keyword. A test calling `Verify Login` looks protected but nothing is asserted - the root
+  cause of a missed C2b.
 - **Sleep as synchronization (J1):** `Sleep    2s` used instead of `Wait Until *`; result
   depends on timing.
 - **Skipped (J1):** `[Tags]    robot:skip` / `Skip` / `Skip If` that always skips.
@@ -1163,16 +1205,20 @@ False-green patterns (the verification keyword is the oracle):
   to one machine (a hostname URL is too common in E2E to flag).
 
 Look-alikes - do NOT flag:
-- `Run Keyword And Expect Error` / `Run Keyword And Continue On Failure` followed by a
-  check - these ARE asserting.
+- `Run Keyword And Expect Error` with a SPECIFIC message/pattern, or
+  `Run Keyword And Continue On Failure` followed by a check - these ARE asserting. Only the
+  catch-all star pattern (C9 above) is the smell.
 - `Wait Until Keyword Succeeds` - legitimate retry for E2E flakiness, not a Sleep smell.
 - Teardown keywords (`[Teardown]`, `Close Browser`) - cleanup, not the oracle.
 - E2E/UI presence keywords (`Page Should Contain Element`) ARE the assertion at the
   browser layer - do not treat as weak.
 
 These mirror the static codes conceptually: no-verification ≈ C2b, empty ≈ C2,
-swallowed ≈ C3/C27, always-true ≈ C5, self-compare ≈ C7, sleep ≈ C16, skip ≈ C32,
-No-Operation-only ≈ R4, empty-template ≈ R5, Test-Cases-in-resource ≈ R3, IP-URL ≈ C23.
+swallowed/status-never-asserted ≈ C3 (catalog RF3), always-true ≈ C5, string-literal-truthy ≈ R6
+(catalog RF17), self-compare ≈ C7, catch-all expected error ≈ C9, dead-step-after-terminator ≈ C20,
+duplicate-template-row ≈ C37, commented-out-verification ≈ CC, forced-green ≈ R1, hollow-verifier ≈ R2,
+sleep ≈ C16, skip ≈ C32, conditional-only ≈ C21, No-Operation-only ≈ R4, empty-template ≈ R5
+(catalog RF18), Test-Cases-in-resource ≈ R3, IP-URL ≈ C23.
 
 ---
 
