@@ -19,6 +19,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (suite rerun vs. targeted unit mutation), the accept/reject rule, the flaky case
   (no stable isolation -> J6 -> reject), and the mutmut / cosmic-ray / Stryker tooling
   that runs on the host side.
+- Community hygiene parity with `falsegreen`: README status badges (CI, npm version,
+  License), `.github/ISSUE_TEMPLATE/` (bug report, feature request, config), a pull
+  request template, `CODEOWNERS`, a `dependabot.yml` covering npm and github-actions,
+  and release-drafter config plus its workflow (the workflow skips fork PRs so it does
+  not fail red). (#40)
 
 ## [0.2.0] - 2026-06-23
 
