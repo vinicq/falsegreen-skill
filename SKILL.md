@@ -25,20 +25,26 @@ borrow correctness from elsewhere.
 
 ---
 
-## Two intents, one skill
+## Three intents, one skill
 
 This is one skill with one source of truth (the J1-J6 judgments and the catalog
-in `reference.md`), used in two directions. Pick the intent from what the user asks:
+in `reference.md`), used in three directions. Pick the intent from what the user asks:
 
 - **Review** an existing test ("analyze / check / is this test real?") -> **Mode A**
   (the Protocol below): detect false-green smells and report them.
 - **Create** a test ("write / generate a unit|integration|e2e test for X in
   <language>") -> **Mode B** (Authoring mode, at the end of this file): generate the
   test, then run Mode A on your own output until it is clean.
+- **Fix** a finding ("strengthen / repair this false-green test", given a falsegreen
+  report) -> **Mode C** (AI-fix mode, after Mode B): propose a strengthened test that
+  closes the finding, self-validated with Mode B's machinery, plus the validation
+  contract the host runs to confirm it.
 
 Generation does not have its own rules. The test you write must pass the same
 J1-J6 it would be judged by, so it is born non-false-green. The developer chooses
-the language and the pyramid level; the catalog is the guard either way.
+the language and the pyramid level; the catalog is the guard either way. The fix
+path reuses that same loop: a proposed fix is just an authored test that has to
+survive its own review before the host runs the gate.
 
 ---
 
@@ -391,6 +397,72 @@ test-spec so the user can regenerate it in another language later.
 
 ---
 
+# AI-fix mode (propose a fix, hand the gate to the host)
+
+Mode A judges a test; Mode B writes one. **Mode C** takes a finding from a
+falsegreen report and proposes a stronger test that closes it. It reuses Mode B
+end to end: a proposed fix is an authored test, so it is generated against the
+oracle and self-validated by running Mode A (Steps 1-6) over it until clean.
+
+The boundary is explicit: **the skill proposes the fix and the validation
+contract; it does not run the gate.** Proving that the strengthened test fails
+when the code breaks is mutation testing's job, and that needs an executable
+environment the skill does not have (the skill does not run tests). The host or
+developer runs the bidirectional gate; the skill hands them a contract to fill.
+
+## Step C1: Read the finding
+
+Take one finding (`schema/finding.json`): its `case`, `judgment`, `language`,
+`level`, the `evidence` lines, and, for case 18, the cited `oracle`. The finding
+says what is wrong; the fix has to make the test able to fail on exactly that.
+
+## Step C2: Propose the strengthened test (Mode B machinery)
+
+Derive a `schema/test-spec.json` from the finding and the existing test, then run
+Mode B Steps A2-A4 on it. The oracle stays independent of the code (never lift the
+expected value from current output, that re-freezes the bug). Strengthen at the
+judgment that failed:
+
+- J1 finding (assertion never runs): make at least one assertion run unconditionally.
+- J2 finding (expected value from the code): re-derive the expected value from the
+  cited oracle.
+- J3 finding (mocks the unit under test): exercise the real unit at the stated level.
+- J4 finding (weak / always-true check): assert the specific value, not truthiness.
+- J5/J6 finding (coupled / order-dependent): make the test pass in isolation.
+
+Run Mode A over the proposal (Step A4). If it trips any catalog code, revise and
+re-run until clean. Only propose a test that passes its own review.
+
+## Step C3: Emit the validation contract (the skill stops here)
+
+Alongside the proposed test, emit the gate contract the host will run, conforming
+to `schema/fix-validation.json`. The skill fills the `finding` reference and the
+intended `tier`; the host fills `clean_replica`, `mutated_replica`, and the
+`verdict` after running the gate.
+
+The gate is bidirectional and the rule is fixed: run the strengthened test on a
+**clean replica** (must pass) and on a **mutated replica** where the bug class is
+reintroduced (must fail). **accept** requires `clean_replica=pass` AND
+`mutated_replica=fail`; any other combination is **reject**. A test that still
+passes on the mutated replica has not closed the finding. Two cost tiers, host's
+choice: `suite-rerun` (rerun the whole suite, cheap and coarse) or
+`targeted-mutation` (a focused mutant on the unit, costlier and precise). Tooling
+is the host's: mutmut or cosmic-ray for Python, Stryker for JS/TS. The adjudication
+rule, the tiers, and the flaky case live in `reference.md` (F7).
+
+This bidirectional gate is the SENTINEL / Pizzini contribution credited in
+`CREDITS.md`: a proposed fix must pass the original suite and fail on a mutation
+before being accepted.
+
+## Step C4: Output
+
+Output the finding being fixed, the proposed test (language, level, cited oracle,
+code), the line confirming it passes its own Mode A self-check, and the
+`fix-validation.json` contract for the host to run. State plainly that acceptance
+waits on the host's gate result; the skill does not run it.
+
+---
+
 # Where outputs go
 
 - **Analysis report (Mode A):** printed to the conversation (a host) or stdout
@@ -443,6 +515,9 @@ Report case 18 HIGH only when the refuter cannot mount a credible defense.
 
 - It does not suggest code fixes unless asked.
 - It does not run the tests.
+- It does not run the AI-fix gate (Mode C). It proposes the strengthened test and
+  the `schema/fix-validation.json` contract; running the test on the clean and
+  mutated replicas (mutmut / cosmic-ray / Stryker) is the host's or developer's job.
 - It does not analyze production code unless the test snippet includes it.
 - It does not flag maintainability smells **by default** (bad names, missing
   messages, Eager Test, Lazy Test, long tests). Those are not false-positive risks.

@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vinicq/falsegreen-skill/schema/fix-validation.json",
+  "title": "FalsegreenFixValidation",
+  "description": "The verdict of the bidirectional gate that decides whether a strengthened test proposed by the skill's AI-fix mode (Mode C) is accepted. The skill proposes the fix and this validation contract; the host or developer runs the gate (suite rerun or targeted mutation, via mutmut/cosmic-ray for Python or Stryker for JS/TS) and fills this object. Decision rule: verdict is accept only when clean_replica is pass AND mutated_replica is fail; every other combination is reject (a test that does not fail on the mutated replica still cannot catch the bug).",
+  "type": "object",
+  "required": ["finding", "tier", "clean_replica", "mutated_replica", "verdict"],
+  "properties": {
+    "finding": {
+      "description": "Reference to the original falsegreen finding this fix addresses, located by catalog code and source position.",
+      "type": "object",
+      "required": ["code", "file", "line"],
+      "properties": {
+        "code": {
+          "description": "Catalog code or case number of the finding being fixed (e.g., 18, C5, JS21, S3).",
+          "oneOf": [
+            { "type": "integer", "minimum": 1 },
+            { "type": "string", "pattern": "^(C[0-9]+[a-z]?|CC|JS[0-9]+|R[0-9]+|D[0-9]+|M[0-9]+|S[0-9]+|[0-9]+)$" }
+          ]
+        },
+        "file": {
+          "description": "Path to the test file the finding was raised in.",
+          "type": "string"
+        },
+        "line": {
+          "description": "Line of the finding (1-indexed).",
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "tier": {
+      "description": "Cost tier of the gate run. suite-rerun reruns the whole suite against clean and mutated replicas (cheap, coarse). targeted-mutation applies a focused mutant to the unit under test (costlier, precise).",
+      "type": "string",
+      "enum": ["suite-rerun", "targeted-mutation"]
+    },
+    "clean_replica": {
+      "description": "Outcome of the strengthened test on an unmodified (clean) replica of the code. Must be pass for the fix to be accepted.",
+      "type": "string",
+      "enum": ["pass", "fail"]
+    },
+    "mutated_replica": {
+      "description": "Outcome of the strengthened test on a replica where the bug class is reintroduced (mutated). Must be fail for the fix to be accepted: the test has to detect the mutation.",
+      "type": "string",
+      "enum": ["pass", "fail"]
+    },
+    "verdict": {
+      "description": "Gate decision. accept requires clean_replica=pass AND mutated_replica=fail; any other combination is reject.",
+      "type": "string",
+      "enum": ["accept", "reject"]
+    },
+    "mutation": {
+      "description": "Description of the mutant applied to the unit under test (targeted-mutation tier), or the suite mutation operator used.",
+      "type": "string"
+    },
+    "notes": {
+      "description": "Free-form notes: why a verdict was reached, flaky behavior observed, or the tool and command used.",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
