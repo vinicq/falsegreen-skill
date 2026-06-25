@@ -6,6 +6,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- AI-fix mode (Mode C) in `SKILL.md`: given a finding from a falsegreen report, the
+  skill proposes a strengthened test and self-validates it by running Mode A over its
+  own output (reusing the Mode B machinery). The header is now "Three intents, one
+  skill" (Review = A / Author = B / Fix = C). The boundary is explicit: the skill
+  proposes the fix and the validation contract but does not run the gate. (#1)
+- `schema/fix-validation.json`: the output contract for the bidirectional gate verdict
+  (finding reference, tier, clean/mutated replica outcomes, accept/reject verdict).
+  accept requires clean_replica=pass AND mutated_replica=fail.
+- F7 in `reference.md`: AI-fix gate adjudication. Documents the two cost tiers
+  (suite rerun vs. targeted unit mutation), the accept/reject rule, the flaky case
+  (no stable isolation -> J6 -> reject), and the mutmut / cosmic-ray / Stryker tooling
+  that runs on the host side.
+
 ## [0.2.0] - 2026-06-23
 
 ### Added

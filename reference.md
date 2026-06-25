@@ -1240,3 +1240,64 @@ The expected value must come from a source independent of the code:
 
 Promoting the current code to the top of this hierarchy is how a bug gets
 frozen as "correct". The semantic pass enforces this hierarchy.
+
+## F7 - AI-fix gate adjudication (semantic skill + mutation)
+
+When the skill runs in AI-fix mode (Mode C in `SKILL.md`), it proposes a
+strengthened test and self-validates it with Mode A. That self-check proves the
+proposed test is structurally able to fail; it does not prove the test fails on
+*this* bug. Mutation is what closes that gap, and the skill does not run it. F7 is
+the rule the host or developer applies to the gate result, and the output contract
+is `schema/fix-validation.json`.
+
+### The bidirectional gate
+
+Run the strengthened test twice:
+
+- **Clean replica** (code unmodified): the test must **pass**. A fail here means
+  the test is wrong or the environment is unstable, not that the fix works.
+- **Mutated replica** (the bug class reintroduced): the test must **fail**. This
+  is the proof that the test can catch the defect the finding described.
+
+Decision rule (fixed): **accept** only when `clean_replica = pass` AND
+`mutated_replica = fail`. Every other combination is **reject**:
+
+| clean_replica | mutated_replica | verdict | reading |
+|---|---|---|---|
+| pass | fail | accept | catches the bug, stable on clean code |
+| pass | pass | reject | still false-green; the mutant survives |
+| fail | fail | reject | test does not hold on clean code |
+| fail | pass | reject | inverted and broken |
+
+### Two cost tiers
+
+The gate has two tiers; the host picks based on cost:
+
+- **suite-rerun** (`tier: "suite-rerun"`): rerun the whole suite against the clean
+  replica and a mutated replica. Cheap to wire, coarse: a surviving mutant tells
+  you *some* test should have failed, not that the strengthened one did.
+- **targeted-mutation** (`tier: "targeted-mutation"`): apply a focused mutant to
+  the unit under test and run the strengthened test alone. Costlier per run, but it
+  attributes the fail to this test and this mutant. Use it when the finding blocks
+  a deploy or is cited in a report.
+
+Tooling is the host's, not the skill's: **mutmut** or **cosmic-ray** for Python,
+**Stryker** for JavaScript/TypeScript. The skill never invokes them.
+
+### The flaky case
+
+If the strengthened test does not pass in stable isolation on the clean replica
+(passes on rerun, fails on rerun, or depends on test order), it is a J6 finding in
+its own right: order-dependent or non-deterministic. Do not accept a flaky fix even
+if it happens to fail on the mutated replica, because the mutated-replica fail
+cannot be attributed to the mutation. Verdict: **reject**, with the J6 reason in
+`notes`. Fix the isolation first (Mode C re-run), then re-gate.
+
+### Output contract
+
+The host records the verdict in `schema/fix-validation.json`: the `finding`
+reference (code / file / line), the `tier`, the two replica outcomes, the
+`verdict`, and optional `mutation` and `notes`. `accept` is gated on
+`clean_replica = pass` AND `mutated_replica = fail`; the schema description carries
+the same rule so the contract is self-describing. The bidirectional gate is the
+SENTINEL / Pizzini contribution credited in `CREDITS.md`.

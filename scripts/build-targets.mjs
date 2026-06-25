@@ -53,6 +53,7 @@ function buildClaudeAgentSkill() {
   copy('schema/finding.json', `${dir}/schema/finding.json`);
   copy('schema/report.json', `${dir}/schema/report.json`);
   copy('schema/test-spec.json', `${dir}/schema/test-spec.json`);
+  copy('schema/fix-validation.json', `${dir}/schema/fix-validation.json`);
 }
 
 function buildGeminiSkill() {
@@ -79,6 +80,7 @@ function buildGeminiSkill() {
   copy('schema/finding.json', `${dir}/schema/finding.json`);
   copy('schema/report.json', `${dir}/schema/report.json`);
   copy('schema/test-spec.json', `${dir}/schema/test-spec.json`);
+  copy('schema/fix-validation.json', `${dir}/schema/fix-validation.json`);
 }
 
 cleanDist();
