@@ -7,6 +7,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- `reference.md` superset sync with the static scanners (#39): the JS/TS C44 numeric
+  tautology on a length (`expect(x.length).toBeGreaterThanOrEqual(0)`), pairing the
+  existing Python `len(x) >= 0` form. The `Infinity`-bound forms are deliberately not
+  flagged (they are false for `NaN`, so they still catch a value that escaped). Robot
+  Framework gained R6 (`Should Be True` on a string literal), C9 (catch-all
+  `Run Keyword And Expect Error    *`), C20 (verification after `[Return]`/`Fail`/
+  `Pass Execution`), C37 (duplicate `[Template]` data row), CC (commented-out
+  verification keyword), R1 (forced green via `Pass Execution`), and R2 (hollow verifier
+  keyword). RF3 is documented as sharing id `C3` (swallow plus status-variable forms).
+  Added the JS D8 diagnostic (magic number in an assertion) to the maintainability group.
 - AI-fix mode (Mode C) in `SKILL.md`: given a finding from a falsegreen report, the
   skill proposes a strengthened test and self-validates it by running Mode A over its
   own output (reusing the Mode B machinery). The header is now "Three intents, one
