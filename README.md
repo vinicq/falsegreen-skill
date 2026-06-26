@@ -17,6 +17,8 @@ is the primary detection tool. It is a superset of the three static scanners
 (falsegreen, falsegreen-js, robotframework-falsegreen) plus semantic patterns only an LLM
 can detect.
 
+**The falsegreen family:** [falsegreen](https://github.com/vinicq/falsegreen) (Python/pytest) · [falsegreen-js](https://github.com/vinicq/falsegreen-js) (JS/TS) · [robotframework-falsegreen](https://github.com/vinicq/robotframework-falsegreen) (Robot Framework) · **falsegreen-skill** (semantic LLM pass).
+
 ---
 
 ## Why this exists
