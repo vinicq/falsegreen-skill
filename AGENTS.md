@@ -168,13 +168,15 @@ Precision over recall: a wrong HIGH finding is worse than a missed LOW one.
 
 ## Semantic cases (quick reference)
 
+<!-- fg:semantic-cases-compact:start -->
 | Case | Judgment | Name | Rule |
 |---|---|---|---|
-| 10 | J3 | Mocks the unit under test | Patches/mocks the function being tested, then asserts on the mock's value |
+| 10 | J3 | Mocks the unit under test | Patches/mocks the function being tested, then asserts on the mock's return value |
 | 11 | J2/J3 | Asserts the value fed to the mock | Stubs dependency to return X, then asserts result == X with no real logic in between |
 | 12 | J2 | Re-implements the production formula | Expected value computed with the same formula as the SUT; both sides agree on the same wrong answer |
 | 15 | J6 | Passes only if another test ran first | Reads shared mutable state written by a sibling test; fails when run alone |
-| 18 | J2 | Expected value contradicts the spec | Asserts a value the independent oracle says is wrong; requires cited oracle before reporting |
+| 18 | J2 | Expected value contradicts what the code should do | Asserts a value the independent oracle says is wrong; requires cited oracle before reporting |
+<!-- fg:semantic-cases-compact:end -->
 
 Cases from the structural families (C1-C45, CC) apply to Python directly.
 For TypeScript/JavaScript, apply them by reading the source semantically.
@@ -199,14 +201,23 @@ Full patterns with examples are in `reference.md`.
 
 ## Precision-first rules
 
+<!-- fg:precision-rules:start -->
 1. Never report case 18 without citing an independent oracle.
 2. If a mock replaces a network/disk/time dependency (an edge), it is NOT
    case 10. Case 10 applies only when the mock replaces the unit being tested.
 3. A characterization test is not a bug even if the expected value looks wrong.
    Classify first (Step 3) before judging.
-4. A test under `@pytest.mark.skip` with an empty body is not C2.
+4. A test decorated with `@pytest.mark.skip`, `@pytest.mark.xfail`, or
+   `@unittest.skip` that has no assertion body is NOT C2/C5. The skip marker
+   stops it from running.
 5. In web/UI layer tests, a truthiness check on a response or locator object
    is NOT case 6. Presence of a response IS the assertion at that layer.
+6. Tests decorated with `@given`, `@hypothesis`, or `@fuzz` that have no
+   explicit `assert` are NOT C2. These frameworks generate and check
+   assertions internally.
+7. `expectTypeOf(v).toEqualTypeOf<T>()` in Vitest is a compile-time type
+   assertion. Not C5. Do not flag it.
+<!-- fg:precision-rules:end -->
 
 ---
 
