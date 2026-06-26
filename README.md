@@ -186,6 +186,18 @@ severity = { D1 = "info", D3 = "info", D4 = "info", D5 = "info", D6 = "info", M2
 
 ---
 
+## What we don't flag (and why)
+
+Measured against the [Open Catalog of Test Smells](https://test-smell-catalog.readthedocs.io/) (517 documented smells), only the false-green slice is in scope. The skill is the broadest of the family - it reads intent - but it is still false-green only. These stay out, on purpose:
+
+- **Brittleness / false-red** (a test that breaks without a real bug): sensitive equality, brittle or fragile assertions. The opposite axis.
+- **Hygiene / maintainability**: assertion roulette, magic numbers, long tests. Linter territory (ruff/ESLint/Robocop); a few are surfaced here as opt-in diagnostics.
+- **Slow, design, naming, duplication, runtime/culture**: none are about whether the test protects.
+
+The skill carries every structural proxy of the scanners (`C16` for uncontrolled time, `C23` for hard-coded paths, `C24`/`C15` for shared state) plus the semantic patterns no parser sees: negative-only security assertions (`S11`), patching the unit under test (`S12`), and order-dependence across files (`S13`). See [CREDITS.md](CREDITS.md) for the full cross-walk against the literature.
+
+---
+
 ## How it compares
 
 **vs. ruff / flake8-pytest-style**
