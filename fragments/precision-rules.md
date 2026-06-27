@@ -5,9 +5,13 @@
    Classify first (Step 3) before judging.
 4. A test decorated with `@pytest.mark.skip`, `@pytest.mark.xfail(strict=True)`,
    or `@unittest.skip` that has no assertion body is NOT C2/C5. The marker stops
-   it from running (skip) or fails it on XPASS (strict xfail). Plain
-   `@pytest.mark.xfail` is NOT exempt: a non-strict xfail still executes and an
-   XPASS keeps exit status 0, so a no-assertion test stays false-green.
+   it from running (skip) or fails it on XPASS (strict xfail). A plain
+   `@pytest.mark.xfail` (no `strict=`) is exempt ONLY when the project turns on
+   strict xfail globally - `xfail_strict = true` in pytest config (pytest.ini,
+   `[tool.pytest.ini_options]`, setup.cfg) or `-o xfail_strict=true` - because the
+   marker then inherits strict and an XPASS fails the run. Otherwise a plain xfail
+   still executes and an XPASS keeps exit status 0, so a no-assertion test stays
+   false-green. Check the pytest config (or a `conventions:` override) first.
 5. In web/UI layer tests, a truthiness check on a response or locator object
    is NOT case 6. Presence of a response IS the assertion at that layer.
 6. Tests decorated with `@given`, `@hypothesis`, or `@fuzz` that have no
