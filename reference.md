@@ -50,7 +50,9 @@ of this. `smoke`/`slow`/`asyncio`/`anyio` markers are level-neutral.
   `redis`/`redis.asyncio`, `alembic`/migrations, `testcontainers`, `pytest-postgresql`/`-mysql`,
   `@pytest.mark.django_db`/`transactional_db`. `sqlite :memory:` leans integration.
 - Python other I/O: queues (`kombu`/`celery` real broker, `pika`, `kafka-python`/`aiokafka`),
-  real `boto3` S3 (not moto), real filesystem (vs pyfakefs), `subprocess`, real SMTP.
+  real `boto3` S3 - against a live endpoint or a **LocalStack**/`testcontainers` emulator (a
+  real service over the wire, not moto/`@mock_aws`), real filesystem (vs pyfakefs),
+  `subprocess`, real SMTP.
 - JS/TS API: supertest `request(app)` in-process, Nest `Test.createTestingModule` + supertest,
   `fetch`/`undici`/`got`/`axios`/`ky` to a live URL, Apollo `executeOperation`, `graphql-request`,
   tRPC caller, `@grpc/grpc-js`, `ws`/`socket.io-client` to a started server.
@@ -58,8 +60,9 @@ of this. `smoke`/`slow`/`asyncio`/`anyio` markers are level-neutral.
   `ioredis`/`redis`, `cassandra-driver`; ORMs Prisma/TypeORM/Sequelize/Drizzle/Kysely/MikroORM/
   Knex/Objection; `testcontainers`. In-memory (`mongodb-memory-server`, sqlite `:memory:`,
   `pg-mem`) leans integration (real query engine), not unit.
-- JS/TS other I/O: `amqplib`/`kafkajs`/`bullmq`, real `@aws-sdk/client-s3` (vs aws-sdk-client-mock),
-  `nodemailer` to a real SMTP stub.
+- JS/TS other I/O: `amqplib`/`kafkajs`/`bullmq`, real `@aws-sdk/client-s3` against a live
+  endpoint or a **LocalStack**/`testcontainers` emulator (a real service over the wire, not
+  aws-sdk-client-mock), `nodemailer` to a real SMTP stub.
 
 ### Component layer (folds to unit for the oracle)
 React/Vue/Angular/Svelte render with mocked network: `@testing-library/*` `render`/`screen`/
@@ -1188,9 +1191,13 @@ False-green patterns (the verification keyword is the oracle):
 - **Should Be True on a string literal (J4, R6):** `Should Be True    some text` passes a
   non-empty bare string literal, not a boolean expression. A non-empty string is always
   truthy, so the check never fails. This is the literal case only: a bare variable
-  (`Should Be True    ${x}`) is the truthiness-only C6, and an expression with operators
-  (`Should Be True    ${n} > 0`, `${a} and ${b}`) is a real oracle and is not flagged.
-  Pass a real expression, not a bare literal.
+  (`Should Be True    ${x}`) is the truthiness-only C6 **when `${x}` holds a non-boolean
+  value** - you should assert its actual expected value, not just that it is truthy. A
+  genuinely boolean variable, such as a status captured from `Run Keyword And Return Status`,
+  asserted with `Should Be True    ${status}` is the correct boolean oracle (see "Status
+  captured" above), not C6. An expression with operators (`Should Be True    ${n} > 0`,
+  `${a} and ${b}`) is also a real oracle and is not flagged. Pass a real expression, not a
+  bare literal.
 - **Self-compare (J2, C7):** `Should Be Equal    ${x}    ${x}`.
 - **Catch-all expected error (J4, C9):** `Run Keyword And Expect Error    *` (or the
   explicit-glob form `GLOB:*`) where the pattern is just a glob star. Any error satisfies
