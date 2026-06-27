@@ -33,7 +33,7 @@ For CLI changes, also run:
 node --check bin/falsegreen-llm.js
 ```
 
-If you changed `SKILL.md`, check that the same text appears in `llm.md`, `AGENTS.md`, and `GEMINI.md` — they carry the same protocol and must stay in sync.
+If you changed `SKILL.md`, check that the same text appears in `llm.md`, `AGENTS.md`, and `GEMINI.md` - they carry the same protocol and must stay in sync.
 
 ## How the skill is built
 

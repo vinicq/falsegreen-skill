@@ -801,6 +801,12 @@ Apply only when the user explicitly asks for diagnostic analysis.
   comparison is always true.
 - **C45 — Empty parametrize (J1, HIGH):** `@pytest.mark.parametrize("...", [])`. Zero cases
   are generated, the test never runs.
+- **C48 — Dark patch: flips a test-mode flag then asserts (J1, LOW):** the test forces a
+  test-mode toggle into test mode (`os.environ["TESTING"] = "1"`, `settings.TESTING = True`,
+  a `global`-declared `TESTING = True`) and then asserts, so it exercises the product's
+  test-only branch (`if TESTING: ...`) instead of real behaviour. Cross-language: shared with
+  falsegreen-js (`process.env.NODE_ENV == "test"`, `process.env.TESTING`); no idiomatic Robot
+  form. Config values and product feature flags are not flagged.
 
 #### Look-alikes: do NOT flag these Python patterns
 
@@ -845,6 +851,7 @@ node:test, Cypress, Playwright, and Testing Library.
 | C21 | LOW | every assertion is conditional |
 | C37 | LOW | duplicate `it.each`/`test.each` case |
 | C44 | HIGH | numeric tautology on a length (`expect(x.length).toBeGreaterThanOrEqual(0)`) |
+| C48 | LOW | dark patch: flips a test-mode flag (`process.env.NODE_ENV = "test"`, `process.env.TESTING`) then asserts |
 | CC | LOW | commented-out assertion |
 | JS1 | HIGH | focused test (`it.only`/`fit`) skips the rest of the suite |
 | JS2 | HIGH | `expect(x)` with no matcher |

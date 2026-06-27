@@ -11,8 +11,8 @@
 to [falsegreen](https://github.com/vinicq/falsegreen), the Python static
 scanner.
 
-For Python, this skill applies the complete falsegreen catalog directly — all
-structural and semantic patterns — via LLM analysis, without requiring the
+For Python, this skill applies the complete falsegreen catalog directly - all
+structural and semantic patterns - via LLM analysis, without requiring the
 static scanner to run first. For TypeScript, JavaScript, and Robot Framework it
 is the primary detection tool. It is a superset of the three static scanners
 (falsegreen, falsegreen-js, robotframework-falsegreen) plus semantic patterns only an LLM
@@ -25,7 +25,7 @@ can detect.
 ## Why this exists
 
 A test suite with 100% green tests is not a proof of correctness. It is a
-proof that no test failed — which is a different thing. Tests can pass
+proof that no test failed - which is a different thing. Tests can pass
 permanently not because the code is right, but because the test never checks
 anything meaningful.
 
@@ -45,7 +45,7 @@ taxonomy of false-positive test patterns collected in
 The core insight: a test is useful if and only if there exists some incorrect
 implementation that would cause it to fail. If no such implementation exists —
 because the assertion is unreachable, tautological, or verifies the mock
-instead of the code — the test is structurally green regardless of whether the
+instead of the code - the test is structurally green regardless of whether the
 production code is correct.
 
 ---
@@ -75,7 +75,7 @@ goodwill than a missed smell. Exemptions are explicit:
 
 - Semantic case 18 requires a cited independent oracle (spec, docstring, API
   contract). Without a citation, do not report case 18.
-- Characterization tests — intentionally freezing current behavior — are not
+- Characterization tests - intentionally freezing current behavior - are not
   false positives.
 - Boolean predicates (`isinstance`, `.exists()`, `.is_dir()`) are not weak assertions.
 - In HTTP/UI layer tests, a truthiness check on a response object means
@@ -87,9 +87,9 @@ Full protocol: [SKILL.md](SKILL.md).
 
 ## What it detects
 
-### Python — structural patterns (complete falsegreen catalog)
+### Python - structural patterns (complete falsegreen catalog)
 
-**Family A — The test never checks anything**
+**Family A - The test never checks anything**
 
 | Code | Pattern | Example |
 |---|---|---|
@@ -103,7 +103,7 @@ Full protocol: [SKILL.md](SKILL.md).
 | C21 | Every assert is conditional, none runs unconditionally | all asserts inside `if/else` branches |
 | CC | Commented-out assertion | `# assert result == 42` |
 
-**Family B — The check is weak or always true**
+**Family B - The check is weak or always true**
 
 | Code | Pattern | Example |
 |---|---|---|
@@ -122,7 +122,7 @@ Full protocol: [SKILL.md](SKILL.md).
 | C25 | `@pytest.mark.xfail` without `strict=True` | XPASS silently accepted |
 | C34 | Suboptimal assertion form | `== True`, `== None`, `not x in y`, `len == 0` |
 
-**Family C — The test checks its own setup**
+**Family C - The test checks its own setup**
 
 | Code | Pattern | Example |
 |---|---|---|
@@ -130,7 +130,7 @@ Full protocol: [SKILL.md](SKILL.md).
 | C28 | `pytest.raises` binding variable never read | `as exc:` but `exc` never asserted |
 | C29 | `os.environ` mutated directly | `os.environ["KEY"] = "x"` without `monkeypatch` |
 
-**Family D — Green depends on outside factors**
+**Family D - Green depends on outside factors**
 
 | Code | Pattern | Example |
 |---|---|---|
@@ -143,7 +143,7 @@ Full protocol: [SKILL.md](SKILL.md).
 | C32 | `@pytest.mark.skip` without `reason=` | forgotten skip |
 | C35 | `@pytest.mark.flaky` / retry decorator | masks non-determinism |
 
-**Family E — The test checks the wrong thing**
+**Family E - The test checks the wrong thing**
 
 | Code | Pattern | Example |
 |---|---|---|
@@ -153,7 +153,7 @@ Full protocol: [SKILL.md](SKILL.md).
 
 ### Semantic patterns (all three languages)
 
-Semantic patterns require LLM judgment — no static rule can detect them.
+Semantic patterns require LLM judgment - no static rule can detect them.
 
 | Case | Pattern |
 |---|---|
@@ -205,11 +205,11 @@ The skill carries every structural proxy of the scanners (`C16` for uncontrolled
 
 Ruff and flake8-pytest-style catch syntax-level patterns: `assert True`,
 `pytest.raises` with no type, magic values in assertions. They are fast and
-precise for the patterns they cover — about 8-10 of the 37+ cases in the
+precise for the patterns they cover - about 8-10 of the 37+ cases in the
 falsegreen catalog.
 
 This skill covers all 37+ structural codes and the 5 semantic cases that
-require reading the test as a whole — echo mocks, formula re-implementation,
+require reading the test as a whole - echo mocks, formula re-implementation,
 spec contradictions. The two tools are complementary: run the linter for
 instant feedback on simple cases, run the skill for semantic judgment on the
 rest.
@@ -223,7 +223,7 @@ focuses only on patterns that create false-positive green tests, not on
 maintainability smells in general.
 
 Where there is overlap (Assertion Roulette = D1, Duplicate Assert = D3),
-falsegreen flags them as diagnostic codes — informational, not blocking.
+falsegreen flags them as diagnostic codes - informational, not blocking.
 The structural codes unique to falsegreen (C1-C45) cover patterns that
 Palomba's taxonomy does not address because they were derived specifically
 from studying how green tests hide broken code in CI.
@@ -236,7 +236,7 @@ the programs they can run, but they require an executable environment, a full
 test suite, and minutes to hours per run.
 
 This skill is a static pre-flight check. It cannot prove that a test fails
-when the code changes — that is mutation testing's job. It can identify, in
+when the code changes - that is mutation testing's job. It can identify, in
 seconds, tests that are structurally unable to fail: assertions that never
 execute, checks that are always true by construction, mocks that intercept
 the function being tested. Think of the skill as a fast filter before the
@@ -318,7 +318,7 @@ npx falsegreen-skill analyze tests/test_orders.py --model claude-opus-4-8
 npx falsegreen-skill analyze tests/test_orders.py --temperature 0.0
 ```
 
-The skill identifies the language from the file extension. TypeScript and JavaScript work the same way — no extra flags needed.
+The skill identifies the language from the file extension. TypeScript and JavaScript work the same way - no extra flags needed.
 
 Full flag reference: [docs/cli.md](docs/cli.md).
 
@@ -334,7 +334,7 @@ Add the marketplace and install the plugin:
 ```
 
 Then invoke the skill with `/falsegreen-skill:falsegreen-llm`, or just attach a
-test file and ask for false-positive analysis — the skill triggers on intent.
+test file and ask for false-positive analysis - the skill triggers on intent.
 The skill identifies the language and framework, classifies the test intent,
 applies the six-judgment protocol, and reports findings with case numbers,
 confidence levels, and fix hints.
@@ -374,7 +374,7 @@ false-positive smells, and the J1-J6 protocol runs automatically.
 | TypeScript | Jest, Vitest, Mocha + Chai, React Testing Library, Vue Test Utils, Angular TestBed |
 | JavaScript | Jest, Vitest, Mocha + Chai, Jasmine, React Testing Library |
 
-Frontend component tests — React, Vue, Angular, Svelte — use the same J1-J6
+Frontend component tests - React, Vue, Angular, Svelte - use the same J1-J6
 framework as backend tests. The structural failures are identical: a J4 weak
 assertion on a rendered component is the same smell as a J4 on a service
 method. See the family-based examples under `examples/typescript/` (for instance
