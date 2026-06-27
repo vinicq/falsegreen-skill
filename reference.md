@@ -1192,19 +1192,23 @@ False-green patterns (the verification keyword is the oracle):
   non-empty bare string literal, not a boolean expression. A non-empty string is always
   truthy, so the check never fails. This is the literal case only: a bare variable
   (`Should Be True    ${x}`) is the truthiness-only C6 **when `${x}` holds a non-boolean
-  value** - you should assert its actual expected value, not just that it is truthy. A
-  genuinely boolean variable, such as a status captured from `Run Keyword And Return Status`,
-  asserted with `Should Be True    ${status}` is the correct boolean oracle (see "Status
-  captured" above), not C6. An expression with operators (`Should Be True    ${n} > 0`,
-  `${a} and ${b}`) is also a real oracle and is not flagged. Pass a real expression, not a
-  bare literal.
+  value** - you should assert its actual expected value, not just that it is truthy. The
+  only exemption is a variable with a genuinely boolean provenance: a status captured from
+  `Run Keyword And Return Status`, or an `Evaluate` of a comparison. Asserting that with
+  `Should Be True    ${status}` is the correct boolean oracle (see "Status captured" above),
+  not C6. Any other bare variable stays C6. An expression with operators
+  (`Should Be True    ${n} > 0`, `${a} and ${b}`) is also a real oracle and is not flagged.
+  Pass a real expression, not a bare literal.
 - **Self-compare (J2, C7):** `Should Be Equal    ${x}    ${x}`.
 - **Catch-all expected error (J4, C9):** `Run Keyword And Expect Error    *` (or the
   explicit-glob form `GLOB:*`) where the pattern is just a glob star. Any error satisfies
   the glob - including one from a typo in the test itself - so the oracle is vacuous. This
   is the glob-wildcard case only: `EQUALS:*` and `STARTS:*` are literal/prefix matchers
   that require the error message to actually be (or start with) `*`, so they are not
-  catch-alls. Match the specific message/pattern instead.
+  catch-alls. The regex form `REGEXP:.*` (also `REGEXP:.+` / `REGEXP:^.*$`) matches every
+  message and IS a catch-all; a bare `.*` without the `REGEXP:` prefix is glob, where `.`
+  is literal, so it only matches messages starting with a dot and is not. Match the
+  specific message/pattern instead.
 - **Verification after a terminator (J1, C20):** a `Should ...` (or other check) placed
   after `[Return]`, `Return From Keyword`, `Fail`, or `Pass Execution` in the same block.
   Nothing after the terminator runs, so the check is dead. Move it before the terminator.
