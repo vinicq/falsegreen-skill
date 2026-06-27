@@ -1,6 +1,6 @@
 {
   "name": "falsegreen-skill",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "LLM-based semantic analysis for false-positive test detection. Applies the J1-J6 judgment framework across Python, TypeScript, JavaScript, and Robot Framework, plus semantic patterns no static tool can see.",
   "author": {
     "name": "Vinicius Queiroz",

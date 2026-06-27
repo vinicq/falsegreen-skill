@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-27
+
+### Fixed
+- A plain @pytest.mark.xfail is exempt from C2/C5 when the project enables strict xfail globally (xfail_strict=true), and stays false-green otherwise (#54, #58).
+- C6 restricted to non-boolean values (a captured boolean status asserted with Should Be True is the correct oracle); LocalStack level cue mirrored; C9 documents the REGEXP:.* catch-all; release workflow on Node 22 for npm OIDC (#56).
+
+
 ### Added
 - `reference.md` superset sync with the static scanners (#39): the JS/TS C44 numeric
   tautology on a length (`expect(x.length).toBeGreaterThanOrEqual(0)`), pairing the
