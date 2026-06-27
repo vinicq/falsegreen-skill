@@ -46,6 +46,7 @@ const TARGETS = {
   'llm.md': ['precision-rules'],
   'AGENTS.md': ['precision-rules', 'semantic-cases-compact'],
   'GEMINI.md': ['precision-rules', 'semantic-cases-compact'],
+  'contexts/cursor.md': ['precision-rules'],
 };
 
 function markers(key) {

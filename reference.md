@@ -348,8 +348,13 @@ smell, operator confirms. OFF/INFO = diagnostic only, skip unless asked.
   The function has no `assert`, no `self.assert*`, no `pytest.raises()`, no
   fluent `.should.`, no mock assertion call. Body is only `pass`, docstring,
   `...`, or setup-only statements. Always green regardless of production code.
-  Exemptions — do NOT flag: `@pytest.mark.skip`, `@pytest.mark.xfail`,
-  `@hypothesis`/`@given`/`@fuzz` decorators.
+  Exemptions — do NOT flag: `@pytest.mark.skip`, `@pytest.mark.xfail(strict=True)`,
+  `@unittest.skip`, `@hypothesis`/`@given`/`@fuzz` decorators. A plain
+  `@pytest.mark.xfail` (no `strict=`) is exempt ONLY when the project turns on strict
+  xfail globally (`xfail_strict = true` in pytest.ini / `[tool.pytest.ini_options]` /
+  setup.cfg, or `-o xfail_strict=true`): the marker then inherits strict and an XPASS
+  fails the run. Otherwise a plain xfail still executes and an XPASS keeps exit status 0,
+  so a no-assertion test stays false-green — check the pytest config first.
   ```python
   # BAD
   def test_create_user():
@@ -568,7 +573,10 @@ smell, operator confirms. OFF/INFO = diagnostic only, skip unless asked.
 - **C25 — xfail without strict=True (J1, LOW):**
   `@pytest.mark.xfail` without `strict=True`. If the test unexpectedly passes,
   pytest still reports it as `XPASS` (not a failure by default). A quietly
-  passing xfail hides that the bug was fixed without removing the mark.
+  passing xfail hides that the bug was fixed without removing the mark. Exempt
+  when the project sets `xfail_strict = true` globally (pytest config or
+  `-o xfail_strict=true`): the marker then inherits strict, so XPASS already fails
+  the run — check the config before flagging.
 
 - **C34 — Suboptimal assertion form (J4, LOW):**
   Any of: `assert not x in y` (use `assert x not in y`),
@@ -775,8 +783,13 @@ Apply only when the user explicitly asks for diagnostic analysis.
 
 #### Look-alikes: do NOT flag these Python patterns
 
-- `@pytest.mark.skip` or `@pytest.mark.xfail` on a test with an empty body
-  → the test is explicitly disabled, not a C2.
+- `@pytest.mark.skip` or `@pytest.mark.xfail(strict=True)` on a test with an
+  empty body → the test is explicitly disabled (skip) or fails on XPASS (strict
+  xfail), not a C2. A plain `@pytest.mark.xfail` (no `strict=`) is exempt ONLY when
+  the project sets strict xfail globally (`xfail_strict = true` in pytest config, or
+  `-o xfail_strict=true`): it then inherits strict and an XPASS fails the run.
+  Otherwise a plain xfail still executes and an XPASS keeps exit status 0, so it stays
+  false-green — check the pytest config first.
 - `@given`/`@hypothesis`/`@fuzz` decorated test with no explicit `assert`
   → hypothesis generates the assertions internally, not C2.
 - A helper called from the test that contains the `assert`
