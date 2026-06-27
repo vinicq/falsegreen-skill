@@ -3,7 +3,7 @@
 Full case catalog with per-language patterns, framework cues, and look-alike
 examples. Use alongside [SKILL.md](SKILL.md).
 
-Supported languages: **Python, TypeScript, JavaScript.**
+Supported languages: **Python, TypeScript, JavaScript, Robot Framework** (Gherkin and Tavern are covered as secondary semantic passes).
 
 ## Language and framework detection cues
 
