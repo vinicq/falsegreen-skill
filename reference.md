@@ -83,7 +83,9 @@ rarely unit.
 - DB integration: `DatabaseLibrary` (`Connect To Database`, `Query`).
 - System integration: `SSHLibrary`, `FTPLibrary`, `ImapLibrary`, `Process` (subprocess),
   `OperatingSystem` (files), MQTT/Kafka libraries.
-- Tags: `[Tags] e2e`/`integration`/`smoke`/`api`. RPA suites are E2E/system.
+- Tags: `[Tags] e2e`/`integration`/`api` carry a level. `smoke` is level-neutral (it marks
+  a fast subset, not a layer) - do not read a level from it; use the imported Library. RPA
+  suites are E2E/system.
 
 ---
 
@@ -303,9 +305,13 @@ clear the contradiction is); never auto-block on these without showing the reaso
 
 Look-alikes - do NOT flag: a deliberately narrow unit test whose scope the spec confirms
 (S6 needs a stated broader contract); a constant that the spec genuinely endorses (not S3);
-a sanitizer test that already pairs the negative check with a positive one (not S11); a mock
-on a genuine external edge - DB, network, clock (not S12); a test whose shared state is reset
-by an autouse/`beforeEach` teardown (not S13).
+a sanitizer test that already pairs the negative check with a positive one (not S11); a test
+of a filter whose contract is to drop the input entirely - a blocklist sanitizer, a
+guard that returns empty on a forbidden value, a redactor that suppresses the whole field -
+where empty output is the correct behavior, so the negative-only assertion legitimately
+passes and a positive "content survived" assertion would contradict the design (not S11); a
+mock on a genuine external edge - DB, network, clock (not S12); a test whose shared state is
+reset by an autouse/`beforeEach` teardown (not S13).
 
 ---
 
@@ -749,6 +755,18 @@ Apply only when the user explicitly asks for diagnostic analysis.
   `print()` call inside the test body. Output is suppressed by pytest by
   default; the print was likely left over from debugging.
 
+- **D7 — Anonymous test: empty or missing description (LOW):**
+  A test with a blank title (`it('', ...)`) or registered with no name where the
+  runner allows it. CI reports a blank or generated test name, so a failure is
+  hard to locate. Give the test a description. (Runner-specific; see the TS/JS
+  catalog - the falsegreen-js scanner emits this code.)
+
+- **D8 — Magic number in an assertion (LOW):**
+  A bare numeric literal as the expected value (`expect(x).toBe(86400)`) instead
+  of a named constant that carries the meaning. Floats are C8's concern; D8 covers
+  bare integers with absolute value greater than 1. Name the constant so the
+  assertion reads as intent. (TS/JS catalog; emitted by the falsegreen-js scanner.)
+
 - **M2 — Long test method (LOW):**
   The test function body exceeds 50 lines. Consider splitting into focused
   single-concern tests.
@@ -1168,13 +1186,18 @@ False-green patterns (the verification keyword is the oracle):
 - **Always-true check (J2, C5):** `Should Be True    ${TRUE}` / `Should Be True    True` /
   `Should Be Equal    1    1`.
 - **Should Be True on a string literal (J4, R6):** `Should Be True    some text` passes a
-  non-empty string, not a boolean expression. A non-empty string is always truthy, so the
-  check never fails. Pass a real expression (`${x} > 0`), not a bare literal.
+  non-empty bare string literal, not a boolean expression. A non-empty string is always
+  truthy, so the check never fails. This is the literal case only: a bare variable
+  (`Should Be True    ${x}`) is the truthiness-only C6, and an expression with operators
+  (`Should Be True    ${n} > 0`, `${a} and ${b}`) is a real oracle and is not flagged.
+  Pass a real expression, not a bare literal.
 - **Self-compare (J2, C7):** `Should Be Equal    ${x}    ${x}`.
-- **Catch-all expected error (J4, C9):** `Run Keyword And Expect Error    *` (or
-  `GLOB:*` / `EQUALS:*` / `STARTS:*` / `REGEXP:*` whose pattern is just a star). Any
-  error satisfies it - including one from a typo in the test itself - so the oracle is
-  vacuous. Match the specific message/pattern instead.
+- **Catch-all expected error (J4, C9):** `Run Keyword And Expect Error    *` (or the
+  explicit-glob form `GLOB:*`) where the pattern is just a glob star. Any error satisfies
+  the glob - including one from a typo in the test itself - so the oracle is vacuous. This
+  is the glob-wildcard case only: `EQUALS:*` and `STARTS:*` are literal/prefix matchers
+  that require the error message to actually be (or start with) `*`, so they are not
+  catch-alls. Match the specific message/pattern instead.
 - **Verification after a terminator (J1, C20):** a `Should ...` (or other check) placed
   after `[Return]`, `Return From Keyword`, `Fail`, or `Pass Execution` in the same block.
   Nothing after the terminator runs, so the check is dead. Move it before the terminator.

@@ -107,7 +107,7 @@ precedence (strongest signal wins), in order:
 | Component render | RTL / Vue Test Utils / Angular TestBed / `cy.mount` / Storybook with mocked network, `jsdom`/`happy-dom` - counts as unit for the oracle | — | full app in a real browser |
 | API | none, or HTTP intercepted | in-process test client (FastAPI/Starlette `TestClient`, Flask/Django/DRF client, supertest `request(app)`, Nest TestingModule) or a real client to a live URL; gRPC/GraphQL/WebSocket; RequestsLibrary/RESTinstance; asserts status/body | full app behind the browser |
 | Database / store | repository or in-memory fake, mocked client | real ORM/driver (SQLAlchemy, Django ORM, Prisma, TypeORM, Drizzle, Knex, psycopg, asyncpg, mongoose, pymongo, redis, ioredis), `testcontainers`, session/transaction; `sqlite :memory:` and `*-memory-server` lean integration | DB reached through the UI |
-| Other I/O | mocked | real queue (Kafka, RabbitMQ, SQS, bullmq), object storage (real S3, not moto/localstack), email/SMTP, subprocess, cache | — |
+| Other I/O | mocked (moto / `@mock_aws`, aws-sdk-client-mock) | real queue (Kafka, RabbitMQ, SQS, bullmq), object storage (real S3, or a LocalStack / testcontainers emulator - a real service over the wire, not moto), email/SMTP, subprocess, cache | — |
 | UI / browser | none | none | Playwright `page.`/`expect(page)`, Cypress `cy.visit`, WebdriverIO `browser.`, Puppeteer, Selenium `driver.`, Robot SeleniumLibrary/Browser/AppiumLibrary; selectors, navigation |
 
 A `conventions:` block (Step 0) with `test_layer_overrides` wins over all of this. Markers like

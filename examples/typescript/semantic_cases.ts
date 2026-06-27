@@ -1,6 +1,6 @@
 /**
  * Semantic cases - require LLM judgment (no static rule can detect these).
- * Cases: 10, 11, 12, 15, 18
+ * Cases: 10, 11, 12, 15, 18, plus the JWT/HMAC sign-then-verify tautology
  *
  * Static analysis catches structural false positives (missing assertions,
  * tautologies, dead branches). It cannot reconstruct intent. These five cases
@@ -114,4 +114,39 @@ it('BAD case18 expected contradicts the spec', () => {
 // CLEAN: expected derived from the spec
 it('CLEAN case18', () => {
   expect(applyDiscount(200, 0.15)).toBe(170); // 200 - (200 * 0.15) = 170
+});
+
+
+// ─── Sign-then-verify tautology: JWT / HMAC positive test only (J2) ──────────
+
+// BAD in isolation: signs a payload and immediately verifies it with the same
+// key, asserting the round-trip matches. This stays green even if verify() skips
+// the signature check, because the happy path never exercises rejection. The
+// model has to notice there is no negative test proving verification is enforced.
+import { JWT } from './jwt';
+
+it('BAD jwt sign-then-verify only', async () => {
+  const payload = { sub: 'alice' };
+  const secret = 'topsecret';
+  const token = await JWT.sign(payload, secret, 'HS256');
+  const verified = await JWT.verify(token, secret, 'HS256');
+  expect(verified).toMatchObject(payload); // passes even without sig verification
+});
+
+// CLEAN: keep the round-trip, but add the negative tests that make verification
+// load-bearing. A wrong key and a tampered token must both be rejected; if
+// verify() skipped the signature, these would fail and expose it.
+it('CLEAN jwt rejects a wrong key', async () => {
+  const token = await JWT.sign({ sub: 'alice' }, 'topsecret', 'HS256');
+  await expect(JWT.verify(token, 'wrongsecret', 'HS256')).rejects.toThrow(
+    /signature/i,
+  );
+});
+
+it('CLEAN jwt rejects a tampered token', async () => {
+  const token = await JWT.sign({ sub: 'alice' }, 'topsecret', 'HS256');
+  const tampered = token.slice(0, -1) + (token.endsWith('A') ? 'B' : 'A');
+  await expect(JWT.verify(tampered, 'topsecret', 'HS256')).rejects.toThrow(
+    /signature/i,
+  );
 });
