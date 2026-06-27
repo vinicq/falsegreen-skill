@@ -183,7 +183,7 @@ schema.
         "required": ["tests_reviewed","high","low","clean"],
         "additionalProperties": false
       },
-      "language": { "type": "string" },
+      "language": { "type": "string", "enum": ["Python","TypeScript","JavaScript","Robot"] },
       "framework": { "type": "string" }
     },
     "required": ["findings","summary","language","framework"],
@@ -247,7 +247,7 @@ schema = {
                 "required": ["tests_reviewed","high","low","clean"],
                 "additionalProperties": False,
             },
-            "language": {"type": "string"},
+            "language": {"type": "string", "enum": ["Python","TypeScript","JavaScript","Robot"]},
             "framework": {"type": "string"},
         },
         "required": ["findings","summary","language","framework"],
@@ -420,7 +420,7 @@ SCHEMA = {
                 "required": ["tests_reviewed","high","low","clean"],
                 "additionalProperties": False,
             },
-            "language": {"type": "string"},
+            "language": {"type": "string", "enum": ["Python","TypeScript","JavaScript","Robot"]},
             "framework": {"type": "string"},
         },
         "required": ["findings","summary","language","framework"],

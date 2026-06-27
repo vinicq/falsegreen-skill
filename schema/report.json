@@ -40,8 +40,9 @@
       "additionalProperties": false
     },
     "language": {
-      "description": "Primary programming language of the analyzed test file.",
-      "type": "string"
+      "description": "Primary programming language or test stack of the analyzed file. Matches the per-finding enum.",
+      "type": "string",
+      "enum": ["Python", "TypeScript", "JavaScript", "Robot"]
     },
     "framework": {
       "description": "Test framework detected in the file (e.g., pytest, jest, vitest, unittest).",
