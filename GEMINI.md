@@ -168,9 +168,11 @@ code, append a pattern note to the SUMMARY suggesting a conventions block.
    case 10. Case 10 applies only when the mock replaces the unit being tested.
 3. A characterization test is not a bug even if the expected value looks wrong.
    Classify first (Step 3) before judging.
-4. A test decorated with `@pytest.mark.skip`, `@pytest.mark.xfail`, or
-   `@unittest.skip` that has no assertion body is NOT C2/C5. The skip marker
-   stops it from running.
+4. A test decorated with `@pytest.mark.skip`, `@pytest.mark.xfail(strict=True)`,
+   or `@unittest.skip` that has no assertion body is NOT C2/C5. The marker stops
+   it from running (skip) or fails it on XPASS (strict xfail). Plain
+   `@pytest.mark.xfail` is NOT exempt: a non-strict xfail still executes and an
+   XPASS keeps exit status 0, so a no-assertion test stays false-green.
 5. In web/UI layer tests, a truthiness check on a response or locator object
    is NOT case 6. Presence of a response IS the assertion at that layer.
 6. Tests decorated with `@given`, `@hypothesis`, or `@fuzz` that have no

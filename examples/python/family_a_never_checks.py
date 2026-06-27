@@ -51,9 +51,15 @@ def test_c2_hypothesis_not_flagged():
     # @given(st.integers()) decorated functions are exempt from C2
     pass
 
-# CLEAN: xfail tests with empty body are explicitly disabled — not C2
+# CLEAN: strict xfail with empty body — XPASS fails the run, so not C2
+@pytest.mark.xfail(strict=True, reason="known bug #42")
+def test_c2_strict_xfail_not_flagged():
+    pass
+
+# BAD: plain (non-strict) xfail with no assertion — still executes and an XPASS
+# keeps exit status 0, so the no-assertion test stays false-green. This IS C2.
 @pytest.mark.xfail(reason="known bug #42")
-def test_c2_xfail_not_flagged():
+def test_c2_plain_xfail_flagged():
     pass
 
 

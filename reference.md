@@ -348,8 +348,10 @@ smell, operator confirms. OFF/INFO = diagnostic only, skip unless asked.
   The function has no `assert`, no `self.assert*`, no `pytest.raises()`, no
   fluent `.should.`, no mock assertion call. Body is only `pass`, docstring,
   `...`, or setup-only statements. Always green regardless of production code.
-  Exemptions — do NOT flag: `@pytest.mark.skip`, `@pytest.mark.xfail`,
-  `@hypothesis`/`@given`/`@fuzz` decorators.
+  Exemptions — do NOT flag: `@pytest.mark.skip`, `@pytest.mark.xfail(strict=True)`,
+  `@unittest.skip`, `@hypothesis`/`@given`/`@fuzz` decorators. Plain
+  `@pytest.mark.xfail` is NOT exempt: a non-strict xfail still executes and an
+  XPASS keeps exit status 0, so a no-assertion test stays false-green.
   ```python
   # BAD
   def test_create_user():
@@ -775,8 +777,10 @@ Apply only when the user explicitly asks for diagnostic analysis.
 
 #### Look-alikes: do NOT flag these Python patterns
 
-- `@pytest.mark.skip` or `@pytest.mark.xfail` on a test with an empty body
-  → the test is explicitly disabled, not a C2.
+- `@pytest.mark.skip` or `@pytest.mark.xfail(strict=True)` on a test with an
+  empty body → the test is explicitly disabled (skip) or fails on XPASS (strict
+  xfail), not a C2. Plain `@pytest.mark.xfail` is NOT exempt: a non-strict xfail
+  still executes and an XPASS keeps exit status 0, so it stays false-green.
 - `@given`/`@hypothesis`/`@fuzz` decorated test with no explicit `assert`
   → hypothesis generates the assertions internally, not C2.
 - A helper called from the test that contains the `assert`
