@@ -72,13 +72,12 @@ test('C20 clean', () => {
 
 // --- C21: every assertion is conditional, none runs unconditionally --------
 
-// BAD: when result is falsy, zero assertions run
+// BAD: the only assertion sits inside the if, so when result is falsy the test
+// runs zero assertions and still passes green.
 test('C21 - all conditional', () => {
   const result = fetch()
   if (result) {
     expect(result.status).toBe('ok') // C21 - skipped when result is falsy
-  } else {
-    expect(result).toBeNull() // unreachable if result is always truthy
   }
 })
 
@@ -268,16 +267,16 @@ test('JS11 - swallowed assertion', () => {
   }
 })
 
-// CLEAN: catch only a specific non-assertion error, then assert outside
+// CLEAN: the try wraps only the SUT call (not the assertion), and the catch
+// re-throws instead of returning, so the assertion afterward always runs.
 test('JS11 clean', () => {
   let result
   try {
     result = riskyParse()
   } catch (e) {
-    if (e instanceof SyntaxError) return // tolerate only the expected failure
-    throw e
+    throw e // never swallow; let a real failure fail the test
   }
-  expect(result).not.toBeNull() // runs unconditionally on the success path
+  expect(result).not.toBeNull() // runs unconditionally - no early return skips it
 })
 
 

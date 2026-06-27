@@ -50,23 +50,24 @@ it('CLEAN d3', () => {
 });
 
 
-// ─── D4: Untitled it.each cases (3+ cases, no named template) ────────────────
+// ─── D4: Untitled it.each cases (no %/$ placeholder in the title) ─────────────
 
-// BAD: positional %s output gives test[0], test[1], hard to read in CI
+// BAD: a static title with no placeholder - every generated case shares the same
+// name, so CI cannot tell them apart on failure.
 it.each([
   ['alice', 'ALICE'],
   ['bob', 'BOB'],
-  ['carol', 'CAROL'], // D4 - 3+ cases, no descriptive titles
-])('BAD d4 %s', (value, expected) => {
+  ['carol', 'CAROL'], // D4 - title has no placeholder, cases are indistinguishable
+])('BAD d4 uppercases the input', (value, expected) => {
   expect(value.toUpperCase()).toBe(expected);
 });
 
-// CLEAN: object table with named fields produces readable titles
+// CLEAN: a title with a placeholder gives each case a distinct, readable name
 it.each([
-  { name: 'lowercase', value: 'alice', expected: 'ALICE' },
-  { name: 'short', value: 'bob', expected: 'BOB' },
-  { name: 'another', value: 'carol', expected: 'CAROL' },
-])('CLEAN d4 $name', ({ value, expected }) => {
+  ['alice', 'ALICE'],
+  ['bob', 'BOB'],
+  ['carol', 'CAROL'],
+])('CLEAN d4 uppercases %s to %s', (value, expected) => {
   expect(value.toUpperCase()).toBe(expected);
 });
 
