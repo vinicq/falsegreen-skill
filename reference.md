@@ -1312,11 +1312,18 @@ False-green patterns (the verification keyword is the oracle):
 - **No Operation only (J1, R4):** the only step is `No Operation` - the test/keyword runs but
   does nothing.
 - **Empty [Template] (J1, R5):** a `[Template]` keyword with no data rows generates zero cases.
+- **Hollow [Template] keyword (J1, R7):** a `[Template]` test whose in-file template keyword
+  contains no verification keyword - every generated case runs the keyword but asserts nothing.
+  Distinct from R5 (which is zero rows) and R2 (a non-template hollow verifier): R7 is the
+  templated-case variant. Add a verification to the template keyword, or template a verifier.
 - **Test Cases in a .resource (J1, R3):** a `*** Test Cases ***` section in a `.resource`
   file is invalid; the cases never run.
 - **Empty keyword (J1, C2):** a user keyword with only settings and no steps does nothing.
 - **Hard-coded IP-address URL (J6, C23):** `http://10.0.0.5:8080` in test data ties the test
   to one machine (a hostname URL is too common in E2E to flag).
+- **Control flow at test level (J4, D2, off by default):** `IF`/`FOR`/`WHILE`/`TRY` directly in
+  a test case (not a keyword). Diagnostic, not false-green: the guide advises moving control flow
+  into a keyword to keep the case flat. Off by default like the other diagnostics.
 
 Look-alikes - do NOT flag:
 - `Run Keyword And Expect Error` with a SPECIFIC message/pattern, or
@@ -1332,7 +1339,29 @@ swallowed/status-never-asserted ≈ C3 (catalog RF3), always-true ≈ C5, string
 (catalog RF17), self-compare ≈ C7, catch-all expected error ≈ C9, dead-step-after-terminator ≈ C20,
 duplicate-template-row ≈ C37, commented-out-verification ≈ CC, forced-green ≈ R1, hollow-verifier ≈ R2,
 sleep ≈ C16, skip ≈ C32, conditional-only ≈ C21, No-Operation-only ≈ R4, empty-template ≈ R5
-(catalog RF18), Test-Cases-in-resource ≈ R3, IP-URL ≈ C23.
+(catalog RF18), hollow-template ≈ R7, Test-Cases-in-resource ≈ R3, IP-URL ≈ C23, test-level
+control-flow ≈ D2 (diagnostic, off).
+
+---
+
+## Project layer (config-audit)
+
+These are not a smell inside any one test: the suite goes green by **configuration**, not by a
+real check, so the whole run can pass while protecting nothing. The static scanners surface them
+only in `--config-audit` mode (reading pytest/jest/vitest/robot run config), never in the per-file
+scan. Listed here so the skill catalog is a true superset of the scanners.
+
+- **No coverage gate (J5, PL7):** no `--cov-fail-under` / `[tool.coverage.report] fail_under`
+  (Python), `coverageThreshold` (Jest) or `coverage.thresholds` (Vitest). Coverage can fall to
+  zero and the suite still passes. Set a coverage floor.
+- **Run stops early (J5, PL8):** `-x` / `--maxfail` / `--exitfirst` in pytest `addopts`, or `bail`
+  in jest/vitest. The reported test count is incomplete - a green run may have skipped most tests.
+- **Warnings not promoted (J1, PL2, Python):** `filterwarnings` does not turn warnings into errors,
+  so deprecations and runtime warnings pass silently. Set `filterwarnings = error`.
+- **passWithNoTests (J1, PL10, JS/TS):** jest/vitest `passWithNoTests` lets an empty or
+  fully-filtered suite report green. Drop it so a no-test run fails.
+- **Skip-on-failure run option (J1, PL9, Robot):** `--skiponfailure` / `--noncritical` in the run
+  config turns a failing test into a non-fatal pass (legacy, removed in RF 4+). Remove it.
 
 ---
 

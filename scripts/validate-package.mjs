@@ -131,10 +131,11 @@ const publicDocs = [
 assertNotContains(publicDocs, /\bcase_id\b|\bjudgment_failed\b|\btest_name\b/, 'uses legacy JSON field names; use schema/finding.json fields');
 assertNotContains(['providers.md'], /Python\/TS\/JS\/Java\/C#\/PHP\/Ruby\/C\+\+/, 'claims unsupported languages; limit catalog support to Python/TypeScript/JavaScript');
 
-// Issue #60: reference.md is the catalog superset; SKILL.md must not advertise a
-// canonical code the catalog does not define (else a host reading only SKILL.md
-// under- or over-detects). Match canonical ids only; reference-only codes are fine
-// (SKILL is a subset), so only SKILL-not-in-reference is a divergence.
+// Issue #60/#77: this guard checks only SKILL.md is a SUBSET of reference.md - it does
+// NOT verify reference.md is a superset of the sibling scanners (those live in other
+// repos; that check would need their code sets vendored here). The scanner-vs-reference
+// superset is enforced by review, not automated. So: a canonical code in SKILL.md that
+// reference.md does not define is a divergence; reference-only codes are expected.
 const codesIn = (text) =>
   new Set(text.match(/\b(CC|C\d+[a-z]?|JS\d+|R\d+|S\d+|D\d+|M\d+|PL\d+)\b/g) || []);
 const refCodes = codesIn(readText('reference.md'));
