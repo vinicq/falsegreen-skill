@@ -131,6 +131,28 @@ const publicDocs = [
 assertNotContains(publicDocs, /\bcase_id\b|\bjudgment_failed\b|\btest_name\b/, 'uses legacy JSON field names; use schema/finding.json fields');
 assertNotContains(['providers.md'], /Python\/TS\/JS\/Java\/C#\/PHP\/Ruby\/C\+\+/, 'claims unsupported languages; limit catalog support to Python/TypeScript/JavaScript');
 
+// Issue #60: reference.md is the catalog superset; SKILL.md must not advertise a
+// canonical code the catalog does not define (else a host reading only SKILL.md
+// under- or over-detects). Match canonical ids only; reference-only codes are fine
+// (SKILL is a subset), so only SKILL-not-in-reference is a divergence.
+const codesIn = (text) =>
+  new Set(text.match(/\b(CC|C\d+[a-z]?|JS\d+|R\d+|S\d+|D\d+|M\d+|PL\d+)\b/g) || []);
+const refCodes = codesIn(readText('reference.md'));
+const orphan = [...codesIn(readText('SKILL.md'))].filter((c) => !refCodes.has(c)).sort();
+if (orphan.length > 0) {
+  fail(`SKILL.md references code(s) not in reference.md: ${orphan.join(', ')} (reference.md is the catalog superset)`);
+}
+
+// Issue #60/#62: the finding and report language enums must stay identical, so a
+// report cannot declare a top-level language the per-finding contract rejects.
+if (findingSchema && reportSchema) {
+  const fLang = ((findingSchema.properties || {}).language || {}).enum || [];
+  const rLang = ((reportSchema.properties || {}).language || {}).enum || [];
+  if (fLang.join(',') !== rLang.join(',')) {
+    fail(`schema language enums diverge: finding.json [${fLang.join(', ')}] vs report.json [${rLang.join(', ')}]`);
+  }
+}
+
 if (errors.length > 0) {
   process.stderr.write(errors.map((e) => `error: ${e}`).join('\n') + '\n');
   process.exit(1);
