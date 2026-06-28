@@ -11,7 +11,7 @@
 framework across Python, TypeScript, JavaScript, and Robot Framework, plus
 semantic patterns no static tool can see.
 
-For Python, this skill covers the complete falsegreen catalog (C1-C45, semantic
+For Python, this skill covers the complete falsegreen catalog (C1-C45, C48, semantic
 cases, diagnostic codes) without requiring the static scanner to run first. For
 TypeScript, JavaScript, and Robot Framework it is the primary detection tool, and
 a superset of the three static scanners.
@@ -100,7 +100,7 @@ structural pass result and proceed directly to Step 3.
 
 For TypeScript / JavaScript and Robot Framework, apply their catalogs from
 `reference.md` (JS1-JS22, the shared C-codes, and the Robot R-codes), then proceed
-to Step 3. The full multi-stack catalog and the AI-only semantic codes (S1-S13)
+to Step 3. The full multi-stack catalog and the AI-only semantic codes (S1-S16)
 live in `reference.md`; this file carries the Python catalog inline as the most
 common case.
 
@@ -280,7 +280,7 @@ project, add it to the conventions: block (Step 0) to suppress future findings.
 ## Semantic cases — all three languages and Robot
 
 Semantic cases require LLM judgment. No static rule can detect them. The five
-numbered cases below are the core; the AI-only S-series (S1-S13) in `reference.md`
+numbered cases below are the core; the AI-only S-series (S1-S16) in `reference.md`
 extends them (intent mismatch, irrelevant oracle, plausible-but-wrong expected
 value, oracle too coarse to fail, tests the framework not the code, and more).
 

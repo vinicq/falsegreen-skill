@@ -356,5 +356,5 @@ pip install falsegreen
 falsegreen tests/
 ```
 
-The scanner covers all Python structural codes (C1-C45) without an LLM. The Cursor
+The scanner covers all Python structural codes (C1-C45, C48) without an LLM. The Cursor
 skill covers semantic cases and TypeScript/JavaScript, where no static scanner exists.

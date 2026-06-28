@@ -6,6 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- contexts/gemini.md structured-output schema: `case` is now STRING (was INTEGER, which dropped
+  every C/JS/R/S code from a Gemini run) and the required `level` field plus a `required` list were
+  added, matching finding.json (#76).
+
+### Changed
+- Stale catalog ranges updated to `C1-C45, C48` (the catalog skips C46/C47) and `S1-S16` across
+  contexts/claude.md, contexts/cursor.md, README.md, llm.md, AGENTS.md, SKILL.md, and
+  skills/falsegreen-llm/SKILL.md; the contexts/claude.md output template now includes `level` (#79, #80).
+- reference.md S15 boundary clarified: a retry that re-raises on exhaustion is a sanctioned settle,
+  not a flakiness mask (#80).
+
 ### Added
 - reference.md now carries the project-layer config codes (PL2/PL7/PL8 Python, PL7/PL8/PL10 JS,
   PL9 Robot), Robot R7 (hollow [Template] keyword), and Robot D2 (test-level control flow), closing
