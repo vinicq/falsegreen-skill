@@ -7,6 +7,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- Catalog (reference.md): three semantic S-codes for patterns only the LLM pass can judge -
+  `S14` recorded model output used as the oracle (J2; agent/RAG/eval snapshot of a completion or
+  judge verdict), `S15` hand-rolled retry/poll loop masking flakiness (J6; the loop-bodied sibling
+  of C35's decorator), `S16` call-verification as the sole oracle (J4; `toHaveBeenCalled`/
+  `assert_called` with no output or state assertion). Each ships a BAD/CLEAN pair and a
+  do-not-flag boundary (#63, #64, #65).
+
+### Added
 - `npm run validate` now guards catalog drift (#60): it fails if SKILL.md advertises a
   canonical code reference.md does not define (reference.md is the superset; SKILL.md must
   be a subset), and if the finding.json and report.json `language` enums diverge. Keeps a
