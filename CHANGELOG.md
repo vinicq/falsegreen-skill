@@ -6,6 +6,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- contexts/codex.md now documents a compact load order that fits the Codex ~32 KiB
+  host context budget: `AGENTS.md` eager (it carries the compact protocol plus the
+  `fragments/*` synced semantic-case table and precision rules), with `reference.md`
+  and `SKILL.md` pulled in only on demand. The compact path references the canonical
+  J1-J6 protocol and case catalog through the single-source fragments, so it cannot
+  drift from a forked summary. docs/packaging.md records the budget for future edits (#66).
+
+### Changed
+- contexts/codex.md model table no longer recommends stale `gpt-4o`/`gpt-4o-mini`/`o3`
+  ids. It points to Codex's current default model (GPT-5 family) and a reasoning tier by
+  capability, leaving the version unpinned so the guidance does not go stale; the API and
+  batch examples use `gpt-5`/`gpt-5-mini` with a note to use the id the account exposes (#66).
+
 ### Fixed
 - `scripts/validate-package.mjs` now asserts `level` is in `schema/finding.json`'s required array,
   so dropping `level` from the schema fails `npm run validate` (it was silently allowed) (#61).
