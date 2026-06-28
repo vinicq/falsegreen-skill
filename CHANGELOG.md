@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-28
+
 ### Fixed
 - contexts/gemini.md structured-output schema: `case` is now STRING (was INTEGER, which dropped
   every C/JS/R/S code from a Gemini run) and the required `level` field plus a `required` list were
@@ -45,9 +47,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   be a subset), and if the finding.json and report.json `language` enums diverge. Keeps a
   host that reads only SKILL.md from under-detecting and the two schemas in lockstep.
 
-## [0.3.0] - 2026-06-27
-
-### Fixed
+### Fixed (earlier in the 0.3.0 cycle)
 - A plain @pytest.mark.xfail is exempt from C2/C5 when the project enables strict xfail globally (xfail_strict=true), and stays false-green otherwise (#54, #58).
 - C6 restricted to non-boolean values (a captured boolean status asserted with Should Be True is the correct oracle); LocalStack level cue mirrored; C9 documents the REGEXP:.* catch-all; release workflow on Node 22 for npm OIDC (#56).
 
@@ -159,6 +159,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Multi-agent adversarial verification protocol for case 18 (bug-freezing).
 - CREDITS.md citing the research base.
 
-[Unreleased]: https://github.com/vinicq/falsegreen-skill/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/vinicq/falsegreen-skill/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/vinicq/falsegreen-skill/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/vinicq/falsegreen-skill/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/vinicq/falsegreen-skill/releases/tag/v0.1.0
