@@ -305,6 +305,58 @@ clear the contradiction is); never auto-block on these without showing the reaso
   import mutates, so it passes only in a given execution order and fails when run alone. The J6
   question is per-test self-sufficiency, not assertion presence; flag order-dependence the AST
   cannot prove across files.
+- **S14 — Recorded model output as the oracle (J2).** A test asserts `==`/`toEqual`/`assertEqual`
+  against a snapshotted LLM/model result - a pinned completion, a captured embedding vector, a
+  stored "LLM-as-judge" verdict, an agent transcript. The expected value was produced by a past
+  run of the same non-deterministic model, so green means "the model still emits what it once
+  emitted", not that the output is correct; a regression the model also produces is frozen as the
+  truth. A specialization of S7 for the model-output case, common in agent/RAG/eval suites.
+  ```python
+  # BAD: expected is a captured completion from a previous run
+  def test_summary():
+      out = llm.complete(PROMPT)
+      assert out == "The Q3 report shows revenue up 12% year over year."  # S14
+  # CLEAN: assert an invariant the spec guarantees, not the exact text
+  def test_summary_contract():
+      out = llm.complete(PROMPT)
+      assert "12%" in out and len(out) <= 280
+  ```
+- **S15 — Hand-rolled retry/poll loop masking flakiness (J6, LOW).** The loop-bodied equivalent of
+  C35's decorator: the test wraps its action-and-assertion in a `for`/`while` retry, a
+  `tenacity.retry`/`@retry`, or a poll-until-success, and passes if any iteration succeeds - the
+  final failure is swallowed. Non-determinism is hidden, not fixed. J6 (does it pass
+  deterministically in isolation?) cannot answer yes when the harness retries until lucky.
+  ```python
+  # BAD: retries the assertion, green if any attempt passes
+  def test_balance():
+      for _ in range(5):
+          try:
+              assert account.balance() == 100   # S15
+              break
+          except AssertionError:
+              time.sleep(0.2)
+  # CLEAN: one deterministic assertion after an explicit settle
+  def test_balance():
+      account.settle()
+      assert account.balance() == 100
+  ```
+- **S16 — Call-verification as the sole oracle (J4, LOW).** The test's only check is that a
+  collaborator was invoked - `assert_called_once`, `toHaveBeenCalled`, `verify(mock).method()` -
+  with no assertion on the unit's own return value or state, so it goes green even when the SUT
+  computes the wrong thing before delegating. Distinct from the `toHaveBeenCalled()` argument note
+  below (a call assertion missing its arguments): S16 is the case where call-verification is the
+  entire oracle. Pair the interaction check with an assertion on the result or state.
+  ```python
+  # BAD: only checks that save was called; nothing about what was computed
+  def test_register(mock_repo):
+      register_user("alice@example.com")
+      mock_repo.save.assert_called_once()      # S16
+  # CLEAN: assert the computed value, keep the call check as secondary
+  def test_register(mock_repo):
+      user = register_user("alice@example.com")
+      assert user.normalized_email == "alice@example.com"
+      mock_repo.save.assert_called_once_with(user)
+  ```
 
 Look-alikes - do NOT flag: a deliberately narrow unit test whose scope the spec confirms
 (S6 needs a stated broader contract); a constant that the spec genuinely endorses (not S3);
@@ -314,7 +366,15 @@ guard that returns empty on a forbidden value, a redactor that suppresses the wh
 where empty output is the correct behavior, so the negative-only assertion legitimately
 passes and a positive "content survived" assertion would contradict the design (not S11); a
 mock on a genuine external edge - DB, network, clock (not S12); a test whose shared state is
-reset by an autouse/`beforeEach` teardown (not S13).
+reset by an autouse/`beforeEach` teardown (not S13); a structural or contract assertion on a
+model output - valid JSON, required keys present, a cited source id matches, a refusal on a
+banned prompt, a deterministic post-processing step - or a mocked/stubbed model whose return is
+fixture data (not S14); a sanctioned async-settling wait - Robot `Wait Until Keyword Succeeds`,
+Testing Library `waitFor`/`findBy*`, Playwright/Cypress auto-wait, `await expect(...).toPass()` -
+that polls a real settle condition and still fails hard on timeout (not S15); a call-only
+assertion where the interaction IS the contract - a fire-and-forget event, an audit-log or
+telemetry write, a queue publish - or a `toHaveBeenCalledWith`/`assert_called_once_with` that
+pins the specific arguments (not S16).
 
 ---
 
