@@ -178,7 +178,7 @@ Precision over recall: a wrong HIGH finding is worse than a missed LOW one.
 | 18 | J2 | Expected value contradicts what the code should do | Asserts a value the independent oracle says is wrong; requires cited oracle before reporting |
 <!-- fg:semantic-cases-compact:end -->
 
-Cases from the structural families (C1-C45, CC) apply to Python directly.
+Cases from the structural families (C1-C45, C48, CC) apply to Python directly.
 For TypeScript/JavaScript, apply them by reading the source semantically.
 Full patterns with examples are in `reference.md`.
 

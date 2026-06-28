@@ -224,7 +224,7 @@ maintainability smells in general.
 
 Where there is overlap (Assertion Roulette = D1, Duplicate Assert = D3),
 falsegreen flags them as diagnostic codes - informational, not blocking.
-The structural codes unique to falsegreen (C1-C45) cover patterns that
+The structural codes unique to falsegreen (C1-C45, C48) cover patterns that
 Palomba's taxonomy does not address because they were derived specifically
 from studying how green tests hide broken code in CI.
 

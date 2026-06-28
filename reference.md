@@ -326,6 +326,10 @@ clear the contradiction is); never auto-block on these without showing the reaso
   `tenacity.retry`/`@retry`, or a poll-until-success, and passes if any iteration succeeds - the
   final failure is swallowed. Non-determinism is hidden, not fixed. J6 (does it pass
   deterministically in isolation?) cannot answer yes when the harness retries until lucky.
+  Boundary: only the swallow-and-pass form is S15. A bounded retry that **re-raises on
+  exhaustion** (`tenacity.retry(..., reraise=True)`, an explicit `else: raise`, an assertion
+  after the loop) fails hard when every attempt fails, so it is closer to a sanctioned settle
+  (`waitFor`/`Wait Until Keyword Succeeds`) than to a flakiness mask - do not flag it.
   ```python
   # BAD: retries the assertion, green if any attempt passes
   def test_balance():

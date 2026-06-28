@@ -235,10 +235,11 @@ schema = types.Schema(
             items=types.Schema(
                 type=types.Type.OBJECT,
                 properties={
-                    "case": types.Schema(type=types.Type.INTEGER),
+                    "case": types.Schema(type=types.Type.STRING),
                     "judgment": types.Schema(type=types.Type.STRING),
                     "confidence": types.Schema(type=types.Type.STRING),
                     "language": types.Schema(type=types.Type.STRING),
+                    "level": types.Schema(type=types.Type.STRING, enum=["unit", "integration", "e2e"]),
                     "intent": types.Schema(type=types.Type.STRING),
                     "test": types.Schema(
                         type=types.Type.OBJECT,
@@ -254,6 +255,8 @@ schema = types.Schema(
                     "oracle": types.Schema(type=types.Type.STRING),
                     "fix_hint": types.Schema(type=types.Type.STRING),
                 },
+                required=["case", "judgment", "confidence", "language", "level",
+                          "intent", "test", "finding", "evidence", "fix_hint"],
             ),
         ),
         "summary": types.Schema(
