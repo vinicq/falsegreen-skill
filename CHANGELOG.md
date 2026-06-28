@@ -7,6 +7,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- reference.md now carries the project-layer config codes (PL2/PL7/PL8 Python, PL7/PL8/PL10 JS,
+  PL9 Robot), Robot R7 (hollow [Template] keyword), and Robot D2 (test-level control flow), closing
+  the superset gap: every code the three scanners emit is now mirrored in the catalog (#75).
+
+### Changed
+- validate-package.mjs comment no longer overstates the drift guard: it checks SKILL.md is a subset
+  of reference.md, not reference.md vs the sibling scanners (the latter is enforced by review) (#77).
+
+### Added
 - Catalog (reference.md): three semantic S-codes for patterns only the LLM pass can judge -
   `S14` recorded model output used as the oracle (J2; agent/RAG/eval snapshot of a completion or
   judge verdict), `S15` hand-rolled retry/poll loop masking flakiness (J6; the loop-bodied sibling
