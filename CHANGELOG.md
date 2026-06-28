@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- `npm run validate` now guards catalog drift (#60): it fails if SKILL.md advertises a
+  canonical code reference.md does not define (reference.md is the superset; SKILL.md must
+  be a subset), and if the finding.json and report.json `language` enums diverge. Keeps a
+  host that reads only SKILL.md from under-detecting and the two schemas in lockstep.
+
 ## [0.3.0] - 2026-06-27
 
 ### Fixed
