@@ -1342,6 +1342,14 @@ False-green patterns (the verification keyword is the oracle):
 - **Sleep as synchronization (J1):** `Sleep    2s` used instead of `Wait Until *`; result
   depends on timing.
 - **Skipped (J1):** `[Tags]    robot:skip` / `Skip` / `Skip If` that always skips.
+- **Vacuous library assertion (J2, C44):** a library assertion provably true for any runtime
+  value: `Should Contain    ${x}    ${EMPTY}` (every string contains empty), `Should Not Be
+  Empty    ${TRUE}`, `Should Be Empty    ${EMPTY}`, or a `Length Should Be` against a fixed
+  length. The Robot analogue of the Python/JS `C44` numeric tautology. Two free variables or a
+  runtime-computed length are not flagged.
+- **Oracle pinned to a constant-true Set Variable If (J2, C5):** `${expected}=    Set Variable
+  If    ${TRUE}    ok    fail` whose result feeds the expected side of a later `Should Be Equal`
+  pins the oracle to a value the test fixed. The Robot form of the always-true family.
 - **Conditional-only verification (J1):** the only verification lives inside a
   `Run Keyword If` whose condition may never hold.
 - **No Operation only (J1, R4):** the only step is `No Operation` - the test/keyword runs but
