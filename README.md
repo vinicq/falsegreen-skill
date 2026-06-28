@@ -18,7 +18,14 @@ is the primary detection tool. It is a superset of the three static scanners
 (falsegreen, falsegreen-js, robotframework-falsegreen) plus semantic patterns only an LLM
 can detect.
 
-**The falsegreen family:** [falsegreen](https://github.com/vinicq/falsegreen) (Python/pytest) · [falsegreen-js](https://github.com/vinicq/falsegreen-js) (JS/TS) · [robotframework-falsegreen](https://github.com/vinicq/robotframework-falsegreen) (Robot Framework) · **falsegreen-skill** (semantic LLM pass).
+**The falsegreen family** (install the one for your stack):
+
+| Tool | Stack | Install | Package |
+|---|---|---|---|
+| [falsegreen](https://github.com/vinicq/falsegreen) | Python / pytest | `pip install falsegreen` | [PyPI](https://pypi.org/project/falsegreen/) |
+| [falsegreen-js](https://github.com/vinicq/falsegreen-js) | JS / TS | `npm i -D falsegreen-js` (`npx falsegreen-js`) | [npm](https://www.npmjs.com/package/falsegreen-js) |
+| [robotframework-falsegreen](https://github.com/vinicq/robotframework-falsegreen) | Robot Framework | `pip install robotframework-falsegreen` | [PyPI](https://pypi.org/project/robotframework-falsegreen/) |
+| **falsegreen-skill** | semantic LLM pass | `npx falsegreen-skill analyze <path>` | [npm](https://www.npmjs.com/package/falsegreen-skill) |
 
 ---
 
