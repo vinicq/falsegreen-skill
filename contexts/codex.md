@@ -27,22 +27,73 @@ Use one of the two paths above instead.
 
 ---
 
+## Compact load order for Codex (context budget)
+
+Codex loads project guidance into a host context with a working budget of
+about **32 KiB**. The full set of protocol files does not fit: `SKILL.md`
+(~29 KB) plus `AGENTS.md` (~11 KB) plus this guide (~18 KB) is roughly 58 KB
+loaded together, well past the budget. Loading all three at once truncates
+the protocol mid-file and the analysis degrades silently.
+
+Load the compact path instead. It carries the same J1-J6 protocol and case
+catalog through the single-source fragments, not a separate summary, so it
+cannot drift from the canonical text.
+
+Eager (always loaded when Codex opens the project):
+
+1. **`AGENTS.md`** - the project pointer. Codex reads it automatically at the
+   repo root. It carries the compact J1-J6 protocol, the compact semantic-case
+   table, and the precision-first rules. The semantic-case table and the
+   precision rules are injected from `fragments/semantic-cases-compact.md` and
+   `fragments/precision-rules.md` by `scripts/sync-host-files.mjs`, so they
+   stay byte-identical to the canonical fragments. This file alone is enough
+   to run the protocol on a typical file and fits the budget on its own.
+
+On demand (load only when the case calls for it, never eagerly):
+
+2. **`reference.md`** - the full per-language pattern catalog with examples and
+   look-alike exemptions. At ~80 KB it never fits eagerly. Pull the relevant
+   section only when a finding needs the full pattern definition or an
+   exemption check that the compact table does not spell out.
+3. **`SKILL.md`** - the full prose protocol, edge cases, and multi-agent mode.
+   Load it only when you need the long-form judgment wording or the multi-agent
+   procedure; the compact protocol in `AGENTS.md` covers routine review.
+
+Single-source rule: the compact path MUST reference the J1-J6 protocol and the
+case catalog through `AGENTS.md` (which is synced from the `fragments/*`
+single sources) and through `reference.md` on demand. Do not fork a separate
+compact summary of the protocol or the case table into this guide or anywhere
+else - a forked summary drifts from the canonical text the moment either side
+is edited. If a fragment changes, run `npm run sync:hosts` to re-inject it.
+
+---
+
 ## Model recommendations
+
+Codex routes to OpenAI's current default model (the GPT-5 family at the time of
+writing). The CLI picks the version; this guide does not pin one, because a
+hard version string goes stale on the next release. The table below maps the
+three analysis passes to the capability you need, not to a frozen model id.
 
 | Use case | Model |
 |---|---|
-| Default (production review) | `gpt-4o` |
-| Fast / cheap batch | `gpt-4o-mini` |
-| Reasoning-heavy — case 18 analysis | `o3` |
+| Default (production review) | Codex's current default model |
+| Fast / cheap batch | A smaller, faster sibling of the default (for example a `mini` variant) |
+| Reasoning-heavy, case 18 analysis | A reasoning-tier model, with extended reasoning enabled |
 
-`gpt-4o` is the right starting point. It handles all six judgments reliably,
-including the semantic cases (10, 11, 12, 15, 18). Use `gpt-4o-mini` when
-throughput or cost matters more than precision on edge cases. Use `o3` when
-you need extended chain-of-thought for a case 18 finding that requires citing
-an oracle and running an adversarial check.
+The current default handles all six judgments reliably, including the semantic
+cases (10, 11, 12, 15, 18). Drop to a smaller sibling when throughput or cost
+matters more than precision on edge cases. Use a reasoning-tier model when a
+case 18 finding needs extended chain-of-thought to cite an oracle and run an
+adversarial check.
 
-**Note on o3:** o3 does not support a `system` message. Fold the skill
-protocol into the first user message instead. See the o3 section below.
+For the API examples below, set `model` to the id your account exposes for the
+current default (or its reasoning tier). See `models.yaml` for the canonical
+tier-to-capability mapping the docs are validated against.
+
+**Note on reasoning models:** some OpenAI reasoning models (the o-series) do
+not accept a `system` message. When using one, fold the skill protocol into
+the first user message instead. See the reasoning-model section below.
 
 ---
 
@@ -91,7 +142,7 @@ skill_protocol = Path("SKILL.md").read_text(encoding="utf-8")
 test_code = Path("tests/test_example.py").read_text(encoding="utf-8")
 
 response = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",  # Codex's current default model; use the id your account exposes
     messages=[
         {"role": "system", "content": skill_protocol},
         {"role": "user", "content": test_code},
@@ -101,10 +152,10 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
-### o3 (reasoning model)
+### Reasoning models (o-series)
 
-o3 does not accept a `system` role. Combine the protocol and the test code
-in a single user message:
+Some OpenAI reasoning models do not accept a `system` role. Combine the
+protocol and the test code in a single user message:
 
 ```python
 from pathlib import Path
@@ -118,7 +169,7 @@ test_code = Path("tests/test_example.py").read_text(encoding="utf-8")
 user_message = f"{skill_protocol}\n\n---\n\n{test_code}"
 
 response = client.chat.completions.create(
-    model="o3",
+    model="o3",  # any current OpenAI reasoning model that omits the system role
     messages=[
         {"role": "user", "content": user_message},
     ],
@@ -127,8 +178,9 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
-Use o3 selectively for individual tests where case 18 is suspected, not for
-full-file batch runs — latency and cost are significantly higher.
+Use a reasoning model selectively for individual tests where case 18 is
+suspected, not for full-file batch runs - latency and cost are significantly
+higher.
 
 ---
 
@@ -257,7 +309,7 @@ schema = {
 }
 
 response = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",  # Codex's current default model; use the id your account exposes
     messages=[
         {"role": "system", "content": skill_protocol},
         {"role": "user",   "content": test_code},
@@ -433,7 +485,7 @@ SCHEMA = {
 async def analyze_file(path: Path) -> dict:
     test_code = path.read_text(encoding="utf-8")
     response = await client.chat.completions.create(
-        model="gpt-4o-mini",   # use gpt-4o for higher precision
+        model="gpt-5-mini",   # smaller sibling of the default; use the full default for higher precision
         messages=[
             {"role": "system", "content": skill_protocol},
             {"role": "user",   "content": test_code},
@@ -475,10 +527,10 @@ if __name__ == "__main__":
 
 **Practical notes:**
 
-- `gpt-4o-mini` is the right default for batch runs. It is 10-15x cheaper
-  than `gpt-4o` and handles the structural families (A-E) accurately. Switch
-  to `gpt-4o` when reviewing files that are likely to contain semantic cases
-  (10, 11, 12, 15, 18).
+- A smaller sibling of the default (a `mini` variant) is the right default for
+  batch runs. It is markedly cheaper than the full default and handles the
+  structural families (A-E) accurately. Switch to the full default when
+  reviewing files that are likely to contain semantic cases (10, 11, 12, 15, 18).
 - Split files larger than ~300 lines into logical groups before sending. The
   model's precision degrades when a single message contains too many test
   functions.

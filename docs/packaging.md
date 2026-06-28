@@ -145,6 +145,23 @@ The maintained context files are:
 Do not add generic provider contexts. If a provider is not an official target,
 keep it in CLI/provider examples only when there is a clear maintenance reason.
 
+### Codex context budget (~32 KiB)
+
+Codex loads project guidance into a host context with a working budget of about
+**32 KiB**. The protocol files do not all fit at once: `SKILL.md` (~29 KB) plus
+`AGENTS.md` (~11 KB) plus `contexts/codex.md` (~18 KB) is roughly 58 KB together,
+well over budget, and loading all three truncates the protocol mid-file.
+
+The supported path for Codex is the compact load order documented in
+`contexts/codex.md` ("Compact load order for Codex"): `AGENTS.md` eager, with
+`reference.md` and `SKILL.md` pulled in only on demand. `AGENTS.md` stays
+compact on purpose, and its semantic-case table and precision rules are injected
+from `fragments/*` by `scripts/sync-host-files.mjs` so the compact path never
+forks a duplicate of the canonical protocol.
+
+Respect this budget on future edits. Growing `AGENTS.md` past what fits the budget
+on its own, or telling Codex to load `SKILL.md` eagerly, breaks the compact path.
+
 ## Scripts
 
 Run before release:
