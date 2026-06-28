@@ -546,6 +546,11 @@ smell, operator confirms. OFF/INFO = diagnostic only, skip unless asked.
   where `idx` is computed (`.index()`, arithmetic, variable), rather than a
   fixed literal. The position is fragile and may silently shift.
 
+- **C6c — Mock `call_count` truthiness as the oracle (J4, LOW):** `assert m.call_count`
+  (bare) passes on any count `>= 1`, so it checks only that the mock was called, not how
+  many times. The receiver must be a known mock; an exact or lower-bounded count
+  (`== N`, `>= 1`) is a real check. The always-true `m.call_count >= 0` form is C44.
+
 - **C7 — Self-comparison: both sides are identical (J2, HIGH):**
   `assert x == x`, `assertEqual(x, x)`, or any comparison where left and
   right are syntactically identical and contain no function calls. Always true
@@ -861,8 +866,8 @@ Apply only when the user explicitly asks for diagnostic analysis.
   lambda: ...`. The object is always truthy. A list/set/dict comprehension is NOT C42 (can be empty).
 - **C43 — Mid-test skip (J1, LOW):** `pytest.skip()` after test logic, with checks below it
   that then never run. A skip at the top is a legitimate guard.
-- **C44 — Numeric tautology (J2, HIGH):** `len(x) >= 0`, `abs(x) >= 0`, `len(x) > -1`. The
-  comparison is always true.
+- **C44 — Numeric tautology (J2, HIGH):** `len(x) >= 0`, `abs(x) >= 0`, `len(x) > -1`, or a
+  mock's `call_count >= 0` / `> -1`. The comparison is always true.
 - **C45 — Empty parametrize (J1, HIGH):** `@pytest.mark.parametrize("...", [])`. Zero cases
   are generated, the test never runs.
 - **C48 — Dark patch: flips a test-mode flag then asserts (J1, LOW):** the test forces a
