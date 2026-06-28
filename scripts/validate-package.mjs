@@ -106,7 +106,7 @@ if (geminiExtension && geminiExtension.contextFileName !== 'GEMINI.md') {
 const findingSchema = readJson('schema/finding.json');
 if (findingSchema) {
   const required = findingSchema.required || [];
-  for (const key of ['case', 'judgment', 'confidence', 'language', 'intent', 'test', 'finding', 'evidence', 'fix_hint']) {
+  for (const key of ['case', 'judgment', 'confidence', 'language', 'level', 'intent', 'test', 'finding', 'evidence', 'fix_hint']) {
     if (!required.includes(key)) fail(`schema/finding.json: missing required field "${key}"`);
   }
 }

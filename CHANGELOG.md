@@ -6,6 +6,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- `scripts/validate-package.mjs` now asserts `level` is in `schema/finding.json`'s required array,
+  so dropping `level` from the schema fails `npm run validate` (it was silently allowed) (#61).
+
 ## [0.3.0] - 2026-06-28
 
 ### Fixed
