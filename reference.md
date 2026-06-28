@@ -965,6 +965,8 @@ node:test, Cypress, Playwright, and Testing Library.
 | JS18 | LOW | `done` callback instead of async/await |
 | JS21 | HIGH | matcher referenced but never called (`expect(x).toBe` with no `()`) |
 | JS22 | HIGH | empty `it.each`/`test.each` table |
+| JS23 | HIGH | `expect.assertions(N)` with fewer unconditional reachable `expect()` calls than `N` |
+| JS24 | LOW | Cypress `cy.get/find/contains` query statement with no `.should`/`.and`/`.then` assertion |
 
 Note: supertest / chai-http `.expect()` (`request(app).get("/").expect(200)`) is a real
 assertion at the API layer - do not flag such a test as C2b.
