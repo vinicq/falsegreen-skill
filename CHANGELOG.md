@@ -10,6 +10,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - contexts/gemini.md structured-output schema: `case` is now STRING (was INTEGER, which dropped
   every C/JS/R/S code from a Gemini run) and the required `level` field plus a `required` list were
   added, matching finding.json (#76).
+- `fragments/semantic-cases-compact.md` was missing S14/S15/S16, so the Codex/Gemini hosts (which
+  read only the synced compact table) did not know those patterns exist. Added the three rows and
+  resynced AGENTS.md and GEMINI.md, closing the same host-under-detect gap the SKILL.md guard
+  targets (#78).
 
 ### Changed
 - Stale catalog ranges updated to `C1-C45, C48` (the catalog skips C46/C47) and `S1-S16` across
