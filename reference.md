@@ -445,6 +445,18 @@ smell, operator confirms. OFF/INFO = diagnostic only, skip unless asked.
       result = process(data)        # calls SUT but no assert follows
   ```
 
+- **C2c — Empty `self.subTest(...)` block (J1, LOW):** a unittest `with self.subTest(...):`
+  block that wraps work but contains no assertion — the subTest analogue of an empty test;
+  each generated sub-case runs and verifies nothing. More specific than C2b (it owns this
+  shape). Exemption: a subTest that asserts, raises, or delegates to a `check_*`/`verify_*`
+  helper is not flagged.
+  ```python
+  # BAD
+  for i in cases:
+      with self.subTest(i=i):
+          do_thing(i)               # no assertion inside the block
+  ```
+
 - **C3 — Assert inside try whose except swallows the error (J1, HIGH):**
   A `try` block contains an `assert` (or equivalent check), and the `except`
   handler catches `AssertionError`, `Exception`, or bare `except:` with a
@@ -574,6 +586,18 @@ smell, operator confirms. OFF/INFO = diagnostic only, skip unless asked.
   assert compute() == 3.14159    # C8
   # CLEAN
   assert compute() == pytest.approx(3.14159, rel=1e-6)
+  ```
+
+- **C8b — Approximate equality with no explicit tolerance (J4, LOW):** `assertAlmostEqual`/
+  `assertNotAlmostEqual` (default 7 places) or `== pytest.approx(...)` (default 1e-6 relative)
+  with no `places=`/`delta=`/`rel=`/`abs=` supplied. The default tolerance can pass a meaningfully
+  wrong value. Sizing the tolerance to the values (`places=2`, `rel=1e-3`) keeps it quiet.
+  ```python
+  # BAD
+  self.assertAlmostEqual(total(), 4.2)          # default 7 places
+  assert total() == pytest.approx(4.2)          # default 1e-6 rel
+  # CLEAN
+  self.assertAlmostEqual(total(), 4.2, places=2)
   ```
 
 - **C9 — pytest.raises too broad (J4, LOW):**
