@@ -127,9 +127,9 @@ import { JWT } from './jwt';
 
 it('BAD jwt sign-then-verify only', async () => {
   const payload = { sub: 'alice' };
-  const secret = 'topsecret';
-  const token = await JWT.sign(payload, secret, 'HS256');
-  const verified = await JWT.verify(token, secret, 'HS256');
+  const signingKey = 'example-not-a-real-key';
+  const token = await JWT.sign(payload, signingKey, 'HS256');
+  const verified = await JWT.verify(token, signingKey, 'HS256');
   expect(verified).toMatchObject(payload); // passes even without sig verification
 });
 
@@ -137,16 +137,16 @@ it('BAD jwt sign-then-verify only', async () => {
 // load-bearing. A wrong key and a tampered token must both be rejected; if
 // verify() skipped the signature, these would fail and expose it.
 it('CLEAN jwt rejects a wrong key', async () => {
-  const token = await JWT.sign({ sub: 'alice' }, 'topsecret', 'HS256');
-  await expect(JWT.verify(token, 'wrongsecret', 'HS256')).rejects.toThrow(
+  const token = await JWT.sign({ sub: 'alice' }, 'example-not-a-real-key', 'HS256');
+  await expect(JWT.verify(token, 'placeholder-wrong-key', 'HS256')).rejects.toThrow(
     /signature/i,
   );
 });
 
 it('CLEAN jwt rejects a tampered token', async () => {
-  const token = await JWT.sign({ sub: 'alice' }, 'topsecret', 'HS256');
+  const token = await JWT.sign({ sub: 'alice' }, 'example-not-a-real-key', 'HS256');
   const tampered = token.slice(0, -1) + (token.endsWith('A') ? 'B' : 'A');
-  await expect(JWT.verify(tampered, 'topsecret', 'HS256')).rejects.toThrow(
+  await expect(JWT.verify(tampered, 'example-not-a-real-key', 'HS256')).rejects.toThrow(
     /signature/i,
   );
 });
