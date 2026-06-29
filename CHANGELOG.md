@@ -6,6 +6,35 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- reference.md mirrors the new structural codes the sibling scanners merged: Python C49
+  (`pytest.warns`/`assertWarns` over more than one call, J1), C50 (captured log never asserted,
+  J4), C51 (empty-bodied `pytest.raises`/`warns` context, J1, HIGH), C52 (membership
+  self-confirmation, J2), C55 (assertion compares two mock-rooted values, J3); TS/JS JS25
+  (assertion only inside an array-iterator callback, HIGH), JS26 (fake timers never advanced),
+  JS27 (call-only oracle on a local double), JS29 (floating `.resolves`/`.rejects`), JS30
+  (literal-vs-literal assertion, HIGH), JS31 (swallowed throw, no assertion); Robot R8/R8b
+  (verification only in Setup/Teardown, J4) and C9b (RequestsLibrary `expected_status=any`, J4).
+  The catalog stays a true superset of the three scanners.
+- Three AI-only semantic codes after S16: S17 (exception-path oracle blindness, J4, HIGH), S18
+  (contract-impossible stub value, J3), S21 (self-judging LLM/agent assertion, J2). Each carries
+  a worked example and a look-alike exemption, and S17/S18/S21 are mirrored into
+  `fragments/semantic-cases-compact.md` so the Codex/Gemini hosts that read only the compact
+  table know they exist (resynced into AGENTS.md and GEMINI.md) (#92, #93, #94).
+
+### Changed
+- The C44 reference.md entry now records that the Robot scanner widens C44 under the same id to
+  vacuous library assertions (`Should Contain ${EMPTY}`, `Should Not Be Empty ${TRUE}`, a
+  `Length Should Be` tautology) beyond the numeric-tautology form py/js use, so the shared id is
+  honestly documented as broader on Robot rather than silently drifting (#96).
+
+### Fixed
+- `scripts/build-code-catalog.mjs` now parses the S-series, the Robot section, and the project
+  layer (config-audit) in reference.md, not just the Python family prose and the TS/JS table.
+  `schema/code-catalog.json` grew from 75 to 121 codes (it had been missing every R, PL, S, and
+  D2 entry), so `check-catalog-consistency.mjs` can catch an id/family/title/severity drift in
+  any of those families, matching ADR-0002's claim that the map is the canonical source (#95).
+
 ## [0.4.0] - 2026-06-28
 
 ### Added
