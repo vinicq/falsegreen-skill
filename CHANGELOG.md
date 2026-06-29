@@ -6,6 +6,42 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-06-29
+
+### Changed
+- reference.md gains look-alike exemptions found by field validation against ~200 real repos
+  (50 each Python/TS/JS/Robot, #99). No codes added or removed - the catalog stays at 121.
+  Non-`assert` oracles are now explicitly exempt: helper-wrapped assertions and fluent matchers
+  (hamcrest, assertpy, `numpy.testing`, `pandas.testing`); pytest runner-result oracles
+  (`result.assert_outcomes`, `result.stdout.fnmatch_lines`/`no_fnmatch_line`, `result.ret`), with
+  source passed to `makepyfile`/`makeconftest` treated as fixture data, not collected tests;
+  Testing-Library throwing queries (`getBy*`/`getAllBy*`/`findBy*`/`findAllBy*`) read as assertions,
+  so only `queryBy*`/`queryAllBy*` stay the check-free JS13 case; a guarded `if (cond) throw` /
+  `node:assert` read as a hand-rolled oracle; the type-assertion exemption generalized past
+  `expectTypeOf` to tsd `expectType`/`expectError` and hand-rolled `Expect<Equal<A,B>>`.
+- Robot look-alikes gain a file-role exemption (no-verification/empty/`No Operation`/hollow not
+  flagged under `testdata`/`resources`/`fixtures`/`performance`/`examples`, or on an intentionally
+  empty DataDriver/`[Template]` suite), plus RESTinstance `Expect Request`/`Expect Response` armed
+  in `[Setup]` (not R8), external report-merge keywords (oxygen `Run JUnit`/`Run Gatling`/`Run Zap`)
+  as the oracle, `Pass Execution If`/`Skip If` on a runtime/env condition as a sanctioned skip (not
+  R1), and screenshot keywords (`Capture Page Screenshot`) as non-assertions.
+- The mock-vs-SUT boundary is sharpened for S12/S16/S5: a `jest.spyOn`/`vi.spyOn` stubbing a
+  sibling method (orchestration isolation) is not S12; a constructor-injected or module-level
+  collaborator mock is a clean case-10 edge; a stub config call on the mocking library under test
+  (mockingoose, tinyspy, jsdom-testing-mocks) is production code, not S5/S8/C11a; S16 requires the
+  call-verification to be the sole oracle.
+- Guard and teaching-fixture exemptions added: a `try/catch` whose catch asserts under
+  `expect.assertions(N)`/`expect.hasAssertions()` is not JS11/JS31; `pytest.raises(BroadType) as exc`
+  with an assertion on `str(exc.value)`/`exc.value.<attr>` is exempt from C9 and S17; a test under
+  `*.problem.*`/`*.solution.*`/`exercises/`/`katas/`/`playground/` is a teaching fixture, not case 18
+  or S3.
+- SKILL.md output shape: the Step-6 finding header generalizes from `CASE {number} (J1-J6)` to
+  `{code} ({J})` so it accepts CASE-N / C* / JS* / R* / S* codes; the `level` axis gains `fixture`
+  (with a `role:` note) and the `intent` axis gains `scaffold` for placeholder findings; the
+  C9/C28/S17 tie-break is stated (most specific code wins, broad `pytest.raises` with a bound
+  message assertion fires nothing); and each code's listed severity is now stated as a ceiling that
+  intent classification can only lower, never raise (#99, field validation 2026-06-29).
+
 ## [0.5.0] - 2026-06-29
 
 ### Added

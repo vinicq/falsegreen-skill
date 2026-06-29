@@ -415,7 +415,7 @@ of a filter whose contract is to drop the input entirely - a blocklist sanitizer
 guard that returns empty on a forbidden value, a redactor that suppresses the whole field -
 where empty output is the correct behavior, so the negative-only assertion legitimately
 passes and a positive "content survived" assertion would contradict the design (not S11); a
-mock on a genuine external edge - DB, network, clock (not S12); a test whose shared state is
+mock on a genuine external edge - DB, network, clock (not S12); a `jest.spyOn(instance, 'methodA')` / `vi.spyOn` that stubs a DIFFERENT method than the one under test, to isolate an orchestrator from a sibling sub-unit (the assertion is on the composed result, not the stub) - S12 fires only when the patched symbol is a method of the SUT instance itself or the assertion echoes the stub value (not S12); a constructor-injected or module-level collaborator mock - repository, db, auth, or HTTP client (a clean case-10 external edge, not S12); a stub-config call made on the very library under test - `mockingoose`, `tinyspy`, `jsdom-testing-mocks` - where the mocking library IS the SUT, so the stub setup is production code (not S5/S8/C11a); a test whose shared state is
 reset by an autouse/`beforeEach` teardown (not S13); a structural or contract assertion on a
 model output - valid JSON, required keys present, a cited source id matches, a refusal on a
 banned prompt, a deterministic post-processing step - or a mocked/stubbed model whose return is
@@ -424,7 +424,7 @@ Testing Library `waitFor`/`findBy*`, Playwright/Cypress auto-wait, `await expect
 that polls a real settle condition and still fails hard on timeout (not S15); a call-only
 assertion where the interaction IS the contract - a fire-and-forget event, an audit-log or
 telemetry write, a queue publish - or a `toHaveBeenCalledWith`/`assert_called_once_with` that
-pins the specific arguments (not S16); a `pytest.raises(SpecificError, match=...)` bound to the SUT line (not S17); a stub fed a value the collaborator's contract can actually return (not S18); a deterministic rubric, structural validator, or frozen human-labeled judge set rather than a live model verdict (not S21).
+pins the specific arguments, or any call-verification paired with an assertion on the SUT's return value or state - S16 requires the call-verification to be the SOLE oracle (not S16); a `pytest.raises(SpecificError, match=...)` bound to the SUT line (not S17); a stub fed a value the collaborator's contract can actually return (not S18); a test under `*.problem.*` / `*.solution.*` / `exercises/` / `katas/` / `playground/` - a teaching or TDD-spec fixture whose expected value is intentional (the exercise IS the spec), not a frozen bug (not case 18, not S3); a deterministic rubric, structural validator, or frozen human-labeled judge set rather than a live model verdict (not S21).
 
 ---
 
@@ -974,7 +974,18 @@ Apply only when the user explicitly asks for diagnostic analysis.
 - `@given`/`@hypothesis`/`@fuzz` decorated test with no explicit `assert`
   → hypothesis generates the assertions internally, not C2.
 - A helper called from the test that contains the `assert`
-  → not C2b; the assertion executes through the helper.
+  → not C2b; the assertion executes through the helper. Same for a fluent matcher
+  whose check lives in the chained call, not the `assert` keyword: `hamcrest.assert_that(x,
+  equal_to(y))`, assertpy `assert_that(x).is_equal_to(y)`, `numpy.testing.assert_allclose`/
+  `assert_array_equal`, `pandas.testing.assert_frame_equal`/`assert_series_equal`. Absence of
+  the bare keyword `assert` is not absence of verification.
+- A pytest plugin meta-test whose oracle is the runner-result object, not an `assert`:
+  `result.assert_outcomes(passed=1)`, `result.stdout.fnmatch_lines([...])` /
+  `result.stdout.no_fnmatch_line(...)`, `assert_contains_lines`, or `result.ret == 0` (the
+  `pytester`/`testdir`/`pytest.Pytester` API). These ARE the verification → not C2b. And the
+  test source passed to `makepyfile(...)` / `makeconftest(...)` / `maketxtfile(...)` as a string
+  is fixture data, not a collected test → do not apply any C-code to a `def test_*` written
+  inside such a string.
 - `for x in (1, 2, 3): assert x` → not C1; literal is always non-empty.
 - `assert response` in an HTTP test / `assert locator` in a Playwright test
   → not C6; presence IS the assertion at that layer.
@@ -984,6 +995,10 @@ Apply only when the user explicitly asks for diagnostic analysis.
 - `patch(..., autospec=True)` → not C13b.
 - `with pytest.raises(E) as exc: ...; assert "msg" in str(exc.value)`
   → exc is read, not C28.
+- `with pytest.raises(BroadException) as exc: ...; assert str(exc.value) == ...` (or any
+  assertion on `exc.value.<attr>` / the bound message) → not C9 and not S17. The bound
+  message assertion narrows the broad type to the SUT's contract, so it is the type-narrowing
+  oracle even when the caught type is broad. Equivalent to or stronger than `match=`.
 
 ### TypeScript / JavaScript
 
@@ -1016,7 +1031,7 @@ node:test, Cypress, Playwright, and Testing Library.
 | JS7 | LOW | assertion in a non-awaited `setTimeout`/`then` callback |
 | JS9 | HIGH | assertion in a dead literal branch (`if(false)`) |
 | JS11 | LOW | `try/catch` swallows the assertion |
-| JS13 | LOW | `getBy*`/`queryBy*` query as a loose statement, never asserted |
+| JS13 | LOW | `queryBy*`/`queryAllBy*` query (returns null when absent) as a loose statement, never asserted - `getBy*`/`getAllBy*`/`findBy*`/`findAllBy*` throw on absence and ARE the assertion |
 | C6 | LOW | weak check (`toBeTruthy`/`toBeDefined`, `.length > 0`) |
 | C20 | HIGH | assertion in dead code after `return`/`throw` |
 | C23 | LOW | reads a real file at a literal path / hard-coded URL (mystery guest) |
@@ -1263,10 +1278,11 @@ The prose below details the higher-prevalence patterns with examples and citatio
    meaningful assertion. This is the TypeScript equivalent of C6's HTTP
    response exemption.
 
-3. **`expectTypeOf(v).toEqualTypeOf<T>()`** from vitest/expect-type — these are
-   compile-time type assertions. They do nothing at runtime but fail at `tsc`
-   time if the type no longer matches. They are not C5 (always-true) because
-   they fail when the type changes. Do not flag `expectTypeOf` calls.
+3. **Type-level assertions**: compile-time type assertions do nothing at runtime but
+   fail at `tsc` time if the type no longer matches, so they are not C5 (always-true) and not
+   C2b (no runtime check). Covers `expectTypeOf(v).toEqualTypeOf<T>()` (vitest/expect-type), tsd
+   `expectType<T>(v)` / `expectError(...)`, and a hand-rolled `type _X = Expect<Equal<A, B>>`
+   (the `Expect<Equal<>>` / `IsExact<>` idiom). Do not flag any of these.
 
 4. **`expect(result).toBeInstanceOf(SpecificError)`** when identity is the
    contract (domain errors, value objects) — not C6 even though it skips field
@@ -1295,6 +1311,20 @@ The prose below details the higher-prevalence patterns with examples and citatio
    not C2 if the assertions are present and precede the `done()` call. The
    smell is `done()` called before or instead of assertions, not `done()` used
    as the callback signal after real checks have run.
+
+4. **Testing-Library throwing queries** — `getBy*`/`getAllBy*`/`findBy*`/`findAllBy*`
+   throw when the element is absent (or the promise rejects), so the bare query IS an
+   assertion. Not C2b and not JS13. Only `queryBy*`/`queryAllBy*` return `null` instead of
+   throwing, so a bare `queryBy*` with no following assertion is the check-free JS13 case.
+
+5. **A guarded `if (cond) throw new Error(...)`** or a `node:assert` call (`assert(cond)`,
+   `assert.equal(...)`, `assert.ok(...)`): a hand-rolled oracle. The throw fails the test
+   when the condition does not hold, so it is a real check, not a no-assertion C2b.
+
+6. **A `try/catch` whose catch contains assertions, guarded by `expect.assertions(N)` or
+   `expect.hasAssertions()`**: not JS11 and not JS31. The guard fails the test if the expected
+   throw never comes (the catch never runs, so fewer than N assertions execute), so the swallowed
+   exception cannot go unnoticed. The swallow smell needs the absence of such a guard.
 
 ---
 
@@ -1452,6 +1482,26 @@ Look-alikes - do NOT flag:
 - Teardown keywords (`[Teardown]`, `Close Browser`) - cleanup, not the oracle.
 - E2E/UI presence keywords (`Page Should Contain Element`) ARE the assertion at the
   browser layer - do not treat as weak.
+- Role files with no body oracle by design: a `.resource` keyword library (no
+  `*** Test Cases ***`), or a DataDriver/`[Template]` suite whose body is intentionally empty
+  because the data table or external data file IS the oracle - do not flag empty, `No Operation`,
+  or hollow-verifier on those. The directory (`testdata/`, `resources/`, `fixtures/`) is a hint,
+  never the rule: still flag a file that defines real `*** Test Cases ***`.
+- A demo or example whose contract is non-failure - it acts and Logs, runs-without-error is the
+  pass criterion, no behavior is named or captured-and-checked - is not no-verification. But an
+  `examples/` or `performance/` file is NOT exempt by location: a test case that names a behavior
+  and captures a result without asserting on it (e.g. `Test TF2 Operations` with three `Get Tf`
+  calls and no Should) is a real false-green - flag it.
+- RESTinstance `Expect Request` / `Expect Response` armed in `[Setup]` / `Test Setup` - not R8.
+  It installs the schema validation the later request enforces (the request fails when the
+  contract is violated), so the verification runs in the body even though it is configured in setup.
+- External-report-merge keywords - oxygen `Run JUnit` / `Run Gatling` / `Run Zap` and similar -
+  are the oracle. The merged external report carries the pass/fail; the keyword is not a bare action.
+- `Pass Execution If` / `Skip If` gated on a runtime or environment condition (library/tool
+  version, OS, available feature) is a sanctioned conditional skip, not R1 forced-green. R1 is
+  only an unconditional `Pass Execution` or a `Pass Execution If` whose condition always holds.
+- Screenshot keywords (`Capture Page Screenshot`, `Capture Element Screenshot`) are diagnostic
+  artifacts, not assertions - their presence neither adds nor removes verification.
 
 These mirror the static codes conceptually: no-verification ≈ C2b, empty ≈ C2,
 swallowed/status-never-asserted ≈ C3 (catalog RF3), always-true ≈ C5, string-literal-truthy ≈ R6

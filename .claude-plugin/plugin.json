@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "falsegreen-skill",
   "displayName": "falsegreen-skill",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "LLM-based semantic analysis for false-positive test detection. Applies the J1-J6 judgment framework across Python, TypeScript, JavaScript, and Robot Framework, plus semantic patterns no static tool can see.",
   "author": {
     "name": "Vinicius Queiroz",

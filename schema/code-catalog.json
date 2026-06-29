@@ -545,7 +545,7 @@
     "JS13": {
       "family": null,
       "judgment": null,
-      "title": "`getBy*`/`queryBy*` query as a loose statement, never asserted",
+      "title": "`queryBy*`/`queryAllBy*` query (returns null when absent) as a loose statement, never asserted - `getBy*`/`getAllBy*`/`findBy*`/`findAllBy*` throw on absence and ARE the assertion",
       "severity": "LOW"
     },
     "JS8": {
