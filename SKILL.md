@@ -241,7 +241,7 @@ Never report case 18 based on gut feeling or pattern-matching alone.
 For each finding, output:
 
 ```
-CASE {number} ({J1-J6}) - {confidence: HIGH | LOW} - {language} - {level: unit|integration|e2e} - {intent: spec|char|regression|behavior}
+{code} ({J}) - {confidence: HIGH | LOW} - {language} - {level: unit|integration|e2e|fixture} - {intent: spec|char|regression|behavior|scaffold}
 
 Test: {function name, line range}
 Finding: {one sentence describing what is wrong}
@@ -250,7 +250,19 @@ Oracle: {for case 18 only: cite the independent oracle}
 Fix hint: {where and how to improve the code or test, one sentence}
 ```
 
-Intent is the classification from Step 3. Include it in every finding - it is required for dataset analysis.
+`{code}` is any catalog id: a semantic case (CASE-10/11/12/15/18), a structural C-code (C*),
+a JS/TS code (JS*), a Robot code (R*), or a semantic S-code (S*). `{J}` is the judgment that
+failed (J1-J6). Intent is the classification from Step 3. Include it in every finding - it is
+required for dataset analysis.
+
+The `level` and `intent` axes carry two extra options for non-behavioral findings:
+
+- `level: fixture` (or a `role:` note such as `role: testdata`/`role: example`/`role: perf`)
+  for a finding in a file that is data, a shared resource, an example, or a perf fixture rather
+  than a behavioral suite - see the Robot file-role look-alikes in `reference.md`.
+- `intent: scaffold` for an unimplemented placeholder (an empty stub, a TODO-only body, a
+  generated skeleton that was never filled in) where the finding is about the missing
+  implementation, not a wrong oracle.
 
 Then a summary block:
 
@@ -504,6 +516,17 @@ waits on the host's gate result; the skill does not run it.
 7. `expectTypeOf(v).toEqualTypeOf<T>()` in Vitest is a compile-time type
    assertion. Not C5. Do not flag it.
 <!-- fg:precision-rules:end -->
+
+**Tie-break (C9 / C28 / S17, same J4 family).** When more than one of these would fire on the
+same `pytest.raises` / `toThrow`, report only the most specific code; do not stack them. A broad
+`pytest.raises(Exception)` (or `toThrow()` with no type) that is followed by an assertion on the
+bound message - `assert str(exc.value) == ...` / `exc.value.<attr>` - fires NOTHING: the message
+assertion narrows the type to the SUT's contract, so C9, C28, and S17 are all satisfied.
+
+**Severity is a ceiling, not a floor.** The severity listed for each code (HIGH / LOW) is the
+maximum. Intent classification (Step 3) can only LOWER it - a HIGH code on a deliberate
+characterization/spec/scaffold test drops to LOW or is withdrawn. It can never RAISE a code above
+its catalog severity.
 
 ---
 
