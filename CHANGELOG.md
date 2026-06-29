@@ -6,6 +6,27 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-06-29
+
+### Changed
+- `examples/typescript/semantic_cases.ts`: renamed the JWT example's signing-key literals from
+  `topsecret`/`wrongsecret` to obviously-dummy placeholders (`example-not-a-real-key`,
+  `placeholder-wrong-key`) and dropped the `const secret =` assignment in favor of `signingKey`.
+  The plugin-scanner's `HARDCODED_SECRET` pattern matched the old literals in the test fixture and
+  raised three HIGH findings. The example still illustrates the same false-green case (a sign-then-verify
+  JWT round-trip with no negative test), now with no secret-shaped strings.
+
+### Added
+- `package-lock.json`: committed lockfile for reproducible dependency resolution. The package has no
+  runtime dependencies, so the lockfile is minimal, but its absence was flagged by the plugin-scanner
+  lockfile check.
+
+### Fixed
+- Pinned every GitHub Action in `.github/workflows/` to a full commit SHA (with a `# vN` comment),
+  replacing the floating `@v7`/`@v6` tags on `actions/checkout`, `actions/setup-node`, and
+  `release-drafter/release-drafter`. Removes the plugin-scanner unpinned-action findings and closes
+  a tag-mutation supply-chain hole.
+
 ## [0.6.1] - 2026-06-29
 
 ### Added
