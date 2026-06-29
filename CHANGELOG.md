@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-29
+
 ### Added
 - reference.md mirrors the new structural codes the sibling scanners merged: Python C49
   (`pytest.warns`/`assertWarns` over more than one call, J1), C50 (captured log never asserted,
