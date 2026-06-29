@@ -477,6 +477,19 @@ The level itself is part of the judgment: a real API or database call inside a t
 claims to be a unit test is a smell (over-mocking inverted, mystery guest), and the skill
 says so rather than accepting the level at face value.
 
+### Patterns by test level and scope
+
+The same false-green shape is classified by the level the test runs at: the level is a
+per-finding axis (J3), read as unit, integration, or E2E. As the superset of the three
+scanners, the skill covers every level and every language, plus the semantic `S1`-`S21`
+patterns no parser sees. The clusters at each level:
+
+- **Unit:** always-true and self-compare (`C5`/`C7`/`JS30`), no oracle (`C2`/`C2b`), asserts its own double (`JS8`/`JS27`/`C13b`/`S8`), and the semantic `S1`/`S5` (intent mismatch, tests the framework).
+- **Integration:** request oracle off (`C9b`), captured log never asserted (`C50`), patching the edge wrong (`S12`/`S18`).
+- **E2E:** sleep as synchronization (`C16`), forced green in Robot (`R1`/`R2`/`R4`/`R6`), and the semantic `S1`/`S2` (intent mismatch, irrelevant oracle).
+
+Full matrix on the docs site: [patterns by test level](https://vinicq.github.io/falsegreen-docs/concepts/by-test-level/) and [what we do not flag](https://vinicq.github.io/falsegreen-docs/concepts/what-we-do-not-flag/).
+
 ---
 
 ## Project layout
