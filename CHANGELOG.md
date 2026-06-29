@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-06-29
+
+### Added
+- Complete "Setup and usage reference" in the README: CLI install, the full analyze + fix flag tables, provider configuration (anthropic/openai/gemini/openai-compatible with base-url + env keys, incl. reasoning-model endpoints), per-host enable steps (Claude Code, Codex, Gemini, Cursor, plain LLM/API), and the J1-J6 output schema.
+
 ## [0.6.2] - 2026-06-29
 
 ### Changed
