@@ -13,8 +13,12 @@ release is keeping every host copy consistent and regenerating the standalone sk
 3. If the protocol changed, update every host rendering in lockstep: `SKILL.md`, `llm.md`,
    `GEMINI.md`, and the files in `contexts/`. `schema/finding.json` and `schema/report.json`
    are the source of truth for the JSON output; do not let a host copy drift from them.
-4. Validate: `npm run validate`. It must pass before tagging.
-5. Rebuild the standalone targets: `npm run build:targets` (the packaged Claude/Gemini
+4. When a sibling scanner ships a new code, update `schema/scanner-codes.json` (the emitted
+   code set + version per scanner) and add the matching `reference.md` entry before tagging.
+   `npm run validate` runs `check-scanner-coverage.mjs`, which fails if a scanner code has no
+   catalog entry - the regression that caused #105.
+5. Validate: `npm run validate`. It must pass before tagging.
+6. Rebuild the standalone targets: `npm run build:targets` (the packaged Claude/Gemini
    skill bundles).
 
 ## Publishing a version

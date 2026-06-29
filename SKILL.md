@@ -135,8 +135,8 @@ before proceeding to the semantic judgments. These patterns are organized in
 
 | Family | Codes | What to look for |
 |---|---|---|
-| A — never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, C38, C39, C43, C45, CC | assertion unreachable, missing, swallowed, uncollected, name-shadowed, returned-not-asserted, skipped mid-test, empty parametrize |
-| B — weak/always-true | C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34, C42, C44 | tautology, truthiness-only, self-compare, broad exception, string repr, generator/lambda always truthy, numeric tautology |
+| A — never checks | C1, C2, C2b, C2c, C3, C4, C4b, C20, C21, C38, C39, C43, C45, C49, C50, C51, C59, CC | assertion unreachable, missing, swallowed, uncollected, name-shadowed, returned-not-asserted, discarded-comparison statement, empty/multi-call raises-warns context, captured log/output never asserted, skipped mid-test, empty parametrize |
+| B — weak/always-true | C5, C6, C6b, C6c, C7, C8, C8b, C9, C11a, C13, C13b, C14, C16, C18, C25, C34, C42, C44, C52, C55, C56, C57 | tautology, truthiness-only, self-compare, broad exception, string repr, generator/lambda always truthy, numeric tautology, membership self-confirmation, mock-rooted compare, never-awaited coroutine, unconfigured Mock attribute |
 | C — checks own setup | C19, C28, C29 | pytest.raises wraps too much, binding unread, env mutation |
 | D — external state | C17, C23, C24, C27, C30, C31, C32, C35 | skip-on-failure, hard path, shared mutable, try/pass, flaky |
 | E — wrong thing | C33, C36, C37, C41 | metric not asserted, fail without reason, duplicate case, assert on a None-returning mutator |

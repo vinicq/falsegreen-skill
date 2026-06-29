@@ -488,6 +488,24 @@
       "title": "Assertion compares two mock-rooted values",
       "severity": "LOW"
     },
+    "C56": {
+      "family": "catalog-sync",
+      "judgment": "J1",
+      "title": "Sync assert of a never-awaited coroutine",
+      "severity": "LOW"
+    },
+    "C57": {
+      "family": "catalog-sync",
+      "judgment": "J3",
+      "title": "Assertion against an unconfigured Mock attribute",
+      "severity": "LOW"
+    },
+    "C59": {
+      "family": "catalog-sync",
+      "judgment": "J1",
+      "title": "Bare comparison written as a statement",
+      "severity": "HIGH"
+    },
     "JS1": {
       "family": null,
       "judgment": null,
@@ -714,6 +732,12 @@
       "family": "PL",
       "judgment": "J1",
       "title": "Warnings not promoted",
+      "severity": null
+    },
+    "PL1": {
+      "family": "PL",
+      "judgment": "J1",
+      "title": "Asserts stripped at runtime",
       "severity": null
     },
     "PL10": {

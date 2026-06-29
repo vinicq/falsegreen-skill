@@ -1,6 +1,6 @@
 {
   "name": "falsegreen-skill",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "LLM skill for false-positive test detection (J1-J6 protocol)",
   "keywords": [
     "claude-code-plugin",
@@ -23,7 +23,7 @@
     "falsegreen-skill": "bin/falsegreen-llm.js"
   },
   "scripts": {
-    "validate": "node scripts/validate-package.mjs && node scripts/check-catalog-consistency.mjs && node scripts/sync-cursor-mdc.mjs --check && node scripts/sync-host-files.mjs --check",
+    "validate": "node scripts/validate-package.mjs && node scripts/check-catalog-consistency.mjs && node scripts/check-scanner-coverage.mjs && node scripts/sync-cursor-mdc.mjs --check && node scripts/sync-host-files.mjs --check",
     "sync:cursor": "node scripts/sync-cursor-mdc.mjs",
     "sync:hosts": "node scripts/sync-host-files.mjs",
     "smoke": "node test/smoke.cjs",

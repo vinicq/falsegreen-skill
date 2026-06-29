@@ -6,6 +6,29 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-06-29
+
+### Added
+- `schema/scanner-codes.json`: a committed snapshot of every sibling scanner's emitted code set
+  plus its version (falsegreen 0.9.0, falsegreen-robot 0.6.2, falsegreen-js 0.6.2), derived from
+  each scanner's live `CASES`. `scripts/check-scanner-coverage.mjs` diffs it against the catalog
+  and fails when a scanner emits a code the catalog does not carry, naming the scanner and the
+  orphan id. Wired into `npm run validate` (#105).
+- Four Python codes the scanner already emitted but `reference.md` was missing: C56 (sync assert
+  of a never-awaited coroutine), C57 (assertion against an unconfigured Mock attribute), C59 (bare
+  comparison written as a statement), and PL1 (asserts stripped under `-O`/`PYTHONOPTIMIZE`). Robot
+  bullets for the codes its scanner emits under reused ids: C31 (captured value never used), C11a
+  (self-confirming literal), and M2 (long test). SKILL.md's Python family table now lists the recent
+  and HIGH codes it had omitted (#105).
+
+### Fixed
+- The catalog was not a true superset of the live scanners: the falsegreen scanner shipped
+  C56/C57/C59/PL1 but `reference.md` never gained the entries, so `schema/code-catalog.json` fell
+  out of superset with nothing to catch it. Added the missing entries and a coverage guard that
+  blocks the same drift at release time (#105). The catalog grows from 121 to 125 codes.
+- `build-code-catalog.mjs` now accepts a hyphen as well as an em-dash in a family-additions bullet
+  title, so a code entry written `- **C59 - Title (J1, HIGH):**` parses (#105).
+
 ## [0.6.0] - 2026-06-29
 
 ### Added
