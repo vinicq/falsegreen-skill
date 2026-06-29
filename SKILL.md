@@ -466,6 +466,19 @@ This bidirectional gate is the SENTINEL / Pizzini contribution credited in
 `CREDITS.md`: a proposed fix must pass the original suite and fail on a mutation
 before being accepted.
 
+**The CLI can run this gate locally (V1, Python/pytest only).** In an editor host
+the skill proposes and the host runs the gate. The npm CLI adds an opt-in
+`falsegreen-skill fix <test-file> --case <code> --line <n> --sut <file>` command
+that runs the whole gate on a clean replica: it asks the LLM for a test-file-only
+patch, then runs parse (`py_compile`), preserve (`pytest` against the real SUT),
+and a line-scoped mutation gate (a built-in operator on the SUT line; full mutmut
+integration is deferred to a later version). It never auto-applies the patch and never edits the
+SUT. Without `--sut`, or with `--cheap` (parse + preserve only), it degrades to
+**propose-only / unvalidated** and labels the output as not proven. V1 fixes the
+mechanical findings (C2b/C20/C21/C5/C7); JS/TS/Robot fix paths and the deep
+semantic cases (10/11/12/18) are v2. The honest limit holds: the gate proves the
+fix catches the targeted mutant, not every possible bug.
+
 ## Step C4: Output
 
 Output the finding being fixed, the proposed test (language, level, cited oracle,
@@ -552,9 +565,11 @@ Report case 18 HIGH only when the refuter cannot mount a credible defense.
 
 - It does not suggest code fixes unless asked.
 - It does not run the tests.
-- It does not run the AI-fix gate (Mode C). It proposes the strengthened test and
-  the `schema/fix-validation.json` contract; running the test on the clean and
-  mutated replicas (mutmut / cosmic-ray / Stryker) is the host's or developer's job.
+- It does not run the AI-fix gate (Mode C) from inside an editor host. It proposes
+  the strengthened test and the `schema/fix-validation.json` contract; the host or
+  developer runs the test on the clean and mutated replicas (mutmut / cosmic-ray /
+  Stryker). The npm CLI is the exception: `falsegreen-skill fix` runs the gate
+  locally for Python/pytest (V1), still propose-only and never touching the SUT.
 - It does not analyze production code unless the test snippet includes it.
 - It does not flag maintainability smells **by default** (bad names, missing
   messages, Eager Test, Lazy Test, long tests). Those are not false-positive risks.

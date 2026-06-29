@@ -6,6 +6,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-29
+
+### Added
+- AI-fix mode in the CLI (#1): `falsegreen-skill fix <test-file> --case <code> --line <n> --sut <file>`.
+  It is opt-in and propose-only. The LLM proposes a test-file-only patch for a mechanical finding
+  (C2b, C20, C21, C5, C7), then a local gate proves it on a clean replica: parse (`py_compile`),
+  preserve (the patch passes `pytest` against the real production code), and a line-scoped mutation
+  gate (the patch must fail on a built-in line-scoped mutant of the SUT line). The command never
+  auto-applies the patch and never edits the SUT. Without `--sut`, or with `--cheap`, it degrades to
+  propose-only and labels the output unvalidated. V1 is Python/pytest only; JS/TS/Robot fix paths and
+  the deep semantic cases (10/11/12/18) are deferred to v2. The gate proves the fix catches the
+  targeted mutant, not every possible bug, and the output says so.
+- `bin/fix-gate.js`: the deterministic gate runner (parse, preserve, mutation), with mock-runner
+  unit tests in `test/fix-gate.cjs` that confirm a tautological fix is rejected and a real-oracle fix
+  is accepted without needing an API key or a live provider.
+
 ## [0.5.2] - 2026-06-29
 
 ### Fixed
