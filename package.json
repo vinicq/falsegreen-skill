@@ -1,6 +1,6 @@
 {
   "name": "falsegreen-skill",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "LLM skill for false-positive test detection (J1-J6 protocol)",
   "keywords": [
     "claude-code-plugin",

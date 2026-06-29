@@ -6,6 +6,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-06-29
+
+### Fixed
+- CLI `--json` against reasoning models on `openai-compatible` providers (#102). Live testing
+  on Nvidia `qwen/qwen3.5-397b-a17b` and Fireworks Kimi showed the models ignored the buried
+  JSON-only prompt and returned the prose report, so the CLI rejected a correct analysis with
+  "could not parse JSON output". The chat call now sends `response_format: {type: "json_object"}`
+  in `--json` mode, which both models honor. `extractJson` is hardened to recover JSON even when
+  a model wraps it: it strips `<think>`/`<reasoning>` blocks, prefers a `json` fence then any
+  fence, and falls back to brace-matching the outermost object; it pulls from
+  `reasoning_content`/`reasoning` when `content` is empty, and normalizes the `"/findings"`
+  leading-slash key quirk seen on qwen3.5. On an unparseable or truncated response it returns
+  null and the CLI fails cleanly, with a hint to raise `--max-tokens` when the model was cut off
+  mid-output (`finish_reason: length`).
+- CLI no longer aborts on Windows when a request fails on the `--json` path (#102). The failure
+  path called `process.exit` while the fetch socket was still closing, which tripped libuv's
+  `UV_HANDLE_CLOSING` assertion (exit `0xC0000409`). `fail()` and the HIGH-finding exit now set
+  `process.exitCode` and unwind through `main()`, letting the event loop drain the handle before
+  the process exits.
+
 ## [0.5.1] - 2026-06-29
 
 ### Changed
