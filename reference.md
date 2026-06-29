@@ -361,6 +361,52 @@ clear the contradiction is); never auto-block on these without showing the reaso
       assert user.normalized_email == "alice@example.com"
       mock_repo.save.assert_called_once_with(user)
   ```
+- **S17 — Exception-path oracle blindness (J4, HIGH).** The test claims to verify the SUT's
+  documented error contract, but `pytest.raises(Exception)` / `expect(fn).toThrow()` with no
+  type or message goes green when the SUT never reaches its raise - the exception came from a typo
+  in arrange, a missing import, or a None-deref before the SUT line. The semantic core of the
+  "0% exception-path coverage" finding for LLM-generated tests. Distinct from S6 (error path
+  omitted) and C9 (static broad-type shape): S17 is the judgment that the raise under test is the
+  SUT's contract and the assertion cannot bind it to the SUT line. Pin the expected type and
+  `match=`, and assert the raise originates from the call under test.
+  ```python
+  # BAD: a typo in arrange raises before the SUT line; the test goes green
+  def test_withdraw_over_limit():
+      acct = Acount(balance=10)            # typo: NameError, not the SUT's ValueError
+      with pytest.raises(Exception):       # S17 — never reaches account.withdraw
+          account.withdraw(50)
+  # CLEAN
+  def test_withdraw_over_limit():
+      acct = Account(balance=10)
+      with pytest.raises(InsufficientFunds, match="balance"):
+          acct.withdraw(50)
+  ```
+- **S18 — Contract-impossible stub value (J3, LOW).** The test stubs an edge collaborator
+  (legitimate, so not S12/C10) but configures its return to a value the real collaborator's
+  contract can never emit - a negative price, a malformed row a typed ORM rejects, a `None` where
+  the schema guarantees non-null. The SUT "handles" it and the assertion passes, but the branch is
+  unreachable in production; the real defect (mishandling a VALID response) is never touched.
+  Report LOW unless the contradiction is type-level and obvious. Drive the stub from a value the
+  collaborator's contract can actually produce.
+  ```python
+  # BAD: get_price's contract returns a non-negative Decimal; -1 is impossible
+  def test_apply_discount(mock_catalog):
+      mock_catalog.get_price.return_value = Decimal("-1")   # S18 — unreachable branch
+      assert apply_discount("sku", 0.1) == Decimal("0")
+  ```
+- **S21 — Self-judging LLM/agent assertion (J2, LOW).** In an LLM/agent/RAG suite the oracle
+  is another model call: `assert judge_llm(f"is this correct? {out}") == "yes"`, an
+  embedding-similarity threshold against a model-generated reference, or an agent asserting its own
+  transcript looks reasonable. It passes whenever the judge is wrong in the same direction as the
+  SUT - a circular oracle sharing the generator's failure modes. Adjacent to S14 (frozen past
+  output); S21 is a LIVE model call as judgment. Replace the model verdict with a deterministic
+  rubric, a structural validator, or a frozen human-labeled judge set.
+  ```python
+  # BAD: the grader is another model call with the same blind spots
+  def test_summary_is_correct():
+      out = summarize(doc)
+      assert judge_llm(f"is this summary correct? {out}") == "yes"   # S21
+  ```
 
 Look-alikes - do NOT flag: a deliberately narrow unit test whose scope the spec confirms
 (S6 needs a stated broader contract); a constant that the spec genuinely endorses (not S3);
@@ -378,7 +424,7 @@ Testing Library `waitFor`/`findBy*`, Playwright/Cypress auto-wait, `await expect
 that polls a real settle condition and still fails hard on timeout (not S15); a call-only
 assertion where the interaction IS the contract - a fire-and-forget event, an audit-log or
 telemetry write, a queue publish - or a `toHaveBeenCalledWith`/`assert_called_once_with` that
-pins the specific arguments (not S16).
+pins the specific arguments (not S16); a `pytest.raises(SpecificError, match=...)` bound to the SUT line (not S17); a stub fed a value the collaborator's contract can actually return (not S18); a deterministic rubric, structural validator, or frozen human-labeled judge set rather than a live model verdict (not S21).
 
 ---
 
@@ -891,7 +937,7 @@ Apply only when the user explicitly asks for diagnostic analysis.
 - **C43 — Mid-test skip (J1, LOW):** `pytest.skip()` after test logic, with checks below it
   that then never run. A skip at the top is a legitimate guard.
 - **C44 — Numeric tautology (J2, HIGH):** `len(x) >= 0`, `abs(x) >= 0`, `len(x) > -1`, or a
-  mock's `call_count >= 0` / `> -1`. The comparison is always true.
+  mock's `call_count >= 0` / `> -1`. The comparison is always true. The Robot scanner widens C44 under this same id to vacuous library assertions beyond the numeric form (`Should Contain ${EMPTY}`, `Should Not Be Empty ${TRUE}`, a `Length Should Be` tautology); see the Robot section. Same id, the Robot bucket is broader - documented, not silent drift (#96).
 - **C45 — Empty parametrize (J1, HIGH):** `@pytest.mark.parametrize("...", [])`. Zero cases
   are generated, the test never runs.
 - **C48 — Dark patch: flips a test-mode flag then asserts (J1, LOW):** the test forces a
@@ -900,6 +946,21 @@ Apply only when the user explicitly asks for diagnostic analysis.
   test-only branch (`if TESTING: ...`) instead of real behaviour. Cross-language: shared with
   falsegreen-js (`process.env.NODE_ENV == "test"`, `process.env.TESTING`); no idiomatic Robot
   form. Config values and product feature flags are not flagged.
+- **C49 — `pytest.warns`/`assertWarns` wraps more than one call (J1, LOW):** the warning context
+  spans several statements, so an unrelated earlier line may emit the warning while the target
+  never does. The warns sibling of C19. Wrap only the call expected to warn.
+- **C50 — Captured log never asserted (J4, LOW):** `caplog` / `assertLogs` captures log output
+  but nothing reads or asserts it, so the capture has no effect on pass/fail. The logging sibling
+  of C31. Assert on the captured records, or drop the capture.
+- **C51 — Empty-bodied `pytest.raises`/`warns` context (J1, HIGH):** a `with pytest.raises(...)`
+  or `pytest.warns(...)` block with no call inside, so the call that should raise is never made
+  and the context cannot fail.
+- **C52 — Membership self-confirmation (J2, LOW):** `assert x in {x}` / `assert x in [x, ...]`
+  where the collection is built from the subject, so membership is true by construction. The
+  membership variant of C7.
+- **C55 — Assertion compares two mock-rooted values (J3, LOW):** `assert m.foo == m.bar` where
+  both sides resolve to the test's own doubles, not the SUT, so the comparison says nothing about
+  production behaviour.
 
 #### Look-alikes: do NOT flag these Python patterns
 
@@ -967,6 +1028,12 @@ node:test, Cypress, Playwright, and Testing Library.
 | JS22 | HIGH | empty `it.each`/`test.each` table |
 | JS23 | HIGH | `expect.assertions(N)` with fewer unconditional reachable `expect()` calls than `N` |
 | JS24 | LOW | Cypress `cy.get/find/contains` query statement with no `.should`/`.and`/`.then` assertion |
+| JS25 | HIGH | the only assertion sits inside an array-iterator callback (`forEach`/`map`/`filter`/`some`/`every`/`flatMap`) - runs zero times on an empty collection |
+| JS26 | LOW | fake timers installed but never advanced (`runAllTimers`/`advanceTimersByTime`/`tick`) - the scheduled callback never fires, so the assertion reads un-mutated state |
+| JS27 | LOW | `toHaveBeenCalled*` is the sole oracle on a locally-created double - verifies wiring, not behaviour |
+| JS29 | LOW | `expect(...).resolves`/`.rejects` chain is a bare statement, not awaited or returned - the test finishes green before the matcher settles |
+| JS30 | HIGH | literal-vs-literal assertion (`expect(2).toBe(3)`, chai `expect(x).to.equal(y)`) - both operands are fixed at parse time |
+| JS31 | LOW | `try/catch` swallows a possible throw with no assertion on the exception - a unit that stops throwing still passes green |
 
 Note: supertest / chai-http `.expect()` (`request(app).get("/").expect(200)`) is a real
 assertion at the API layer - do not flag such a test as C2b.
@@ -1352,6 +1419,15 @@ False-green patterns (the verification keyword is the oracle):
   pins the oracle to a value the test fixed. The Robot form of the always-true family.
 - **Conditional-only verification (J1):** the only verification lives inside a
   `Run Keyword If` whose condition may never hold.
+- **Verification only in Setup (J4, R8):** the only verification keyword lives in `[Setup]` /
+  `Test Setup`, so it checks preconditions before the body acts. The body can break and the
+  suite stays green. Move the oracle into the test body.
+- **Verification only in Teardown (J4, R8b):** the only verification keyword lives in
+  `[Teardown]` / `Test Teardown`. Teardown runs even when the body fails and reports on a
+  separate axis, so it does not gate the behaviour under test.
+- **RequestsLibrary `expected_status=any` (J4, C9b):** an HTTP method called with
+  `expected_status=any` / `anything` accepts every status, so the oracle is disabled and a 500
+  never fails the test. Pin the expected status, or assert it explicitly.
 - **No Operation only (J1, R4):** the only step is `No Operation` - the test/keyword runs but
   does nothing.
 - **Empty [Template] (J1, R5):** a `[Template]` keyword with no data rows generates zero cases.
