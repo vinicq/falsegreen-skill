@@ -29,6 +29,49 @@ can detect.
 
 ---
 
+## New here? Start here
+
+This is an LLM skill that reads your tests and flags the false-green ones: tests
+that stay green even when the code they cover is wrong. It catches the semantic
+cases the static scanners cannot, because it reads the test as text and works
+out what the test was meant to prove.
+
+A test like this passes forever, no matter what the code does:
+
+```python
+# before - false-green: asserts the mock back to itself
+def test_discount(mock_rate):
+    mock_rate.return_value = 0.1
+    result = apply_discount(100, mock_rate)
+    assert result == mock_rate.return_value   # passes for ANY result, even a wrong one
+```
+
+The fix is an independent expected value, one the code did not produce:
+
+```python
+# after - the test can now fail when apply_discount is wrong
+def test_discount():
+    result = apply_discount(100, rate=0.1)
+    assert result == 90                       # 10% off 100, computed by hand from the spec
+```
+
+The skill reads the first version and reports it as a J2 finding (the expected
+value is borrowed from the code, not from an independent source) with the line,
+the reason, and a fix hint. Three steps to try it:
+
+1. **Install or enable it** for your host - see [Installation](#installation) below.
+2. **Point it at a test file** - `npx falsegreen-skill analyze tests/test_discount.py`,
+   or, in an editor host, just ask it to "analyze this test for false-positive smells".
+3. **Read the finding** - each one names the catalog code, the failed judgment
+   (J1-J6), why the test cannot fail, and how to fix it. See
+   [Quick example](#quick-example).
+
+The full catalog, the judgments, and the per-language reference live in the
+[docs site](https://vinicq.github.io/falsegreen-docs/) and in
+[reference.md](reference.md).
+
+---
+
 ## Why this exists
 
 A test suite with 100% green tests is not a proof of correctness. It is a
@@ -265,6 +308,17 @@ mutation testing pass.
 | Cursor | Copy contents of `contexts/cursor.md` to `.cursor/rules/falsegreen-skill.mdc` |
 | CLI | `npx falsegreen-skill analyze tests/test_example.py` — see [docs/cli.md](docs/cli.md) |
 | API | Use the defined provider guides in `contexts/claude.md`, `contexts/codex.md`, and `contexts/gemini.md` |
+
+### Skill or static scanner?
+
+Use the static scanner (`falsegreen` for Python, `falsegreen-js`, `robotframework-falsegreen`)
+for fast, deterministic checks in CI and pre-commit: it proves what a parser can
+see and never needs an API key. Use this skill for the semantic cases a parser
+cannot reach - a mock standing in for the unit under test, an expected value
+copied from the code, a value that contradicts the spec. The skill is a superset:
+it carries every structural code of the three scanners plus the AI-only semantic
+patterns. A common setup runs the scanner on every commit and the skill on the
+files the scanner cannot fully judge.
 
 ### Quick example
 
