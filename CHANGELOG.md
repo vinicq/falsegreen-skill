@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-28
+
 ### Added
 - contexts/codex.md now documents a compact load order that fits the Codex ~32 KiB
   host context budget: `AGENTS.md` eager (it carries the compact protocol plus the
@@ -177,7 +179,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Multi-agent adversarial verification protocol for case 18 (bug-freezing).
 - CREDITS.md citing the research base.
 
-[Unreleased]: https://github.com/vinicq/falsegreen-skill/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/vinicq/falsegreen-skill/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/vinicq/falsegreen-skill/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/vinicq/falsegreen-skill/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/vinicq/falsegreen-skill/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/vinicq/falsegreen-skill/releases/tag/v0.1.0
