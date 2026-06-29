@@ -81,5 +81,45 @@ try {
     : bad('fix-validation.json does not enforce the accept matrix');
 } catch (e) { bad('fix-validation.json matrix check failed: ' + e.message); }
 
+// 8. extractJson recovers JSON that reasoning models wrap in thinking blocks,
+// markdown fences, or surrounding prose, and normalizes the "/findings" key
+// quirk; a malformed/truncated response yields null (clean failure, no crash). #102
+try {
+  const { extractJson } = require(CLI);
+  const obj = { findings: [], summary: { tests_reviewed: 0, high: 0, low: 0, clean: 0 }, language: 'Python', framework: 'pytest' };
+  const body = JSON.stringify(obj);
+
+  // thinking-wrapped + json fence
+  const thinkFenced = `<think>let me reason about the file...</think>\nHere is the report:\n\`\`\`json\n${body}\n\`\`\``;
+  deepEq(extractJson(thinkFenced), obj, 'extractJson recovers <think> + ```json fence');
+
+  // bare fence, no language tag
+  const bareFence = `\`\`\`\n${body}\n\`\`\``;
+  deepEq(extractJson(bareFence), obj, 'extractJson recovers a bare ``` fence');
+
+  // <think> prefix, no fence, prose around a bare object
+  const thinkPrefix = `<think>analysis here</think>\nFinal answer:\n${body}\nDone.`;
+  deepEq(extractJson(thinkPrefix), obj, 'extractJson brace-matches a bare object after <think>');
+
+  // Nvidia qwen "/findings" leading-slash key quirk
+  const slashed = JSON.stringify({ '/findings': [], summary: obj.summary, language: 'Python', framework: 'pytest' });
+  const fixed = extractJson(slashed);
+  fixed && Array.isArray(fixed.findings) && !('/findings' in fixed)
+    ? ok('extractJson normalizes the "/findings" leading-slash key')
+    : bad('extractJson did not normalize "/findings"');
+
+  // malformed / truncated -> null (caller fails cleanly, never throws)
+  extractJson('not json at all, just prose') === null
+    ? ok('extractJson returns null on prose (clean failure path)')
+    : bad('extractJson should return null on non-JSON');
+  extractJson('{"findings": [ {"case": "C5"') === null
+    ? ok('extractJson returns null on truncated JSON')
+    : bad('extractJson should return null on truncated JSON');
+} catch (e) { bad('extractJson tests failed: ' + e.message); }
+
+function deepEq(actual, expected, label) {
+  JSON.stringify(actual) === JSON.stringify(expected) ? ok(label) : bad(`${label} (got ${JSON.stringify(actual)})`);
+}
+
 if (failures) { process.stdout.write(`\n${failures} smoke failure(s)\n`); process.exit(1); }
 process.stdout.write('\nsmoke ok\n');

@@ -64,9 +64,17 @@ Environment:
 `);
 }
 
+// Sentinel so main().catch can tell an already-reported fail() from an
+// unexpected throw and avoid printing the message twice.
+class FailError extends Error {}
+
 function fail(message) {
   process.stderr.write(`error: ${message}\n`);
-  process.exit(1);
+  process.exitCode = 1;
+  // Throw instead of process.exit: an abrupt exit while a fetch/undici socket
+  // handle is still closing aborts libuv on Windows (UV_HANDLE_CLOSING assert,
+  // #102). Throwing unwinds to main(), the loop drains, node exits cleanly.
+  throw new FailError(message);
 }
 
 // ------------------------------------------------------------- arg parsing
@@ -281,12 +289,21 @@ async function callOpenAIStyle(baseUrl, apiKey, opts, system, user) {
     body.max_tokens = opts.maxTokens;
     body.temperature = opts.temperature;
   }
+  // In --json mode, ask for native JSON output. Reasoning models otherwise
+  // ignore the buried prompt override and emit the prose report, which the
+  // JSON path then cannot parse (#102).
+  if (opts.json) {
+    body.response_format = { type: 'json_object' };
+  }
   const data = await postJson(
     `${baseUrl.replace(/\/+$/, '')}/chat/completions`,
     { authorization: `Bearer ${apiKey}` },
     body
   );
-  return data.choices[0].message.content;
+  // Stash the stop reason so the JSON path can tell "model emitted garbage"
+  // from "model ran out of tokens mid-JSON" and give a useful hint (#102).
+  opts._finishReason = data.choices[0].finish_reason;
+  return pickContent(data.choices[0].message);
 }
 
 async function callGemini(opts, system, user) {
@@ -320,15 +337,87 @@ function analyzeOne(opts, system, user) {
 
 // ------------------------------------------------------------ json output
 
-function extractJson(text) {
-  // Models sometimes wrap JSON in markdown fences despite instructions.
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const candidate = fenced ? fenced[1] : text;
+function tryParse(candidate) {
+  if (typeof candidate !== 'string') return null;
+  const trimmed = candidate.trim();
+  if (!trimmed) return null;
   try {
-    return JSON.parse(candidate.trim());
+    return JSON.parse(trimmed);
   } catch (e) {
     return null;
   }
+}
+
+// Find the outermost balanced { ... } object, ignoring braces inside strings.
+function balancedObject(text) {
+  const start = text.indexOf('{');
+  if (start === -1) return null;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+function extractJson(text) {
+  // Reasoning models wrap the JSON in <think>/<reasoning> blocks, markdown
+  // fences, or surrounding prose. Recover defensively and never throw: strip
+  // thinking, prefer a fenced block, else brace-match the outermost object.
+  if (typeof text !== 'string') return null;
+  const cleaned = text
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, '');
+
+  // Prefer a ```json fence, then any fence.
+  const jsonFence = cleaned.match(/```json\s*([\s\S]*?)```/i);
+  const anyFence = cleaned.match(/```\s*([\s\S]*?)```/);
+  for (const candidate of [jsonFence && jsonFence[1], anyFence && anyFence[1], cleaned]) {
+    const parsed = tryParse(candidate);
+    if (parsed !== null) return normalizeReportKeys(parsed);
+  }
+
+  // Last resort: the outermost balanced object found anywhere in the text.
+  const fallback = tryParse(balancedObject(cleaned));
+  return fallback === null ? null : normalizeReportKeys(fallback);
+}
+
+// Schema-guided decoding on some providers (seen on Nvidia qwen3.5) leaks the
+// JSON-pointer leading slash into top-level keys, e.g. "/findings" instead of
+// "findings". Rename the known report keys back when only the slashed form is
+// present, so a correct analysis is not rejected as malformed (#102).
+function normalizeReportKeys(obj) {
+  if (!isPlainObject(obj)) return obj;
+  for (const key of ['findings', 'summary', 'language', 'framework', 'scan_date']) {
+    if (!(key in obj) && `/${key}` in obj) {
+      obj[key] = obj[`/${key}`];
+      delete obj[`/${key}`];
+    }
+  }
+  return obj;
+}
+
+// Reasoning providers sometimes leave message.content empty and put the answer
+// in reasoning_content / message.reasoning. Pick whichever holds text.
+function pickContent(message) {
+  if (!message) return '';
+  if (typeof message.content === 'string' && message.content.trim()) return message.content;
+  if (typeof message.reasoning_content === 'string' && message.reasoning_content.trim()) return message.reasoning_content;
+  if (typeof message.reasoning === 'string' && message.reasoning.trim()) return message.reasoning;
+  return message.content || '';
 }
 
 function isPlainObject(value) {
@@ -468,7 +557,15 @@ async function runAnalyze(opts) {
     if (opts.json) {
       const report = extractJson(output);
       if (report === null) {
-        fail(`could not parse JSON output for ${file}`);
+        // A reasoning model that spends its token budget on chain-of-thought in
+        // `content` gets cut off mid-JSON; the recovered text looks like a report
+        // but never closes. Point at --max-tokens instead of a generic parse error.
+        const truncated = opts._finishReason === 'length' ||
+          (output.lastIndexOf('}') < output.lastIndexOf('{') && output.includes('{'));
+        const hint = truncated
+          ? ' (response was cut off, likely by --max-tokens; retry with a higher --max-tokens. Reasoning models spend output budget on chain-of-thought)'
+          : '';
+        fail(`could not parse JSON output for ${file}${hint}`);
       }
       const validationErrors = validateReport(report, file);
       if (validationErrors.length > 0) fail(validationErrors.join('\n'));
@@ -486,7 +583,9 @@ async function runAnalyze(opts) {
     process.stdout.write(JSON.stringify(report, null, 2) + '\n');
   }
 
-  if (anyHigh) process.exit(2);
+  // exitCode (not process.exit): exit after the loop drains the closing fetch
+  // socket, so node does not assert on a still-closing handle (#102).
+  if (anyHigh) process.exitCode = 2;
 }
 
 // ------------------------------------------------------------------ main
@@ -508,6 +607,14 @@ async function main() {
   await runAnalyze(opts);
 }
 
-main().catch((err) => {
-  fail(err && err.message ? err.message : String(err));
-});
+// Export internals for unit tests; only run the CLI when invoked directly.
+module.exports = { extractJson, validateReport, balancedObject, normalizeReportKeys, pickContent };
+
+if (require.main === module) {
+  main().catch((err) => {
+    // fail() already reported and set exitCode; just let the process wind down.
+    if (err instanceof FailError) return;
+    process.stderr.write(`error: ${err && err.message ? err.message : String(err)}\n`);
+    process.exitCode = 1;
+  });
+}
