@@ -385,6 +385,25 @@ Full flag reference: [docs/cli.md](docs/cli.md).
 
 ---
 
+### Propose a fix and prove it (AI-fix mode, V1)
+
+`analyze` finds a false-green; `fix` proposes a stronger test and proves it before you trust it. It is opt-in, Python/pytest only, and propose-only: it prints a test-file patch but never applies it and never edits your production code.
+
+```bash
+# propose a patch for a C2b finding and run the gate against the real SUT
+npx falsegreen-skill fix tests/test_discount.py --case C2b --line 14 --sut src/discount.py
+
+# parse + preserve only, no mutation gate (no runnable SUT or a quick pass)
+npx falsegreen-skill fix tests/test_discount.py --case C5 --line 9 --cheap
+
+# machine-readable gate verdict (schema/fix-validation.json)
+npx falsegreen-skill fix tests/test_discount.py --case C20 --line 22 --sut src/discount.py --json
+```
+
+The gate runs three checks on a clean replica: the patch parses, it passes `pytest` against the real code, and it **fails** on a line-scoped mutation of the SUT (a built-in operator on the SUT line; full mutmut integration is deferred to a later version). A patch is accepted only when it both passes on correct code and goes red on the mutant, which is what proves the new assertion catches a bug instead of being a fresh tautology. Without `--sut` it degrades to propose-only and says the fix is unvalidated. The honest limit: the gate proves the fix catches the targeted mutant, not every possible bug. JS/TS/Robot and the deep semantic cases are v2.
+
+---
+
 ### Claude Code (primary path)
 
 Add the marketplace and install the plugin:

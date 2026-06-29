@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { runFixGate, isV1Fixable } = require('./fix-gate');
 
 const PKG_ROOT = path.join(__dirname, '..');
 
@@ -41,8 +42,18 @@ function printHelp() {
 
 Usage:
   falsegreen-skill analyze <file...> [options]
+  falsegreen-skill fix <test-file> --case <code> --line <n> [options]
   falsegreen-skill --help
   falsegreen-skill --version
+
+Commands:
+  analyze   Review a test file for false-positive smells (Mode A).
+  fix       PROPOSE-ONLY AI-fix (Mode C, V1: Python/pytest). The LLM proposes a
+            test-file-only patch for a mechanical finding (C2b/C20/C21/C5/C7); a
+            local gate then proves it: parse -> preserve (passes on the real SUT)
+            -> mutation (FAILS on a line-scoped mutant of the SUT). Never auto-
+            applies, never edits the SUT. Without a runnable SUT it degrades to
+            propose-only/unvalidated and says so.
 
 Options:
   --provider <name>     anthropic (default) | openai | gemini | openai-compatible
@@ -55,6 +66,16 @@ Options:
   --temperature <n>     Sampling temperature 0.0-1.0 (default 0.2). Ignored for OpenAI o-series.
   --max-tokens <n>      Max output tokens (default 4096)
   --fail-on-high        Exit 2 when any HIGH finding is present (requires --json)
+
+fix options (in addition to the provider options above):
+  --case <code>         Catalog code of the finding to fix (C2b, C20, C21, C5, C7).
+  --line <n>            Line of the finding in the test file (1-indexed).
+  --sut <file>          Production file the test protects. Required for a validated
+                        fix; without it the gate degrades to propose-only.
+  --sut-line <n>        Line in the SUT to mutate (the behavioural line the finding
+                        names). Defaults to --line.
+  --cheap               Validation tier: parse + preserve only (no mutation gate).
+                        Default tier is strong (parse + preserve + mutation).
 
 Environment:
   ANTHROPIC_API_KEY     for --provider anthropic
@@ -91,6 +112,12 @@ function parseArgs(argv) {
     maxTokens: 4096,
     failOnHigh: false,
     temperature: 0.2,
+    // fix mode
+    case: null,
+    line: null,
+    sut: null,
+    sutLine: null,
+    tier: 'strong',
   };
 
   let i = 0;
@@ -136,6 +163,29 @@ function parseArgs(argv) {
       }
       case '--fail-on-high':
         opts.failOnHigh = true;
+        break;
+      case '--case':
+        opts.case = requireValue(argv, ++i, arg);
+        break;
+      case '--line': {
+        const raw = requireValue(argv, ++i, arg);
+        const n = parseInt(raw, 10);
+        if (!Number.isInteger(n) || n <= 0) fail(`--line expects a positive integer, got "${raw}"`);
+        opts.line = n;
+        break;
+      }
+      case '--sut':
+        opts.sut = requireValue(argv, ++i, arg);
+        break;
+      case '--sut-line': {
+        const raw = requireValue(argv, ++i, arg);
+        const n = parseInt(raw, 10);
+        if (!Number.isInteger(n) || n <= 0) fail(`--sut-line expects a positive integer, got "${raw}"`);
+        opts.sutLine = n;
+        break;
+      }
+      case '--cheap':
+        opts.tier = 'cheap';
         break;
       default:
         if (arg.startsWith('-')) fail(`unknown option: ${arg}`);
@@ -520,6 +570,128 @@ function aggregateReports(reports) {
   };
 }
 
+// ----------------------------------------------------------------- fix mode
+
+// Mode C V1: build the system prompt that asks the LLM for a test-file-only
+// strengthening patch. The trust is the gate, not the prompt: a weak proposal
+// is caught by parse/preserve/mutation downstream.
+function buildFixSystemPrompt() {
+  const llmPath = path.join(PKG_ROOT, 'llm.md');
+  let prompt = fs.existsSync(llmPath) ? fs.readFileSync(llmPath, 'utf8') : '';
+  prompt += [
+    '',
+    '---',
+    '',
+    '## AI-fix mode (Mode C) - propose a test-file-only patch',
+    '',
+    'You are given a Python/pytest test file and one false-green finding on it.',
+    'Propose a STRENGTHENED version of the WHOLE test file that closes the finding:',
+    'add the missing assertion / prune the dead guard / replace the tautology with a',
+    'real comparison, at the judgment that failed.',
+    '',
+    'Hard rules:',
+    '- Edit the TEST FILE ONLY. Never edit production code.',
+    '- The expected value must come from an independent oracle (spec/contract), never',
+    '  lifted from current output - that just re-freezes the bug.',
+    '- Keep the rest of the file intact; change only what the finding requires.',
+    '',
+    'Output ONLY the full patched test file inside a single fenced code block:',
+    '```python',
+    '<the complete strengthened test file>',
+    '```',
+    'No prose before or after.',
+  ].join('\n');
+  return prompt;
+}
+
+function buildFixUserMessage(filename, content, code, line) {
+  return [
+    `Finding to fix: case ${code} at line ${line} of ${filename}.`,
+    '',
+    'Current test file:',
+    '```python',
+    content,
+    '```',
+    '',
+    'Propose the full strengthened test file (test-file-only patch).',
+  ].join('\n');
+}
+
+// Pull the first fenced code block out of the model output (the proposed patch).
+function extractCodeBlock(text) {
+  if (typeof text !== 'string') return null;
+  const fenced = text.match(/```(?:python|py)?\s*([\s\S]*?)```/i);
+  if (fenced && fenced[1].trim()) return fenced[1].replace(/\n$/, '');
+  // No fence: if it looks like Python source, take it whole.
+  return text.trim() ? text.trim() : null;
+}
+
+async function runFix(opts) {
+  const file = opts.files[0] || null;
+  if (!file) fail('fix requires a test file. See --help.');
+  if (!fs.existsSync(file)) fail(`file not found: ${file}`);
+  if (path.extname(file).toLowerCase() !== '.py') {
+    fail('fix V1 supports Python/pytest only. JS/TS/Robot fix paths are v2 (see SKILL.md).');
+  }
+  if (!opts.case) fail('fix requires --case <code> (the finding to fix).');
+  if (!isV1Fixable(opts.case)) {
+    fail(`case ${opts.case} is not fixable in V1. Fixable: C2b, C20, C21, C5, C7. ` +
+      'Deep semantic cases (10/11/12/18) and JS/TS/Robot are v2.');
+  }
+  if (!opts.line) fail('fix requires --line <n> (the finding line in the test file).');
+
+  if (opts.provider === 'openai-compatible') {
+    if (!opts.baseUrl) fail('--base-url is required for --provider openai-compatible');
+    if (!opts.model) fail('--model is required for --provider openai-compatible');
+  }
+  if (!(opts.provider in DEFAULT_MODELS)) {
+    fail(`unknown provider: ${opts.provider}. Use anthropic, openai, gemini, or openai-compatible.`);
+  }
+  if (!opts.model) opts.model = DEFAULT_MODELS[opts.provider];
+
+  const content = fs.readFileSync(file, 'utf8');
+  const system = buildFixSystemPrompt();
+  const user = buildFixUserMessage(path.basename(file), content, opts.case, opts.line);
+
+  // The LLM proposes; everything after this is the deterministic gate.
+  const raw = await analyzeOne(opts, system, user);
+  const patchedTestSource = extractCodeBlock(raw);
+  if (!patchedTestSource) fail('the model returned no usable patch (no code block).');
+
+  const cheap = opts.tier === 'cheap';
+  const out = runFixGate({
+    patchedTestSource,
+    testFile: file,
+    sutFile: opts.sut || null,
+    sutLine: opts.sutLine || opts.line,
+    finding: { code: opts.case, file, line: opts.line },
+    tier: cheap ? 'suite-rerun' : 'targeted-mutation',
+    mutationDisabled: cheap,
+  });
+
+  emitFix(opts, out, patchedTestSource);
+}
+
+// Print the proposed patch + the gate evidence (or the JSON validation object).
+function emitFix(opts, out, patch) {
+  const { validation, summary } = out;
+  if (opts.json) {
+    process.stdout.write(JSON.stringify(validation, null, 2) + '\n');
+  } else {
+    process.stdout.write('=== Proposed patch (test file only - NOT applied) ===\n');
+    process.stdout.write(patch + '\n\n');
+    process.stdout.write(`=== Gate verdict: ${validation.verdict.toUpperCase()} (${summary}) ===\n`);
+    process.stdout.write(`  parse/preserve: clean_replica=${validation.clean_replica}\n`);
+    process.stdout.write(`  mutation:       mutated_replica=${validation.mutated_replica}` +
+      (validation.mutation ? ` [${validation.mutation}]` : '') + '\n');
+    if (validation.notes) process.stdout.write(`  notes: ${validation.notes}\n`);
+    process.stdout.write('\nHonest limit: the gate proves this fix catches the targeted mutant, ' +
+      'not every possible bug. Never auto-applied - review and apply yourself.\n');
+  }
+  // accepted fix -> 0; rejected/unvalidated -> 1 (CI can branch on it)
+  if (validation.verdict !== 'accept') process.exitCode = 1;
+}
+
 // --------------------------------------------------------------- analyze
 
 async function runAnalyze(opts) {
@@ -601,6 +773,10 @@ async function main() {
     process.stdout.write(readPackageVersion() + '\n');
     return;
   }
+  if (opts.command === 'fix') {
+    await runFix(opts);
+    return;
+  }
   if (opts.command !== 'analyze') {
     fail(`unknown command: ${opts.command}. See --help.`);
   }
@@ -608,7 +784,7 @@ async function main() {
 }
 
 // Export internals for unit tests; only run the CLI when invoked directly.
-module.exports = { extractJson, validateReport, balancedObject, normalizeReportKeys, pickContent };
+module.exports = { extractJson, validateReport, balancedObject, normalizeReportKeys, pickContent, extractCodeBlock };
 
 if (require.main === module) {
   main().catch((err) => {

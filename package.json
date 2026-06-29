@@ -1,6 +1,6 @@
 {
   "name": "falsegreen-skill",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "LLM skill for false-positive test detection (J1-J6 protocol)",
   "keywords": [
     "claude-code-plugin",
@@ -27,7 +27,7 @@
     "sync:cursor": "node scripts/sync-cursor-mdc.mjs",
     "sync:hosts": "node scripts/sync-host-files.mjs",
     "smoke": "node test/smoke.cjs",
-    "test": "node test/smoke.cjs",
+    "test": "node test/smoke.cjs && node test/fix-gate.cjs",
     "build:targets": "node scripts/build-targets.mjs",
     "version": "node -e \"const fs=require('fs');const v=require('./package.json').version;['.claude-plugin/plugin.json','.codex-plugin/plugin.json','gemini-extension.json'].forEach(f=>{const p=JSON.parse(fs.readFileSync(f));p.version=v;fs.writeFileSync(f,JSON.stringify(p,null,2)+'\\n')});\" && git add .claude-plugin/ .codex-plugin/ gemini-extension.json"
   },
