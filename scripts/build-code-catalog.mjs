@@ -48,7 +48,7 @@ const ROBOT_SEC_RE = /^##\s+Robot Framework\b/;
 const PL_SEC_RE = /^##\s+Project layer\b/;
 const TOP_SEC_RE = /^##\s+/;
 
-const PROSE_START_RE = /^- \*\*([A-Za-z0-9]+)\s+—\s+(.*)$/;
+const PROSE_START_RE = /^- \*\*([A-Za-z0-9]+)\s+[—-]\s+(.*)$/;
 const PROSE_CLOSE_RE = /^(.*?)\s*\((?:(J[0-9](?:\/J[0-9])?),\s*)?(HIGH|LOW|OFF|INFO|MEDIUM)\b[^)]*\):\*\*/;
 const S_START_RE = /^- \*\*(S[0-9]+)\s+—\s+(.*)$/;
 const S_CLOSE_RE = /^(.*?)\s*\((J[0-9](?:\/J[0-9])?)(?:,\s*(HIGH|LOW|OFF|INFO|MEDIUM)\b[^)]*)?\)\.\*\*/;

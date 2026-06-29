@@ -828,7 +828,9 @@ smell, operator confirms. OFF/INFO = diagnostic only, skip unless asked.
 - **C31 — capsys.readouterr() result discarded (J4, LOW):**
   `capsys.readouterr()` called as bare expression (result ignored) or
   assigned to a variable never read in an assertion. The capture ran but
-  no check was performed on it.
+  no check was performed on it. The Robot scanner reuses this same id for its
+  own capture-never-used shape (`${x}= Get Text loc` never passed to a `Should`);
+  see the Robot section. Documented reuse, same id, not drift (#105).
   ```python
   # BAD
   def test_output(capsys):
@@ -961,6 +963,9 @@ Apply only when the user explicitly asks for diagnostic analysis.
 - **C55 — Assertion compares two mock-rooted values (J3, LOW):** `assert m.foo == m.bar` where
   both sides resolve to the test's own doubles, not the SUT, so the comparison says nothing about
   production behaviour.
+- **C56 - Sync assert of a never-awaited coroutine (J1, LOW):** the operand of the assert is a call to a local async def, so the check runs on the coroutine object (always truthy), not its awaited value. BAD: assert fetch_user() where fetch_user is async def. CLEAN: assert await fetch_user() (or asyncio.run(...)).
+- **C57 - Assertion against an unconfigured Mock attribute (J3, LOW):** the expected side is m.attr on a bare Mock()/MagicMock() with no spec; attribute access auto-creates a fresh truthy child mock, so the comparison can never meaningfully fail. BAD: m = Mock(); assert result == m.value. CLEAN: build with Mock(spec=...) or assert against a concrete value.
+- **C59 - Bare comparison written as a statement (J1, HIGH):** result == expected on its own line - the boolean is computed and discarded, nothing is asserted. The loose-statement sibling of C39. BAD: result == expected. CLEAN: assert result == expected.
 
 #### Look-alikes: do NOT flag these Python patterns
 
@@ -1412,6 +1417,14 @@ False-green patterns (the verification keyword is the oracle):
   (`Should Be True    ${n} > 0`, `${a} and ${b}`) is also a real oracle and is not flagged.
   Pass a real expression, not a bare literal.
 - **Self-compare (J2, C7):** `Should Be Equal    ${x}    ${x}`.
+- **Self-confirming literal (J2, C11a):** `${y}=    Set Variable    ${x}` then `Should Be Equal
+  ${x}    ${y}` - the expected side is a copy of the actual, so the oracle confirms itself. The
+  Robot form of the assign-then-assert C11a; same id as the Python self-confirming literal.
+- **Captured value never used (J4, C31):** `${x}=    Get Text    loc` (or any capture) whose
+  value is never passed to a `Should`, so the capture is dead and the test verifies something
+  else. This shares the id with the Python capsys C31: the Python form is a discarded
+  `readouterr()`, the Robot form is a discarded `Get` capture. Same concept (a capture nothing
+  asserts on), same id - documented reuse, not silent drift (#105). Mirror of the C44 note style.
 - **Catch-all expected error (J4, C9):** `Run Keyword And Expect Error    *` (or the
   explicit-glob form `GLOB:*`) where the pattern is just a glob star. Any error satisfies
   the glob - including one from a typo in the test itself - so the oracle is vacuous. This
@@ -1473,6 +1486,9 @@ False-green patterns (the verification keyword is the oracle):
 - **Control flow at test level (J4, D2, off by default):** `IF`/`FOR`/`WHILE`/`TRY` directly in
   a test case (not a keyword). Diagnostic, not false-green: the guide advises moving control flow
   into a keyword to keep the case flat. Off by default like the other diagnostics.
+- **Long test (J5, M2, off by default):** a test/task with too many steps (the guide suggests a
+  max of ~10). Coupling, not false-green: split into focused cases or extract keywords. Off by
+  default; shares the M2 id with the Python/JS over-long-test-body code.
 
 Look-alikes - do NOT flag:
 - `Run Keyword And Expect Error` with a SPECIFIC message/pattern, or
@@ -1527,6 +1543,7 @@ scan. Listed here so the skill catalog is a true superset of the scanners.
   in jest/vitest. The reported test count is incomplete - a green run may have skipped most tests.
 - **Warnings not promoted (J1, PL2, Python):** `filterwarnings` does not turn warnings into errors,
   so deprecations and runtime warnings pass silently. Set `filterwarnings = error`.
+- **Asserts stripped at runtime (J1, PL1, Python):** the resolved config runs under python -O/-OO or with PYTHONOPTIMIZE set, which removes every assert statement - the whole suite passes with no checks. Run without -O and unset PYTHONOPTIMIZE.
 - **passWithNoTests (J1, PL10, JS/TS):** jest/vitest `passWithNoTests` lets an empty or
   fully-filtered suite report green. Drop it so a no-test run fails.
 - **Skip-on-failure run option (J1, PL9, Robot):** `--skiponfailure` / `--noncritical` in the run
