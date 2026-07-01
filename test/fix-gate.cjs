@@ -304,6 +304,25 @@ if (!pyOk()) {
     : bad(`#110.4: kill not attributed to target test, got runs=${JSON.stringify(seen)}`);
 }
 
+// --- 14. REGRESSION #111.1: mutateLine ignores comment/string content. An
+// operator that only appears in a comment must NOT be mutated (that yields a
+// no-op mutant that a good test passes -> gate falsely rejects the fix). The
+// real code (a constant bump here) must be what gets mutated instead.
+{
+  // `+` only in the comment; the code has a bumpable constant.
+  const m = mutateLine('def price():\n    return 10  # legacy: was price + 10\n', 2);
+  m && !/was price - 10/.test(m.source) && /return 11/.test(m.source)
+    ? ok('#111.1: mutateLine skips the comment `+`, bumps the real constant instead')
+    : bad(`#111.1: mutateLine mutated the comment or missed the code (${m && m.source})`);
+
+  // Operator ONLY in the comment, nothing mutatable in the code -> null (the gate
+  // treats null as "no mutant"/unvalidated, better than a false reject).
+  const noop = mutateLine('def f(x):\n    return x  # x + y once\n', 2);
+  noop === null
+    ? ok('#111.1: operator only in comment, no code op -> mutateLine returns null')
+    : bad(`#111.1: expected null when only the comment matches, got ${noop && noop.source}`);
+}
+
 try { fs.rmSync(work, { recursive: true, force: true }); } catch (_) { /* best effort */ }
 
 if (failures) { process.stdout.write(`\n${failures} fix-gate failure(s)\n`); process.exit(1); }
