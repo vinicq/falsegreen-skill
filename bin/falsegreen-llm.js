@@ -335,7 +335,15 @@ async function callAnthropic(opts, system, user) {
       messages: [{ role: 'user', content: user }],
     }
   );
-  return data.content[0].text;
+  // HTTP 200 does not mean text: a safety block returns stop_reason "refusal"
+  // or an empty content array. Guard before indexing so we fail() with the real
+  // reason instead of a bare "Cannot read properties of undefined" (#111.3).
+  const block = Array.isArray(data.content) ? data.content.find((b) => b && typeof b.text === 'string') : null;
+  opts._finishReason = data.stop_reason; // so --json can spot max_tokens (#111.4)
+  if (!block || !block.text) {
+    fail(`model returned no text (stop_reason=${data.stop_reason || 'unknown'})`);
+  }
+  return block.text;
 }
 
 async function callOpenAIStyle(baseUrl, apiKey, opts, system, user) {
@@ -364,10 +372,21 @@ async function callOpenAIStyle(baseUrl, apiKey, opts, system, user) {
     { authorization: `Bearer ${apiKey}` },
     body
   );
+  // Guard the shape before indexing: a content filter returns choices: [] or a
+  // choice with finish_reason "content_filter" and no message content, which
+  // otherwise throws a bare TypeError and hides the block (#111.3).
+  const choice = Array.isArray(data.choices) ? data.choices[0] : null;
+  if (!choice) {
+    fail(`model returned no choices (${data.error ? data.error.message : 'empty response'})`);
+  }
   // Stash the stop reason so the JSON path can tell "model emitted garbage"
   // from "model ran out of tokens mid-JSON" and give a useful hint (#102).
-  opts._finishReason = data.choices[0].finish_reason;
-  return pickContent(data.choices[0].message);
+  opts._finishReason = choice.finish_reason;
+  const content = pickContent(choice.message);
+  if (!content || !content.trim()) {
+    fail(`model returned no text (finish_reason=${choice.finish_reason || 'unknown'})`);
+  }
+  return content;
 }
 
 async function callGemini(opts, system, user) {
@@ -381,7 +400,22 @@ async function callGemini(opts, system, user) {
     contents: [{ parts: [{ text: user }] }],
     generationConfig: { maxOutputTokens: opts.maxTokens, temperature: opts.temperature },
   });
-  return data.candidates[0].content.parts[0].text;
+  // A safety block returns no candidates and a promptFeedback.blockReason; a
+  // MAX_TOKENS/RECITATION stop returns a candidate with finishReason but no
+  // parts. Guard both before indexing so the reason surfaces (#111.3).
+  if (data.promptFeedback && data.promptFeedback.blockReason) {
+    fail(`model returned no text (blockReason=${data.promptFeedback.blockReason})`);
+  }
+  const candidate = Array.isArray(data.candidates) ? data.candidates[0] : null;
+  opts._finishReason = candidate && candidate.finishReason; // so --json spots MAX_TOKENS (#111.4)
+  const part =
+    candidate && candidate.content && Array.isArray(candidate.content.parts)
+      ? candidate.content.parts.find((p) => p && typeof p.text === 'string')
+      : null;
+  if (!part || !part.text) {
+    fail(`model returned no text (finishReason=${(candidate && candidate.finishReason) || 'unknown'})`);
+  }
+  return part.text;
 }
 
 function analyzeOne(opts, system, user) {
@@ -493,8 +527,10 @@ function validateReport(report, label) {
   const judgments = new Set(['J1', 'J2', 'J3', 'J4', 'J5', 'J6']);
   const confidences = new Set(['HIGH', 'LOW']);
   const languages = new Set(['Python', 'TypeScript', 'JavaScript', 'Robot']);
-  const levels = new Set(['unit', 'integration', 'e2e']);
-  const intents = new Set(['spec', 'char', 'regression', 'behavior']);
+  // fixture/scaffold: non-behavioral axes documented in SKILL.md for findings on
+  // data/example/perf files and unimplemented placeholders (#111.2).
+  const levels = new Set(['unit', 'integration', 'e2e', 'fixture']);
+  const intents = new Set(['spec', 'char', 'regression', 'behavior', 'scaffold']);
   const findingKeys = new Set([
     'case',
     'judgment',
@@ -543,8 +579,8 @@ function validateReport(report, label) {
       if (!judgments.has(finding.judgment)) add(`${prefix}.judgment`, 'must be one of J1-J6');
       if (!confidences.has(finding.confidence)) add(`${prefix}.confidence`, 'must be HIGH or LOW');
       if (!languages.has(finding.language)) add(`${prefix}.language`, 'must be Python, TypeScript, JavaScript, or Robot');
-      if (!levels.has(finding.level)) add(`${prefix}.level`, 'must be unit, integration, or e2e');
-      if (!intents.has(finding.intent)) add(`${prefix}.intent`, 'must be spec, char, regression, or behavior');
+      if (!levels.has(finding.level)) add(`${prefix}.level`, 'must be unit, integration, e2e, or fixture');
+      if (!intents.has(finding.intent)) add(`${prefix}.intent`, 'must be spec, char, regression, behavior, or scaffold');
       if (!isPlainObject(finding.test) || typeof finding.test.name !== 'string') {
         add(`${prefix}.test.name`, 'must be a string');
       }
@@ -751,7 +787,9 @@ async function runAnalyze(opts) {
         // A reasoning model that spends its token budget on chain-of-thought in
         // `content` gets cut off mid-JSON; the recovered text looks like a report
         // but never closes. Point at --max-tokens instead of a generic parse error.
-        const truncated = opts._finishReason === 'length' ||
+        // OpenAI: "length"; Anthropic: "max_tokens"; Gemini: "MAX_TOKENS" (#111.4).
+        const truncatedReasons = new Set(['length', 'max_tokens', 'MAX_TOKENS']);
+        const truncated = truncatedReasons.has(opts._finishReason) ||
           (output.lastIndexOf('}') < output.lastIndexOf('{') && output.includes('{'));
         const hint = truncated
           ? ' (response was cut off, likely by --max-tokens; retry with a higher --max-tokens. Reasoning models spend output budget on chain-of-thought)'
@@ -803,7 +841,12 @@ async function main() {
 }
 
 // Export internals for unit tests; only run the CLI when invoked directly.
-module.exports = { extractJson, validateReport, balancedObject, normalizeReportKeys, pickContent, extractCodeBlock };
+module.exports = {
+  extractJson, validateReport, balancedObject, normalizeReportKeys, pickContent, extractCodeBlock,
+  // exported for the provider-parsing regression tests (#111.3): stubbed fetch,
+  // no live API.
+  callAnthropic, callOpenAIStyle, callGemini, FailError,
+};
 
 if (require.main === module) {
   main().catch((err) => {

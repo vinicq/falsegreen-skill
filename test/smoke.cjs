@@ -63,8 +63,8 @@ try {
   /findingKeys\s*=\s*new Set\(\[[\s\S]*?'level'[\s\S]*?\]\)/.test(src)
     ? ok('CLI validator allows the level field')
     : bad('CLI validateReport findingKeys is missing level');
-  /levels\s*=\s*new Set\(\['unit', 'integration', 'e2e'\]\)/.test(src)
-    ? ok('CLI validates the level enum')
+  /levels\s*=\s*new Set\(\['unit', 'integration', 'e2e', 'fixture'\]\)/.test(src)
+    ? ok('CLI validates the level enum (incl. fixture)')
     : bad('CLI is missing the level enum check');
 } catch (e) { bad('CLI level checks failed: ' + e.message); }
 
@@ -117,9 +117,89 @@ try {
     : bad('extractJson should return null on truncated JSON');
 } catch (e) { bad('extractJson tests failed: ' + e.message); }
 
+// 9. REGRESSION #111.2: validateReport accepts level:fixture and intent:scaffold
+// (SKILL.md documents both; the closed enum used to abort the whole --json run).
+try {
+  const { validateReport } = require(CLI);
+  const report = {
+    findings: [{
+      case: 'C5', judgment: 'J2', confidence: 'LOW', language: 'Python',
+      level: 'fixture', intent: 'scaffold', test: { name: 'test_stub' },
+      finding: 'placeholder', evidence: ['pass'], fix_hint: 'implement it',
+    }],
+    summary: { tests_reviewed: 1, high: 0, low: 1, clean: 0 },
+    language: 'Python', framework: 'pytest',
+  };
+  const errs = validateReport(report, 'stub');
+  errs.length === 0
+    ? ok('#111.2: validateReport accepts level:fixture and intent:scaffold')
+    : bad(`#111.2: fixture/scaffold rejected: ${errs.join('; ')}`);
+} catch (e) { bad('#111.2 test failed: ' + e.message); }
+
+// 10. REGRESSION #111.3/#111.4: a degenerate 200 body (safety block / empty /
+// truncated) must fail() with a useful message per provider, NOT a bare
+// TypeError. fetch is stubbed; no live API. Env keys set so getApiKey passes.
+async function providerParsingTests() {
+  const mod = require(CLI);
+  const savedFetch = globalThis.fetch;
+  const savedEnv = { ...process.env };
+  process.env.ANTHROPIC_API_KEY = 'test';
+  process.env.OPENAI_API_KEY = 'test';
+  process.env.GEMINI_API_KEY = 'test';
+  const stub = (payload) => { globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => payload, text: async () => '' }); };
+
+  async function expectFail(label, fn, matcher) {
+    try {
+      await fn();
+      bad(`${label}: expected fail(), no error thrown`);
+    } catch (e) {
+      e instanceof mod.FailError && matcher.test(e.message)
+        ? ok(label)
+        : bad(`${label}: wrong error (${e && e.message})`);
+    }
+  }
+
+  const opts = { model: 'x', maxTokens: 10, temperature: 0.2, json: true, baseUrl: 'http://x' };
+
+  // Anthropic safety block: stop_reason set, empty content array.
+  stub({ stop_reason: 'refusal', content: [] });
+  await expectFail('#111.3 anthropic: no text -> fail with stop_reason',
+    () => mod.callAnthropic({ ...opts }, 'sys', 'user'), /no text.*refusal/i);
+
+  // OpenAI-style content filter: choice with no message content.
+  stub({ choices: [{ finish_reason: 'content_filter', message: { content: '' } }] });
+  await expectFail('#111.3 openai: no text -> fail with finish_reason',
+    () => mod.callOpenAIStyle('http://x', 'k', { ...opts }, 'sys', 'user'), /no text.*content_filter/i);
+
+  // Gemini prompt block: no candidates, promptFeedback.blockReason.
+  stub({ promptFeedback: { blockReason: 'SAFETY' } });
+  await expectFail('#111.3 gemini: blocked -> fail with blockReason',
+    () => mod.callGemini({ ...opts }, 'sys', 'user'), /blockReason=SAFETY/i);
+
+  // #111.4: Anthropic max_tokens populates _finishReason so the --json hint fires.
+  stub({ stop_reason: 'max_tokens', content: [] });
+  const o4 = { ...opts };
+  try { await mod.callAnthropic(o4, 'sys', 'user'); } catch (_) { /* expected */ }
+  o4._finishReason === 'max_tokens'
+    ? ok('#111.4: anthropic sets _finishReason=max_tokens for the truncation hint')
+    : bad(`#111.4: anthropic _finishReason not set (${o4._finishReason})`);
+
+  globalThis.fetch = savedFetch;
+  process.env = savedEnv;
+  // fail() sets process.exitCode=1 as a side effect on each EXPECTED failure;
+  // reset it so the harness reports on the `failures` counter, not the stub.
+  process.exitCode = 0;
+}
+
 function deepEq(actual, expected, label) {
   JSON.stringify(actual) === JSON.stringify(expected) ? ok(label) : bad(`${label} (got ${JSON.stringify(actual)})`);
 }
 
-if (failures) { process.stdout.write(`\n${failures} smoke failure(s)\n`); process.exit(1); }
-process.stdout.write('\nsmoke ok\n');
+// Provider tests are async (stubbed fetch); await them before the final tally so
+// their pass/fail counts and never race the exit.
+providerParsingTests()
+  .catch((e) => bad('#111.3/4 provider tests threw: ' + e.message))
+  .finally(() => {
+    if (failures) { process.stdout.write(`\n${failures} smoke failure(s)\n`); process.exit(1); }
+    process.stdout.write('\nsmoke ok\n');
+  });
