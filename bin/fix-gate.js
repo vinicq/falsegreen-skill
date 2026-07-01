@@ -53,17 +53,25 @@ function defaultRunners() {
       return { ok: r.status === 0, output: (r.stderr || r.stdout || '').trim() };
     },
     // run the patched test against whatever SUT is on disk now. ok = tests passed.
-    pytest(testFile, cwd) {
+    // When targetTest is given, scope the run to that one test (pytest -k) so the
+    // kill is attributed to the finding's target test, not a pre-existing sibling
+    // that happens to catch the mutant (#110.4).
+    pytest(testFile, cwd, targetTest) {
       // Clear stale bytecode and disable writing it: between the clean and mutated
       // runs the SUT file changes but Python would import the cached .pyc of the
       // clean version, so the mutant would silently "pass". This is the bug the
       // whole mutation gate depends on not having.
       clearPycache(cwd);
-      const r = spawnSync(py, ['-B', '-m', 'pytest', '-q', '-x', '-p', 'no:cacheprovider', testFile], {
+      const args = ['-B', '-m', 'pytest', '-q', '-x', '-p', 'no:cacheprovider'];
+      if (targetTest) args.push('-k', targetTest);
+      args.push(testFile);
+      const r = spawnSync(py, args, {
         cwd,
         encoding: 'utf8',
         env: Object.assign({}, process.env, { PYTHONDONTWRITEBYTECODE: '1' }),
       });
+      // pytest exits 5 when -k matches no test. Treat that as a failed run (the
+      // target test does not exist in the patch), not a silent pass.
       return { ok: r.status === 0, output: ((r.stdout || '') + (r.stderr || '')).trim() };
     },
   };
@@ -83,6 +91,18 @@ function copyFileSafe(src, dst) {
   fs.copyFileSync(src, dst);
 }
 
+// Where the SUT should live inside the replica, preserving its package layout so
+// imports like `import src.discount` still resolve (#110.2). Prefer an explicit
+// --sut-rel, then a path relative to cwd (or the given base) that stays inside
+// the tree; otherwise fall back to the basename.
+function sutReplicaPath(opts) {
+  if (opts.sutRel) return opts.sutRel.split(/[\\/]/).join(path.sep);
+  const base = opts.projectRoot || process.cwd();
+  const rel = path.relative(base, path.resolve(opts.sutFile));
+  if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) return rel;
+  return path.basename(opts.sutFile);
+}
+
 // Apply one line-scoped mutation operator to the SUT source. Returns the mutated
 // source, or null if no operator applied to that line. This is the design doc's
 // fallback operator table. This is the V1 mutation engine (mutmut deferred), so the
@@ -95,8 +115,11 @@ function mutateLine(source, lineNo) {
   const ops = [
     // comparison flip
     [/==/, '!='], [/!=/, '=='], [/<=/, '<'], [/>=/, '>'],
-    // arithmetic perturbation
-    [/\+/, '-'], [/\*/, '+'],
+    // arithmetic perturbation. The `*` operator matches `/\*\*/` (power) and
+    // degrades it to `*`, so it can never split a `**` into invalid `a +* b`
+    // the way the old `/\*/`/`+` pair did (#110.3). A bare `*` (multiply) is
+    // caught by the negative-lookaround star below.
+    [/\+/, '-'], [/\*\*/, '*'], [/(?<![*\d.])\*(?!\*)/, '+'],
     // boolean flip
     [/\breturn\s+True\b/, 'return False'], [/\breturn\s+False\b/, 'return True'],
   ];
@@ -161,7 +184,13 @@ function runFixGate(opts) {
 
     let replicaSut = null;
     if (opts.sutFile && fs.existsSync(opts.sutFile)) {
-      replicaSut = path.join(work, path.basename(opts.sutFile));
+      // Preserve the package layout in the replica so `import src.discount` still
+      // resolves; flattening to the basename breaks packaged SUTs and the
+      // preserve gate then rejects correct fixes before mutating (#110.2). Honor
+      // an explicit --sut-rel; else derive a relative path under cwd; fall back
+      // to the basename only for an absolute path outside the tree.
+      const rel = sutReplicaPath(opts);
+      replicaSut = path.join(work, rel);
       copyFileSafe(opts.sutFile, replicaSut);
     }
 
@@ -188,7 +217,9 @@ function runFixGate(opts) {
     }
 
     // --- gate 2: preserve (test must PASS on the clean SUT) ---
-    const preserve = runners.pytest(replicaTest, work);
+    // Scope to the target test so the same test carries both the preserve and the
+    // kill (#110.4): a passing sibling must not stand in for the target.
+    const preserve = runners.pytest(replicaTest, work, opts.targetTest);
     gates.preserve = preserve.ok;
     result.clean_replica = preserve.ok ? 'pass' : 'fail';
     if (!preserve.ok) {
@@ -220,7 +251,21 @@ function runFixGate(opts) {
     // integration is deferred to a later version, done via `mutmut results`
     // parsing + true line scoping.
     const sutSource = fs.readFileSync(replicaSut, 'utf8');
-    const m = mutateLine(sutSource, opts.sutLine || (finding.line || 1));
+    // The line to mutate is the SUT's behavioural line, NOT the finding's test
+    // line. Falling back to finding.line mutated the wrong file's line and made
+    // the verdict about a different behaviour (#110.1). Require an explicit
+    // sutLine; without it the gate stays unvalidated rather than guessing.
+    if (!Number.isInteger(opts.sutLine) || opts.sutLine <= 0) {
+      result.mutated_replica = 'pass';
+      result.verdict = 'reject';
+      result.tier = 'suite-rerun';
+      result.notes =
+        'unvalidated: --sut-line was not supplied, so the mutation gate could not ' +
+        'target the SUT behaviour (the test-file line is not the SUT line). Pass ' +
+        '--sut-line <n> pointing at the production line under test. Fix is PROPOSED, not PROVEN.';
+      return finalize(result, gates, work, 'unvalidated (no sut-line)');
+    }
+    const m = mutateLine(sutSource, opts.sutLine);
     if (!m) {
       result.mutated_replica = 'pass';
       result.verdict = 'reject';
@@ -230,7 +275,22 @@ function runFixGate(opts) {
       return finalize(result, gates, work, 'unvalidated (no mutant)');
     }
     fs.writeFileSync(replicaSut, m.source, 'utf8');
-    const mutated = runners.pytest(replicaTest, work);
+    // Validate the mutant compiles before running: a syntactically invalid
+    // mutant makes pytest exit non-zero for a parse error, which :236 would
+    // misread as "the test caught the mutant" (#110.3). Discard it instead.
+    const mutantParse = runners.parse(replicaSut);
+    if (!mutantParse.ok) {
+      fs.writeFileSync(replicaSut, sutSource, 'utf8');
+      result.mutated_replica = 'pass';
+      result.verdict = 'reject';
+      result.notes =
+        'mutation gate could not run: the generated mutant did not compile, so it ' +
+        `was discarded (a parse error is not a kill).\n${mutantParse.output.slice(0, 400)}\n` +
+        'Point --sut-line at a behavioural line the operators can mutate cleanly. ' +
+        'Fix is PROPOSED, not PROVEN.';
+      return finalize(result, gates, work, 'unvalidated (invalid mutant)');
+    }
+    const mutated = runners.pytest(replicaTest, work, opts.targetTest);
     // restore so the replica reflects the clean SUT again
     fs.writeFileSync(replicaSut, sutSource, 'utf8');
     gates.mutation = !mutated.ok; // test FAILED on the mutant == caught

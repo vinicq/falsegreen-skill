@@ -203,6 +203,107 @@ if (!pyOk()) {
     : bad(`e2e: tautology should be rejected, got ${taut.verdict}/${taut.mutated_replica}`);
 }
 
+// --- 10. REGRESSION #110.1: no --sut-line -> gate stays UNVALIDATED, does NOT
+// mutate the test-file line. Old code fell back to finding.line (the test line)
+// and mutated the wrong behaviour, silently returning a verdict. Now it must
+// refuse to mutate without an explicit sutLine.
+{
+  let mutationRan = false;
+  const runners = {
+    parse: () => ({ ok: true, output: '' }),
+    pytest: () => { mutationRan = true; return { ok: true, output: '1 passed' }; },
+  };
+  const out = runFixGate({
+    patchedTestSource: PATCH, testFile, sutFile: sut, /* sutLine omitted */
+    finding: { code: 'C2b', file: testFile, line: 4 }, runners,
+  });
+  out.validation.verdict === 'reject' && /sut-line/i.test(out.validation.notes)
+    ? ok('#110.1: missing --sut-line -> unvalidated, refuses to mutate test line')
+    : bad(`#110.1: expected unvalidated on missing sut-line, got ${out.validation.verdict} (${out.validation.notes})`);
+}
+
+// --- 11. REGRESSION #110.2: package layout preserved in the replica. A SUT at
+// pkg/src/mod.py must land at pkg/src/mod.py, not flattened to mod.py, or
+// `import src.mod` breaks. We assert the copied path keeps the relative layout.
+{
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'fixgate-pkg-'));
+  const pkgDir = path.join(projectRoot, 'src');
+  fs.mkdirSync(pkgDir, { recursive: true });
+  const pkgSut = path.join(pkgDir, 'discount.py');
+  fs.writeFileSync(pkgSut, 'def price():\n    return 10\n', 'utf8');
+  let replicaHadPackagePath = false;
+  const runners = {
+    parse: () => ({ ok: true, output: '' }),
+    pytest: (_t, cwd) => {
+      // the SUT must exist at <work>/src/discount.py inside the replica
+      replicaHadPackagePath = fs.existsSync(path.join(cwd, 'src', 'discount.py'));
+      return { ok: true, output: '1 passed' };
+    },
+  };
+  runFixGate({
+    patchedTestSource: 'from src.discount import price\n\ndef test_price():\n    assert price() == 10\n',
+    testFile: path.join(projectRoot, 'test_discount.py'),
+    sutFile: pkgSut, sutLine: 2, projectRoot,
+    finding: { code: 'C2b', file: 'test_discount.py', line: 4 }, runners,
+  });
+  replicaHadPackagePath
+    ? ok('#110.2: SUT keeps its package path (src/discount.py) in the replica')
+    : bad('#110.2: SUT was flattened to the basename, breaking import src.discount');
+  try { fs.rmSync(projectRoot, { recursive: true, force: true }); } catch (_) { /* best effort */ }
+}
+
+// --- 12. REGRESSION #110.3: an invalid mutant is DISCARDED, not counted as a
+// kill. mutateLine on `a ** b` must NOT produce `a +* b`; and if a mutant fails
+// py_compile, the gate must treat it as "no mutant" (unvalidated), never accept.
+{
+  // the operator regex must not split `**` into invalid `+*`
+  const m = mutateLine('def f(a, b):\n    return a ** b\n', 2);
+  m && !/\+\*/.test(m.source) && /a \* b|a\*b/.test(m.source)
+    ? ok('#110.3: mutateLine degrades a ** b to a * b (no invalid +*)')
+    : bad(`#110.3: mutateLine produced a bad mutant (${m && m.source})`);
+
+  // a mutant that fails py_compile must be discarded, not read as a kill
+  const runners = {
+    _parseCalls: 0,
+    parse() {
+      this._parseCalls++;
+      // 1st parse = the test file (ok); 2nd parse = the mutant (fail to compile)
+      return this._parseCalls === 1 ? { ok: true, output: '' } : { ok: false, output: 'SyntaxError: invalid syntax' };
+    },
+    pytest: () => ({ ok: true, output: '1 passed' }), // preserve passes; mutation would too
+  };
+  const out = runFixGate({
+    patchedTestSource: PATCH, testFile, sutFile: sut, sutLine: 2,
+    finding: { code: 'C2b', file: testFile, line: 4 }, runners,
+  });
+  out.validation.verdict === 'reject' && /discard|did not compile|invalid/i.test(out.validation.notes)
+    ? ok('#110.3: invalid mutant discarded (parse error is not a kill), not accepted')
+    : bad(`#110.3: invalid mutant should be discarded, got ${out.validation.verdict} (${out.validation.notes})`);
+}
+
+// --- 13. REGRESSION #110.4: the kill is attributed to the target test. When
+// --target-test is set, both preserve and mutation runs must pass -k so a
+// sibling test cannot stand in. We assert the runner receives the target.
+{
+  const seen = [];
+  const runners = {
+    parse: () => ({ ok: true, output: '' }),
+    _calls: 0,
+    pytest(_t, _cwd, targetTest) {
+      this._calls++;
+      seen.push(targetTest);
+      return { ok: this._calls === 1, output: this._calls === 1 ? '1 passed' : '1 failed' };
+    },
+  };
+  const out = runFixGate({
+    patchedTestSource: PATCH, testFile, sutFile: sut, sutLine: 2, targetTest: 'test_add',
+    finding: { code: 'C2b', file: testFile, line: 4 }, runners,
+  });
+  out.validation.verdict === 'accept' && seen.length === 2 && seen.every((t) => t === 'test_add')
+    ? ok('#110.4: preserve and mutation runs both scoped to the target test (test_add)')
+    : bad(`#110.4: kill not attributed to target test, got runs=${JSON.stringify(seen)}`);
+}
+
 try { fs.rmSync(work, { recursive: true, force: true }); } catch (_) { /* best effort */ }
 
 if (failures) { process.stdout.write(`\n${failures} fix-gate failure(s)\n`); process.exit(1); }
