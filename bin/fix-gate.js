@@ -103,15 +103,43 @@ function sutReplicaPath(opts) {
   return path.basename(opts.sutFile);
 }
 
+// Split a Python source line into [code, comment], where comment starts at the
+// first `#` that is not inside a string literal. A comment-only or blank line
+// yields an empty code part. This keeps mutation off comments/strings (#111.1):
+// a `+` in `# was price + 10` is not a real operator and mutating it is a no-op
+// that a strengthened test cannot catch, which then falsely rejects a good fix.
+function splitCodeComment(line) {
+  let quote = null;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (quote) {
+      if (ch === '\\') { i++; continue; } // skip escaped char
+      if (ch === quote) quote = null;
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+    } else if (ch === '#') {
+      return [line.slice(0, i), line.slice(i)];
+    }
+  }
+  return [line, ''];
+}
+
 // Apply one line-scoped mutation operator to the SUT source. Returns the mutated
 // source, or null if no operator applied to that line. This is the design doc's
 // fallback operator table. This is the V1 mutation engine (mutmut deferred), so the
 // gate gives a real, line-scoped mutation signal without a third-party tool.
+//
+// Only the CODE part of the line is mutated (comments/strings are left alone,
+// #111.1): mutating an operator inside a comment produces a no-op mutant that a
+// correctly strengthened test passes, which the gate then misreads as "tautology
+// not defeated" and rejects a legitimate fix. If nothing matches in the code,
+// return null (the gate treats it as "no mutant"/unvalidated, honest over false).
 function mutateLine(source, lineNo) {
   const lines = source.split('\n');
   const idx = lineNo - 1;
   if (idx < 0 || idx >= lines.length) return null;
   const original = lines[idx];
+  const [code, comment] = splitCodeComment(original);
   const ops = [
     // comparison flip
     [/==/, '!='], [/!=/, '=='], [/<=/, '<'], [/>=/, '>'],
@@ -124,19 +152,19 @@ function mutateLine(source, lineNo) {
     [/\breturn\s+True\b/, 'return False'], [/\breturn\s+False\b/, 'return True'],
   ];
   for (const [re, rep] of ops) {
-    if (re.test(original)) {
-      const mutated = original.replace(re, rep);
-      if (mutated !== original) {
-        lines[idx] = mutated;
-        return { source: lines.join('\n'), operator: `${original.trim()} -> ${mutated.trim()}` };
+    if (re.test(code)) {
+      const mutatedCode = code.replace(re, rep);
+      if (mutatedCode !== code) {
+        lines[idx] = mutatedCode + comment;
+        return { source: lines.join('\n'), operator: `${lines[idx].trim()} (was ${original.trim()})` };
       }
     }
   }
-  // constant bump on the targeted line (numeric literal N -> N+1)
-  const bumped = original.replace(/\b(\d+)\b/, (m) => String(Number(m) + 1));
-  if (bumped !== original) {
-    lines[idx] = bumped;
-    return { source: lines.join('\n'), operator: `${original.trim()} -> ${bumped.trim()} (constant bump)` };
+  // constant bump on the targeted line (numeric literal N -> N+1), code only.
+  const bumpedCode = code.replace(/\b(\d+)\b/, (m) => String(Number(m) + 1));
+  if (bumpedCode !== code) {
+    lines[idx] = bumpedCode + comment;
+    return { source: lines.join('\n'), operator: `${lines[idx].trim()} (was ${original.trim()}, constant bump)` };
   }
   return null;
 }

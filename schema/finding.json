@@ -29,14 +29,14 @@
       "enum": ["Python", "TypeScript", "JavaScript", "Robot"]
     },
     "level": {
-      "description": "Test pyramid level inferred in Step 1: unit, integration (API or database), or e2e. The level changes what counts as a valid oracle.",
+      "description": "Test pyramid level inferred in Step 1: unit, integration (API or database), or e2e. `fixture` marks a finding in a file that is data, a shared resource, an example, or a perf fixture rather than a behavioral suite. The level changes what counts as a valid oracle.",
       "type": "string",
-      "enum": ["unit", "integration", "e2e"]
+      "enum": ["unit", "integration", "e2e", "fixture"]
     },
     "intent": {
-      "description": "Test intent classification from Step 3.",
+      "description": "Test intent classification from Step 3. `scaffold` marks an unimplemented placeholder (empty stub, TODO-only body, generated skeleton) where the finding is about the missing implementation, not a wrong oracle.",
       "type": "string",
-      "enum": ["spec", "char", "regression", "behavior"]
+      "enum": ["spec", "char", "regression", "behavior", "scaffold"]
     },
     "test": {
       "description": "Identity of the test function or method where the finding was detected.",
