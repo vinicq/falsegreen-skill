@@ -73,7 +73,13 @@ fix options (in addition to the provider options above):
   --sut <file>          Production file the test protects. Required for a validated
                         fix; without it the gate degrades to propose-only.
   --sut-line <n>        Line in the SUT to mutate (the behavioural line the finding
-                        names). Defaults to --line.
+                        names). Required for the mutation gate; without it the
+                        gate stays unvalidated (it must not mutate the test line).
+  --sut-rel <path>      Package-relative path for the SUT in the replica (e.g.
+                        src/discount.py), so imports like "import src.discount"
+                        resolve. Defaults to the SUT path relative to cwd.
+  --target-test <name>  Restrict preserve/mutation to this test (pytest -k), so the
+                        kill is attributed to the finding's test, not a sibling.
   --cheap               Validation tier: parse + preserve only (no mutation gate).
                         Default tier is strong (parse + preserve + mutation).
 
@@ -117,6 +123,8 @@ function parseArgs(argv) {
     line: null,
     sut: null,
     sutLine: null,
+    sutRel: null,
+    targetTest: null,
     tier: 'strong',
   };
 
@@ -184,6 +192,12 @@ function parseArgs(argv) {
         opts.sutLine = n;
         break;
       }
+      case '--sut-rel':
+        opts.sutRel = requireValue(argv, ++i, arg);
+        break;
+      case '--target-test':
+        opts.targetTest = requireValue(argv, ++i, arg);
+        break;
       case '--cheap':
         opts.tier = 'cheap';
         break;
@@ -663,7 +677,12 @@ async function runFix(opts) {
     patchedTestSource,
     testFile: file,
     sutFile: opts.sut || null,
-    sutLine: opts.sutLine || opts.line,
+    // Do NOT fall back to opts.line: that is the TEST file's line, not the SUT's.
+    // Mutating it targets the wrong behaviour (#110.1). Left null, the gate stays
+    // unvalidated and tells the user to pass --sut-line.
+    sutLine: opts.sutLine,
+    sutRel: opts.sutRel || null,
+    targetTest: opts.targetTest || null,
     finding: { code: opts.case, file, line: opts.line },
     tier: cheap ? 'suite-rerun' : 'targeted-mutation',
     mutationDisabled: cheap,
