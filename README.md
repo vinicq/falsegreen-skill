@@ -68,7 +68,9 @@ the reason, and a fix hint. Three steps to try it:
 
 The full catalog, the judgments, and the per-language reference live in the
 [docs site](https://vinicq.github.io/falsegreen-docs/) and in
-[reference.md](reference.md).
+[reference.md](reference.md). For a visual architecture overview - host and
+language routing plus the Mode A/B/C flow diagrams - see
+[docs/architecture.md](docs/architecture.md).
 
 ---
 
@@ -516,6 +518,7 @@ falsegreen-skill/
     validate-package.mjs validate manifests, frontmatter, and schema naming
     build-targets.mjs    generate standalone Claude/Gemini skill packages
   docs/
+    architecture.md     architecture overview + Mermaid flow diagrams
     cli.md              CLI usage guide
     packaging.md        target packaging and release checklist
   schema/
