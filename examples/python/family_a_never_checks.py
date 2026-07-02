@@ -1,10 +1,11 @@
 """
 Family A — The test never checks anything.
-Codes: C1, C2, C2b, C3, C4, C4b, C20, C21, C38, C39, C43, C45, CC
+Codes: C1, C2, C2b, C3, C4, C4b, C20, C21, C22, C38, C39, C43, C45, CC
 
 The assertion is skipped, missing, swallowed, or the test is never collected
 by the runner. The test is green regardless of whether the code is correct.
 """
+import asyncio
 import pytest
 from unittest.mock import patch
 
@@ -183,6 +184,32 @@ def test_cc_commented():
 def test_cc_clean():
     result = compute()
     assert result == 42
+
+
+# ─── C22: async test asserts but never awaits the unit (OFF by default) ──────
+# Opt-in code (higher false-positive rate). An `async def test_*` that makes
+# calls and asserts but never awaits and never drives a loop: the coroutine is
+# created and dropped, the assertion runs on the coroutine object, and the test
+# passes vacuously.
+
+# BAD: fetch() returns a coroutine that is never awaited; nothing actually runs.
+async def test_c22_never_awaits():
+    result = fetch()            # C22 — coroutine created, never awaited
+    assert result == 1
+
+# CLEAN: the unit is awaited before the assertion.
+async def test_c22_awaits_clean():
+    result = await fetch()
+    assert result == 1
+
+# CLEAN: the test drives the loop itself with asyncio.run.
+async def test_c22_drives_loop_clean():
+    results = asyncio.run(gather())
+    assert results == [1, 2]
+
+# CLEAN: a plain synchronous test is never an async liar.
+def test_c22_sync_clean():
+    assert fetch_sync() == 1
 
 
 # ─── C38: two tests share a name; the later overrides the first ──────────────

@@ -1,6 +1,6 @@
 """
 Family E — The test passes but checks the wrong thing.
-Codes: C33, C36, C37
+Codes: C33, C36, C37, C41
 
 The assertion runs against a real result, yet the expected value
 contradicts intent, a metric is never verified, or duplicate cases
@@ -101,3 +101,28 @@ def test_c37_clean(a, b, expected):
 ], ids=["greeting", "target", "empty"])
 def test_c37_with_ids_clean(value, expected):
     assert value.upper() == expected
+
+
+# ─── C41: assertion on a None-returning mutator ──────────────────────────────
+
+# BAD: list.sort() sorts in place and returns None; `not None` is True, so the
+# assert is always green and the ordering is never verified.
+def test_c41_assert_not_sort():
+    lst = [3, 1, 2]
+    assert not lst.sort()          # C41 — checks the None return, not the order
+
+# BAD: append() returns None; comparing it to None passes no matter what.
+def test_c41_append_is_none():
+    lst = []
+    assert lst.append(1) is None   # C41 — trivially satisfied by the None return
+
+# CLEAN: assert the resulting state after the mutation.
+def test_c41_assert_state_clean():
+    lst = [3, 1, 2]
+    lst.sort()
+    assert lst == [1, 2, 3]
+
+# CLEAN: pop() returns a value — a real check, not a None-mutator false-green.
+def test_c41_pop_value_clean():
+    lst = [1, 2, 3]
+    assert lst.pop() == 3

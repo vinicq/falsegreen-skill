@@ -1,6 +1,6 @@
 /**
  * Family C - The test checks its own setup, not the program.
- * Codes: JS8
+ * Codes: JS8, C48
  *
  * The test mocks the very unit it claims to test, then asserts on the mock's
  * configured return value. The production code never runs, so the assertion
@@ -77,6 +77,30 @@ describe('validateEmail (CLEAN - spy on a side effect)', () => {
 });
 
 
+// ─── C48: dark patch - flips a test-mode flag, then asserts ──────────────────
+
+// BAD: the test forces the product's test-only branch by flipping a test-mode
+// flag, then asserts. It exercises `if (NODE_ENV === 'test')`, the branch that
+// exists only for tests, not the real path users hit.
+describe('featureFlag (C48 - dark patch)', () => {
+  it('BAD: flips NODE_ENV then asserts', () => {
+    process.env.NODE_ENV = 'test'; // C48 - forces the test-only branch
+    expect(featureFlag()).toBe('enabled');
+  });
+});
+
+// CLEAN: setting a real configuration value is not a test-mode toggle, so the
+// real code path still runs.
+describe('runPipeline (CLEAN - real config, not a toggle)', () => {
+  it('CLEAN: a DB URL is configuration, not test-mode', () => {
+    process.env.DATABASE_URL = 'sqlite://memory'; // config, not a test-only branch
+    expect(runPipeline()).toBe('ok');
+  });
+});
+
+
 // ─── Placeholder stubs ────────────────────────────────────────────────────────
 
 declare function CheckoutPage(): JSX.Element;
+declare function featureFlag(): string;
+declare function runPipeline(): string;

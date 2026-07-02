@@ -1,6 +1,6 @@
 /**
  * Family B - The check is weak or always true.
- * Codes: C5, C6, C7, C8, C9, C18, JS3, JS15
+ * Codes: C5, C6, C7, C8, C8b, C9, C11a, C18, C44, JS3, JS15, JS30
  *
  * The assertion passes by construction, accepts almost any output, or compares
  * a stringified form instead of the real value.
@@ -194,5 +194,81 @@ test('JS15 - boolean-wrapped inequality', () => {
 
 // CLEAN: let the matcher do the comparison so it can report both sides
 test('JS15 clean', () => {
+  expect(compute()).toBe(42)
+})
+
+
+// --- C8b: toBeCloseTo with no precision argument ---------------------------
+
+// BAD: toBeCloseTo defaults to 2 decimal digits, so a value off by up to ~0.005
+// still passes. The tolerance is invisible and usually far looser than intended.
+test('C8b - implicit precision', () => {
+  expect(computeRatio()).toBeCloseTo(3.14159) // C8b - default 2 digits, very loose
+})
+
+// CLEAN: state the precision so the tolerance matches the values
+test('C8b clean', () => {
+  expect(computeRatio()).toBeCloseTo(3.14159, 5)
+})
+
+
+// --- C11a: self-confirming literal (assign then assert the same value) -----
+
+// BAD: the expected side is bound from the same call it asserts, so the test
+// only confirms that JavaScript assignment works, not any production behavior.
+test('C11a - self-confirming literal', () => {
+  const expected = getPrice()
+  expect(getPrice()).toBe(expected) // C11a - both sides are the same call's output
+})
+
+// BAD: assign a field, then assert it straight back
+test('C11a - assign then assert', () => {
+  const product = {}
+  product.price = 100
+  expect(product.price).toBe(100) // C11a - confirms the assignment, nothing else
+})
+
+// CLEAN: the expected value is an independent literal
+test('C11a clean', () => {
+  expect(getPrice()).toBe(42)
+})
+
+
+// --- C44: numeric tautology on a length (never negative) -------------------
+
+// BAD: a .length is never negative, so >= 0 holds for an empty array, a full
+// one, anything. The bound can never fail.
+test('C44 - length non-negative', () => {
+  expect(getUsers().length).toBeGreaterThanOrEqual(0) // C44 - always true
+})
+
+// CLEAN: assert the exact length, a value that can fail
+test('C44 clean', () => {
+  expect(getUsers()).toHaveLength(3)
+})
+
+// CLEAN (not C44): a bound against Infinity is false for NaN, so it still
+// catches a value that escaped to NaN - not a tautology.
+test('C44 clean - Infinity bound', () => {
+  expect(computeRatio()).toBeLessThan(Infinity) // fails for NaN, so not vacuous
+})
+
+
+// --- JS30: literal-vs-literal assertion ------------------------------------
+
+// BAD: both operands are literals, decided at parse time, so no SUT output ever
+// flows into the assertion. Distinct from C5 (always-true): the point is not
+// that it always passes, it is that it references no real value at all.
+test('JS30 - literal vs literal', () => {
+  expect(2).toBe(3) // JS30 - fixed at parse time, references no production value
+})
+
+// BAD: Chai form, two literals
+test('JS30 - chai literals', () => {
+  expect('ok').to.equal('done') // JS30
+})
+
+// CLEAN: compare a real computed value to an independent expected one
+test('JS30 clean', () => {
   expect(compute()).toBe(42)
 })

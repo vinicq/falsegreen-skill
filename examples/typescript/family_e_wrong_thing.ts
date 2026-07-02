@@ -60,6 +60,34 @@ it('CLEAN asserts a derived value', () => {
 });
 
 
+// ─── JS27: toHaveBeenCalled* as the sole oracle on a local double ────────────
+
+// BAD: the only check is that a locally-created spy was called. That verifies
+// the wiring, not the unit's output. Distinct from JS8: the SUT is not mocked -
+// the assertion just targets call-tracking instead of a returned value.
+it('BAD js27 only asserts the spy was called', () => {
+  const spy = vi.fn();
+  run(spy);
+  expect(spy).toHaveBeenCalled(); // JS27 - wiring only, no behavior checked
+});
+
+// CLEAN: assert the unit's own output alongside the call
+it('CLEAN js27 also asserts the result', () => {
+  const spy = vi.fn();
+  const result = run(spy);
+  expect(spy).toHaveBeenCalled();
+  expect(result).toBe(2); // behavior verified, not just wiring
+});
+
+// CLEAN: toHaveBeenCalledWith carrying real arguments checks the call contract,
+// not merely that it happened.
+it('CLEAN js27 asserts the call arguments', () => {
+  const spy = vi.fn();
+  submit(spy, { id: 1 });
+  expect(spy).toHaveBeenCalledWith({ id: 1 }); // the arguments are the contract
+});
+
+
 // ─── Note on the semantic boundary ───────────────────────────────────────────
 //
 // The two cases above are catchable from structure: a toBe/toEqual mismatch and
@@ -78,3 +106,5 @@ it('CLEAN asserts a derived value', () => {
 
 declare const userService: { getUser(id: number): any };
 declare function echo<T>(x: T): T;
+declare function run(cb: (...args: any[]) => any): number;
+declare function submit(cb: (...args: any[]) => any, payload: unknown): void;

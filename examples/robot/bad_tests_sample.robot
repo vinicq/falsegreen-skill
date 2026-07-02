@@ -62,7 +62,129 @@ Conditional Only Check
     END
     # CLEAN: run at least one verification unconditionally
 
+Bare Variable Truthiness
+    [Documentation]    C6 - checks a non-boolean variable is merely truthy, not its value.
+    ${r}=    Get Status
+    Should Be True    ${r}
+    # CLEAN: Should Be Equal As Integers    ${r}    200
+
+String Literal True
+    [Documentation]    R6 - a non-empty string literal is always truthy.
+    Should Be True    login succeeded
+    # CLEAN: Should Be True    ${count} > 0
+
+Catch All Expected Error
+    [Documentation]    C9 - the glob "*" matches any error, even a typo in the test.
+    Run Keyword And Expect Error    *    Do Risky Thing
+    # CLEAN: Run Keyword And Expect Error    ValueError: bad input    Do Risky Thing
+
+Status Oracle Disabled
+    [Documentation]    C9b - expected_status=any accepts every HTTP status.
+    GET    https://api.example.com/users    expected_status=any
+    # CLEAN: GET    https://api.example.com/users    expected_status=200
+
+Self Confirming Literal
+    [Documentation]    C11a - the expected side is a copy of the actual value.
+    ${value}=    Get Value From Sut
+    ${expected}=    Set Variable    ${value}
+    Should Be Equal    ${value}    ${expected}
+    # CLEAN: ${expected}=    Set Variable    42
+
+Vacuous Library Assertion
+    [Documentation]    C44 - every string contains the empty string, so it never fails.
+    Should Contain    ${text}    ${EMPTY}
+    # CLEAN: Should Contain    ${text}    welcome
+
+Captured Value Never Used
+    [Documentation]    C31 - the captured heading is dead; the test asserts something else.
+    ${heading}=    Get Text    //h1
+    Should Be Equal    ${status}    active
+    # CLEAN: Should Be Equal    ${heading}    Welcome
+
+Sleep As Synchronization
+    [Documentation]    C16 - the result depends on timing, not on a real wait.
+    Sleep    2s
+    Should Be Equal    ${a}    ${b}
+    # CLEAN: Wait Until Element Is Visible    id:result
+
+Skipped Test
+    [Documentation]    C32 - robot:skip means the case never runs.
+    [Tags]    robot:skip
+    Should Be Equal    ${a}    ${b}
+    # CLEAN: [Tags]    smoke
+
+Dead After Fail
+    [Documentation]    C20 - nothing after Fail runs, so the check is dead.
+    Fail    stop here
+    Should Be Equal    ${a}    ${b}
+    # CLEAN: verify first, then Run Keyword If ${broken} Fail reported
+
+Oracle Switched Off
+    [Documentation]    CC - the only verification is commented out.
+    Do Something
+    # Should Be Equal    ${a}    ${b}
+    Log    moving on
+    # CLEAN: uncomment the Should Be Equal line
+
+Duplicate Template Row
+    [Documentation]    C37 - the second data row repeats the first, adding no coverage.
+    [Template]    Verify Addition
+    1    2    3
+    1    2    3
+    4    5    9
+    # CLEAN: drop the repeated 1 2 3 row
+
+Hollow Template Test
+    [Documentation]    R7 - the in-file template keyword asserts nothing.
+    [Template]    Open And Click
+    /home    button-1
+    /about    button-2
+    # CLEAN: template a verifier keyword that ends in a Should
+
+Verifies In Setup
+    [Documentation]    R8 - the only oracle is in [Setup]; the body verifies nothing.
+    [Setup]    Should Be Equal    ${precondition}    ready
+    Log    body runs but verifies nothing
+    # CLEAN: move the Should Be Equal into the body
+
+Verifies In Teardown
+    [Documentation]    R8b - the only oracle is in [Teardown], a separate axis.
+    Do Something
+    [Teardown]    Should Be Equal    ${result}    ok
+    # CLEAN: assert ${result} in the body; keep only cleanup in teardown
+
+Control Flow At Test Level
+    [Documentation]    D2 - IF at the test level (diagnostic, off by default).
+    Should Be Equal    ${a}    ${b}
+    IF    ${cond}
+        Log    branch
+    END
+    # CLEAN: move the IF into a keyword to keep the case flat
+
+Long Test
+    [Documentation]    M2 - too many steps (diagnostic, off by default).
+    Log    step 1
+    Log    step 2
+    Log    step 3
+    Log    step 4
+    Log    step 5
+    Log    step 6
+    Log    step 7
+    Log    step 8
+    Log    step 9
+    Log    step 10
+    Log    step 11
+    Should Be Equal    ${a}    ${b}
+    # CLEAN: split into focused cases or extract a keyword
+
 *** Keywords ***
+Open And Click
+    [Documentation]    R7 - hollow template keyword: acts but never verifies.
+    [Arguments]    ${path}    ${selector}
+    Go To    ${path}
+    Click    ${selector}
+    # CLEAN: end with Should Be Equal / Page Should Contain
+
 Verify Login Succeeded
     [Documentation]    R2 - named like a verifier, asserts nothing (hollow oracle).
     Log    checking login
