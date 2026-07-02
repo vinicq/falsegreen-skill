@@ -45,6 +45,37 @@ The skill inherits the same methodology as the scanner: a test is useful only
 if it fails when the code breaks. Cases 10, 11, 12, 15, and 18 need semantic
 judgment that a parser cannot make. This skill makes that judgment.
 
+## Repository layout contract
+
+Two host-packaging details depend on the current file layout. Keep them in mind
+before moving or renaming files at the repo root.
+
+- **The Claude skill entry point is a thin pointer that resolves the protocol by
+  relative path.** `skills/falsegreen-llm/SKILL.md` references `../../SKILL.md`
+  and `../../reference.md`. Those paths resolve two levels up, at the repo root,
+  inside the installed plugin cache. Moving `SKILL.md` or `reference.md` out of
+  the root, or relocating the skill directory, breaks the reference silently -
+  the plugin still installs, but the protocol never loads. If you change the
+  layout, update the relative paths in the skill entry and re-run
+  `npm run validate`.
+- **The marketplace entries use the root form `"source": "./"`.**
+  `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json` point
+  at the repo root, so the host runs its default `skills/` scan to find the
+  skill. If you ever add an explicit `skills` field to a marketplace entry, it
+  replaces that default scan - the host then looks only where the field points.
+  Leave `"source": "./"` without a `skills` override unless you intend to take
+  over discovery yourself.
+
+## Releasing: bump the version
+
+`plugin.json`, `.codex-plugin/plugin.json`, and `gemini-extension.json` pin a
+`version`. New commits do not reach installed plugins until that version is
+bumped and published - a fix merged to `master` without a release is invisible
+to users. Before publishing, run `npm version <patch|minor|major>` (the
+`version` npm script syncs the number into all three manifests and stages
+them), move the `[Unreleased]` entries in `CHANGELOG.md` under the new version,
+then follow `RELEASE.md`.
+
 ## Precision over recall
 
 Same rule as the scanner: a finding that wrongly flags a legitimate test is
