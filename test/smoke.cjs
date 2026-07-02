@@ -216,12 +216,14 @@ try {
   badLang.code === 1 && /unknown language/.test(badLang.stderr)
     ? ok('generate rejects an unknown --lang (exit 1)') : bad(`generate bad-lang: ${badLang.code} ${badLang.stderr}`);
 
-  // tsx/jsx are valid langs (the whole JS/TS family): they pass the lang guard and
-  // only stop later at the missing API key, never at "unknown language".
+  // tsx/jsx are valid langs (the whole JS/TS family). Use openai-compatible with
+  // no --base-url so the run stops OFFLINE at the base-url check right after the
+  // language guard - never a real API call, even if ANTHROPIC_API_KEY is set in
+  // the environment. What we assert: it is not rejected as an unknown language.
   for (const L of ['tsx', 'jsx']) {
-    const r = runFail(['generate', spec, '--lang', L]);
-    !/unknown language/.test(r.stderr)
-      ? ok(`generate accepts --lang ${L} (JS/TS family)`) : bad(`generate rejected --lang ${L}: ${r.stderr}`);
+    const r = runFail(['generate', spec, '--lang', L, '--provider', 'openai-compatible']);
+    r.code === 1 && !/unknown language/.test(r.stderr) && /base-url is required/.test(r.stderr)
+      ? ok(`generate accepts --lang ${L} (JS/TS family, stops offline)`) : bad(`generate --lang ${L}: ${r.code} ${r.stderr}`);
   }
 
   const noOracle = path.join(os.tmpdir(), 'fg-smoke-no-oracle.yaml');
@@ -231,6 +233,16 @@ try {
     r.code === 1 && /no oracle/i.test(r.stderr)
       ? ok('generate refuses a spec with no oracle (exit 1)') : bad(`generate no-oracle: ${r.code} ${r.stderr}`);
   } finally { fs.rmSync(noOracle, { force: true }); }
+
+  // Codex P2: a spec that only MENTIONS oracle/expected in comments (no real key)
+  // must still be refused - the guard anchors on line-start keys, not the words.
+  const commentedOracle = path.join(os.tmpdir(), 'fg-smoke-commented-oracle.yaml');
+  fs.writeFileSync(commentedOracle, 'level: unit\nunit: foo\nscenario: bar\nact: foo()\n# oracle: from the spec\n# expected: 170\n');
+  try {
+    const r = runFail(['generate', commentedOracle]);
+    r.code === 1 && /no oracle/i.test(r.stderr)
+      ? ok('generate refuses commented-only oracle keys (exit 1)') : bad(`generate commented-oracle: ${r.code} ${r.stderr}`);
+  } finally { fs.rmSync(commentedOracle, { force: true }); }
 } catch (e) { bad('generate offline-guard tests failed: ' + e.message); }
 
 // 12. extractCodeBlockLang prefers the language-tagged fence, falls back to any
@@ -244,6 +256,18 @@ try {
   extractCodeBlockLang('no fence here', 'python') === 'no fence here'
     ? ok('extractCodeBlockLang falls back to raw text') : bad('extractCodeBlockLang missed the raw fallback');
 } catch (e) { bad('extractCodeBlockLang tests failed: ' + e.message); }
+
+// 12b. firstSpecLanguage reads both inline and block-style `languages` lists
+// (Codex P2: block form used to return null and silently default to python).
+try {
+  const { firstSpecLanguage } = require(CLI);
+  firstSpecLanguage('languages: [TypeScript, Python]') === 'typescript'
+    ? ok('firstSpecLanguage reads an inline list') : bad('firstSpecLanguage missed the inline list');
+  firstSpecLanguage('languages:\n  - TypeScript\n  - Python') === 'typescript'
+    ? ok('firstSpecLanguage reads a block list') : bad('firstSpecLanguage missed the block list');
+  firstSpecLanguage('level: unit') === null
+    ? ok('firstSpecLanguage returns null when absent') : bad('firstSpecLanguage should be null when absent');
+} catch (e) { bad('firstSpecLanguage tests failed: ' + e.message); }
 
 function deepEq(actual, expected, label) {
   JSON.stringify(actual) === JSON.stringify(expected) ? ok(label) : bad(`${label} (got ${JSON.stringify(actual)})`);

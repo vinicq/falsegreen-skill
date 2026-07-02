@@ -904,13 +904,24 @@ async function selfCheck(opts, testSource, lang) {
   return { report, high };
 }
 
-// Pull the first language out of a spec's `languages: [Python, ...]` list, mapped
-// to a LANG_SPEC key. Text scan (no YAML dep); null if absent or unrecognized.
+// Pull the first language out of a spec's `languages` list, mapped to a LANG_SPEC
+// key. Handles both the inline flow form (`languages: [Python, ...]`) and the
+// block form (`languages:\n  - Python`). Text scan (no YAML dep); null if absent
+// or unrecognized.
 function firstSpecLanguage(specText) {
-  const m = specText.match(/^\s*["']?languages["']?\s*:\s*\[([^\]]*)\]/im);
-  if (!m) return null;
-  const first = (m[1].split(',')[0] || '').replace(/["'\s]/g, '').toLowerCase();
-  return first && first in LANG_SPEC ? first : null;
+  const norm = (s) => (s || '').replace(/["'\s]/g, '').toLowerCase();
+  const inline = specText.match(/^\s*["']?languages["']?\s*:\s*\[([^\]]*)\]/im);
+  if (inline) {
+    const first = norm(inline[1].split(',')[0]);
+    return first && first in LANG_SPEC ? first : null;
+  }
+  // Block form: `languages:` on its own line, then the first `- Item` under it.
+  const block = specText.match(/^\s*["']?languages["']?\s*:\s*(?:#.*)?\n\s*-\s*([^\n#]+)/im);
+  if (block) {
+    const first = norm(block[1]);
+    return first && first in LANG_SPEC ? first : null;
+  }
+  return null;
 }
 
 async function runGenerate(opts) {
@@ -931,12 +942,13 @@ async function runGenerate(opts) {
     fail(`unknown language "${opts.lang || lang}". Use python, typescript, javascript, tsx, jsx, or robot.`);
   }
 
-  // Structural refusal, anchored on the `oracle:`/`expected:` KEYS (not the bare
-  // words), so a spec that only mentions the words in a comment no longer passes.
-  // The oracle's *correctness* (is expected spec-derived, not code-derived?) stays
-  // a judgment for the Mode A self-check; a hand-copied code value cannot be caught
-  // here. This is a keyword-key sniff, not full schema validation (zero YAML deps).
-  if (!/["']?\boracle\b["']?\s*:/i.test(specText) || !/["']?\bexpected\b["']?\s*:/i.test(specText)) {
+  // Structural refusal, anchored on the `oracle:`/`expected:` KEYS at line start
+  // (a leading `#` is a comment, so `# oracle:` / `# expected:` template comments
+  // no longer satisfy the guard). The oracle's *correctness* (is expected
+  // spec-derived, not code-derived?) stays a judgment for the Mode A self-check; a
+  // hand-copied code value cannot be caught here. Keyword-key sniff, not full
+  // schema validation (zero YAML deps).
+  if (!/^\s*["']?oracle["']?\s*:/im.test(specText) || !/^\s*["']?expected["']?\s*:/im.test(specText)) {
     fail('spec has no oracle.expected key. Without an independent oracle the generated ' +
       'test can only freeze current behaviour (a characterization test, false-green by ' +
       'design). Add an oracle block with an expected value - see schema/test-spec.json.');
@@ -951,9 +963,14 @@ async function runGenerate(opts) {
   }
   if (!opts.model) opts.model = DEFAULT_MODELS[opts.provider];
 
+  // The render output is a fenced source file, never JSON, so force json:false
+  // for the generation calls even when the user passed --json (which only shapes
+  // the CLI's own output via emitGenerate). Otherwise an OpenAI/Gemini provider
+  // would be told to emit a JSON object and the code extraction would fail.
+  const genOpts = Object.assign({}, opts, { json: false });
   const genSystem = buildGenerateSystemPrompt(opts, lang);
   const genUser = buildGenerateUserMessage(specText, lang, specFile);
-  let testSource = extractCodeBlockLang(await analyzeOne(opts, genSystem, genUser), LANG_SPEC[lang].fence);
+  let testSource = extractCodeBlockLang(await analyzeOne(genOpts, genSystem, genUser), LANG_SPEC[lang].fence);
   if (!testSource) fail('the model returned no usable test (no code block).');
 
   // A4 says repeat-until-clean; we cap at one revision to stay a CLI, not an
@@ -977,7 +994,7 @@ async function runGenerate(opts) {
       '```',
       `Emit the corrected ${LANG_SPEC[lang].label} test only, in one fenced block.`,
     ].join('\n');
-    const revised = extractCodeBlockLang(await analyzeOne(opts, genSystem, reviseUser), LANG_SPEC[lang].fence);
+    const revised = extractCodeBlockLang(await analyzeOne(genOpts, genSystem, reviseUser), LANG_SPEC[lang].fence);
     if (revised) {
       testSource = revised;
       check = await selfCheck(opts, testSource, lang);
