@@ -1,0 +1,26 @@
+name: plugin-scanner
+
+# Awesome AI Plugins listing gate (hashgraph-online/awesome-ai-plugins#50):
+# CONTRIBUTING.md requires the HOL Plugin Scanner to run in CI on the source
+# repo, not just locally. Fails the run on any high/critical finding; the score
+# (>= 80/142, currently 90/142 grade A) is the trust signal maintainers cite.
+# Actions are SHA-pinned because the scanner's Operational category penalizes
+# floating tags - the same pin style as ci.yml.
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: hashgraph-online/ai-plugin-scanner-action@260cc0d630501bd6507461c0f50dce5a13bd506d # v1.2.367
+        with:
+          plugin_dir: "."
+          fail_on_severity: high
