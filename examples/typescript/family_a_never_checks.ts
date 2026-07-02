@@ -1,7 +1,7 @@
 /**
  * Family A - The test never checks anything.
  * Codes: C2, C2b, C20, C21, CC, JS1, JS2, JS4, JS5, JS6, JS7, JS9,
- *        JS11, JS13, JS17, JS18, JS21, JS22
+ *        JS11, JS13, JS17, JS18, JS21, JS22, JS23, JS25, JS26, JS29, JS31
  *
  * The assertion is missing, swallowed, skipped, or scheduled to fire after
  * the runner has already marked the test done. The test is green regardless
@@ -405,6 +405,118 @@ test.each([])('BAD js22 empty test.each %s', (value) => {
 it.each([1, 2, 3])('CLEAN js22 %s', (value) => {
   expect(process(value)).toBeGreaterThan(0);
 });
+
+
+// ─── JS23: expect.assertions(N) promises more asserts than run ───────────────
+
+// BAD: the count claims two assertions but only one runs unconditionally, so a
+// skipped second expect passes unnoticed.
+it('BAD js23 too few assertions', async () => {
+  expect.assertions(2); // JS23 - promises 2, only 1 unconditional expect below
+  expect(await load()).toBe('ok');
+});
+
+// CLEAN: the promised count matches the unconditional expect calls
+it('CLEAN js23', async () => {
+  expect.assertions(2);
+  expect(await load()).toBe('ok');
+  expect(await statusCode()).toBe(200);
+});
+
+
+// ─── JS25: the only assertion lives inside an array-iterator callback ────────
+
+// BAD: forEach runs the callback once per element, so on an empty list it never
+// runs and the test passes without checking anything.
+it('BAD js25 assertion only in forEach', () => {
+  getItems().forEach((item) => {
+    expect(item.price).toBeGreaterThan(0); // JS25 - zero runs on an empty list
+  });
+});
+
+// CLEAN: an own-scope assertion guards the empty-collection case
+it('CLEAN js25', () => {
+  const items = getItems();
+  expect(items).toHaveLength(3);
+  items.forEach((item) => expect(item.price).toBeGreaterThan(0));
+});
+
+
+// ─── JS26: fake timers installed but never advanced ──────────────────────────
+
+// BAD: the fake clock is installed but never advanced, so the scheduled
+// callback never fires and the assertion reads the un-mutated initial state.
+it('BAD js26 timers never advanced', () => {
+  vi.useFakeTimers();
+  let value = 0;
+  setTimeout(() => { value = 1; }, 100);
+  expect(value).toBe(0); // JS26 - green only because the timer never ran
+});
+
+// CLEAN: advance the timers so the callback fires before the assertion
+it('CLEAN js26', () => {
+  vi.useFakeTimers();
+  let value = 0;
+  setTimeout(() => { value = 1; }, 100);
+  vi.advanceTimersByTime(100);
+  expect(value).toBe(1);
+});
+
+
+// ─── JS29: resolves/rejects chain not awaited or returned ────────────────────
+
+// BAD: a bare expect(...).resolves chain returns a Promise the test drops, so
+// the runner finishes before the matcher settles - a rejection never fails it.
+it('BAD js29 floating resolves', () => {
+  expect(fetchValue()).resolves.toBe(42); // JS29 - not awaited, settles too late
+});
+
+// BAD: same trap with rejects
+it('BAD js29 floating rejects', () => {
+  expect(loadMissing()).rejects.toThrow('not found'); // JS29 - dropped promise
+});
+
+// CLEAN: await the chain so the matcher settles inside the test
+it('CLEAN js29', async () => {
+  await expect(fetchValue()).resolves.toBe(42);
+});
+
+
+// ─── JS31: try/catch swallows a possible SUT throw, no assertion ─────────────
+
+// BAD: if the unit stops throwing the try just succeeds; if it throws the empty
+// catch eats it. Either way nothing is asserted. Distinct from JS11: the
+// swallowed statement is the SUT call, not an expect() - a swallowed throw,
+// not a swallowed assertion.
+it('BAD js31 swallowed SUT throw', () => {
+  try {
+    withdraw(account, 1000); // expected to throw on overdraft
+  } catch (e) {
+    // JS31 - exception swallowed, nothing checked
+  }
+});
+
+// CLEAN: assert on the caught error and guard with expect.assertions so a
+// missing throw (catch never runs) also fails the test.
+it('CLEAN js31', () => {
+  expect.assertions(1);
+  try {
+    withdraw(account, 1000);
+  } catch (e) {
+    expect(e).toBeInstanceOf(Error); // the throw is the contract
+  }
+});
+
+
+// ─── Placeholder stubs ────────────────────────────────────────────────────────
+
+declare function load(): Promise<string>;
+declare function statusCode(): Promise<number>;
+declare function getItems(): Array<{ price: number }>;
+declare function fetchValue(): Promise<number>;
+declare function loadMissing(): Promise<never>;
+declare function withdraw(account: unknown, amount: number): void;
+declare const account: unknown;
 
 
 // ─── Placeholder stubs (declared so the file reads as TypeScript) ────────────

@@ -64,6 +64,43 @@ test('formatUserLabel derives a label (CLEAN: asserts a transform)', () => {
 })
 
 
+// --- JS27: toHaveBeenCalled* as the sole oracle on a local double ----------
+
+// BAD: the only check is that a locally-created spy was called. That verifies
+// the wiring (run invokes its callback) but nothing about the unit's output or
+// behavior. Distinct from JS8: the SUT is not mocked here - the assertion
+// simply targets call-tracking instead of a returned value.
+test('JS27 - only asserts the spy was called', () => {
+  const spy = jest.fn()
+  run(spy)
+  expect(spy).toHaveBeenCalled() // JS27 - wiring only, no behavior checked
+})
+
+// BAD: toHaveBeenNthCalledWith carrying only the call index is still a bare
+// counter - it asserts an Nth call happened, not any argument value.
+test('JS27 - nth call index only', () => {
+  const spy = jest.fn()
+  run(spy)
+  expect(spy).toHaveBeenNthCalledWith(1) // JS27 - index only, no argument asserted
+})
+
+// CLEAN: assert the unit's own output alongside the call
+test('JS27 clean - also asserts the result', () => {
+  const spy = jest.fn()
+  const result = run(spy)
+  expect(spy).toHaveBeenCalled()
+  expect(result).toBe(2) // behavior is verified, not just wiring
+})
+
+// CLEAN: toHaveBeenCalledWith carrying real arguments checks the contract of
+// the call, not merely that it happened.
+test('JS27 clean - asserts the call arguments', () => {
+  const spy = jest.fn()
+  submit(spy, { id: 1 })
+  expect(spy).toHaveBeenCalledWith({ id: 1 }) // the arguments are the contract
+})
+
+
 // --- pointer to the semantic layer -----------------------------------------
 
 // The next step up is invisible to structure alone. When getPrice(product)

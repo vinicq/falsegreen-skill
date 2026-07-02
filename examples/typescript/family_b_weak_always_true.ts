@@ -1,6 +1,6 @@
 /**
  * Family B - The check is weak or always true.
- * Codes: C5, C6, C7, C8, C9, C18, JS3, JS15
+ * Codes: C5, C6, C7, C8, C8b, C9, C11a, C18, C44, JS3, JS15, JS30
  *
  * The assertion runs, but it passes by construction, accepts almost any
  * output, or checks a formatting detail instead of the value that matters.
@@ -197,7 +197,73 @@ it('CLEAN js15', () => {
 });
 
 
+// ─── C8b: toBeCloseTo with no precision argument ─────────────────────────────
+
+// BAD: toBeCloseTo defaults to 2 decimal digits, so a value off by up to ~0.005
+// still passes. The tolerance is invisible and usually far looser than intended.
+it('BAD c8b implicit precision', () => {
+  expect(computeRatio()).toBeCloseTo(3.14159); // C8b - default 2 digits, very loose
+});
+
+// CLEAN: state the precision so the tolerance matches the values
+it('CLEAN c8b', () => {
+  expect(computeRatio()).toBeCloseTo(3.14159, 5);
+});
+
+
+// ─── C11a: self-confirming literal (assign then assert the same value) ───────
+
+// BAD: the expected side is bound from the same call it asserts, so the test
+// only confirms assignment works, not any production behavior.
+it('BAD c11a self-confirming literal', () => {
+  const expected = getPrice();
+  expect(getPrice()).toBe(expected); // C11a - both sides are the same call's output
+});
+
+// CLEAN: the expected value is an independent literal
+it('CLEAN c11a', () => {
+  expect(getPrice()).toBe(42);
+});
+
+
+// ─── C44: numeric tautology on a length (never negative) ─────────────────────
+
+// BAD: a .length is never negative, so >= 0 holds for any input - empty, full,
+// anything. The bound can never fail.
+it('BAD c44 length non-negative', () => {
+  expect(getUsers().length).toBeGreaterThanOrEqual(0); // C44 - always true
+});
+
+// CLEAN: assert the exact length, a value that can fail
+it('CLEAN c44', () => {
+  expect(getUsers()).toHaveLength(3);
+});
+
+// CLEAN (not C44): a bound against Infinity is false for NaN, so it still
+// catches a value that escaped to NaN - not a tautology.
+it('CLEAN c44 Infinity bound', () => {
+  expect(computeRatio()).toBeLessThan(Infinity); // fails for NaN, so not vacuous
+});
+
+
+// ─── JS30: literal-vs-literal assertion ──────────────────────────────────────
+
+// BAD: both operands are literals, decided at parse time, so no SUT output ever
+// flows into the assertion. Distinct from C5 (always-true): the point is that
+// it references no real value at all, not that it always passes.
+it('BAD js30 literal vs literal', () => {
+  expect(2).toBe(3); // JS30 - fixed at parse time, references no production value
+});
+
+// CLEAN: compare a real computed value to an independent expected one
+it('CLEAN js30', () => {
+  expect(compute()).toBe(42);
+});
+
+
 // ─── Placeholder stubs ────────────────────────────────────────────────────────
+
+declare function getPrice(): number;
 
 declare const chai: { assert: { equal(a: unknown, b: unknown): void }; expect(x: unknown): any };
 declare const screen: { getByTestId(id: string): HTMLElement };

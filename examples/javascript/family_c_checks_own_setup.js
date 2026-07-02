@@ -1,6 +1,6 @@
 /**
  * Family C - The test checks its own setup, not the program.
- * Codes: JS8
+ * Codes: JS8, C48
  *
  * The test mocks the very unit it claims to test, then asserts the mock's
  * configured return value. The real implementation never runs, so the test
@@ -86,4 +86,28 @@ test('JS8 clean - spy on a collaborator', () => {
   jest.spyOn(db, 'fetch').mockReturnValue({ id: 1, name: 'Alice' })
   const summary = orders.getUserSummary(1) // real function under test
   expect(summary).toBe('Alice (#1)') // derived from the stubbed dependency
+})
+
+
+// --- C48: dark patch - flips a test-mode flag, then asserts ----------------
+
+// BAD: the test forces the product into its test-only branch by flipping a
+// test-mode flag, then asserts. It exercises the `if (NODE_ENV === 'test')`
+// path that exists only for tests, not the real code path users hit.
+test('C48 - flips NODE_ENV then asserts', () => {
+  process.env.NODE_ENV = 'test' // C48 - forces the test-only branch
+  expect(featureFlag()).toBe('enabled')
+})
+
+// BAD: a bespoke TESTING toggle, same dark-patch shape
+test('C48 - flips a TESTING flag', () => {
+  process.env.TESTING = '1' // C48 - test-mode toggle, not real config
+  expect(runPipeline()).toBe('ok')
+})
+
+// CLEAN: setting a real configuration value is not a test-mode toggle, so the
+// real code path still runs.
+test('C48 clean - real config value', () => {
+  process.env.DATABASE_URL = 'sqlite://memory' // configuration, not a test-mode branch
+  expect(runPipeline()).toBe('ok')
 })
