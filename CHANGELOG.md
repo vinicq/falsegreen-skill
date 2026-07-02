@@ -6,7 +6,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-02
+
 ### Added
+- `generate` CLI command: authoring mode (Mode B) on the CLI. It renders a language-neutral
+  test-spec (`schema/test-spec.json`) into one stack with `--lang` (`python`, `typescript`,
+  `javascript`, `tsx`, `jsx`, `robot` - the whole JS/TS family routes through the shared JS*
+  catalog), then runs Mode A on the result so a false-green shape cannot pass the self-check
+  undetected. It anchors the oracle guard on the `oracle:`/`expected:` keys, seeds the prompt
+  with the shipped per-language render as a few-shot, and defaults `--lang` from the spec's
+  `languages` list. Fail-closed exit contract: 0 PASSED, 1 FAILED (surviving false-green), 3
+  UNVERIFIED (self-check could not run - never silently accepted). The self-check is a
+  same-model static review bounded to one revision, not an execution; it does not verify the
+  oracle value or that the test compiles/runs. Covered by an offline stubbed-provider smoke
+  test for all three exit branches. Documented in README, `docs/user-guide.md`, `docs/cli.md`,
+  `docs/invocation-methods.md`, and ADR 0004.
+- `docs/invocation-methods.md`: the map of every way to run the skill (CLI, API token per
+  provider, editor-host skill, raw protocol, static scanner, CI) with an OpenAI-compatible
+  provider table (Groq, Cerebras, OpenRouter, NVIDIA, DeepInfra, Mistral, DeepSeek, Fireworks,
+  Alibaba, Hugging Face, Cohere, Ollama) and a live validation snapshot.
 - Authoring mode (Mode B) names its architect/QA gate **A0**: before a test is written, the
   skill runs the review judgments and the precision rules over the proposed design, and reuses
   the `examples/` fixtures as reference. Documented in ADR 0004 (#119).

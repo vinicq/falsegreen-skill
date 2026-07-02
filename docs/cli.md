@@ -66,15 +66,17 @@ base URL and model name, and set `FALSEGREEN_API_KEY` to the provider key.
 
 ```
 falsegreen-skill analyze <file...> [options]
+falsegreen-skill generate <spec-file> [--lang <language>] [options]
 falsegreen-skill fix <test-file> --case <code> --line <n> [options]
 falsegreen-skill --help
 falsegreen-skill --version
 ```
 
-`analyze` is Mode A (review); `fix` is Mode C (AI-fix). Multiple files given to
-`analyze` are analyzed in separate API calls. Plain-text output is printed under a
-`=== {filename} ===` header. With `--json`, the CLI validates each model response
-against the canonical schema and emits one aggregate JSON report.
+`analyze` is Mode A (review); `generate` is Mode B (authoring); `fix` is Mode C
+(AI-fix). Multiple files given to `analyze` are analyzed in separate API calls.
+Plain-text output is printed under a `=== {filename} ===` header. With `--json`,
+the CLI validates each model response against the canonical schema and emits one
+aggregate JSON report.
 
 ## Flags
 
@@ -149,6 +151,97 @@ red on the mutant. Exit code is 0 on accept, 1 on reject/unvalidated. Without `-
 (or with `--cheap`) the gate degrades to propose-only and labels the fix unvalidated.
 The honest limit: it proves the fix catches the targeted mutant, not every possible
 bug; JS/TS/Robot and the deep semantic cases (10/11/12/18) are v2.
+
+## `generate` - author a test from a spec (Mode B)
+
+```
+falsegreen-skill generate <spec-file> [--lang <language>] [options]
+```
+
+Renders a language-neutral test-spec into a real test, then runs `analyze` (Mode A)
+on the result so a false-green test cannot pass the self-check undetected. It
+catches false-green *shapes*, not a wrong-but-well-formed oracle. The spec is a
+[`schema/test-spec.json`](../schema/test-spec.json) file (YAML or JSON);
+[`examples/authoring/apply-discount.spec.yaml`](../examples/authoring/) is one spec
+rendered into all four stacks.
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--lang <language>` | `python`, `typescript`, `javascript`, `tsx`, `jsx`, or `robot`. `tsx`/`jsx` cover the React side of the JS/TS family (same shared JS* catalog `falsegreen-js` uses over `.js`/`.ts`/`.tsx`/`.jsx`). One language per run - the spec is the single source, re-run to render another stack | spec's first `languages` entry, else `python` |
+
+```bash
+# render the example spec to a Python test and self-check it
+falsegreen-skill generate examples/authoring/apply-discount.spec.yaml --lang python
+
+# same spec, TypeScript
+falsegreen-skill generate examples/authoring/apply-discount.spec.yaml --lang typescript
+
+# machine-readable: { language, test, self_check, self_check_passed, self_check_error }
+falsegreen-skill generate my-spec.yaml --lang python --json
+```
+
+**Offline guards (no API call).** The command refuses early, exit 1, when the
+language is unknown, the spec file is missing, or the spec carries no `oracle:` /
+`expected:` key. The last is the point: a test generated from the code's current
+output only freezes the bug (a characterization test). The guard anchors on the
+keys, so the words in a comment no longer pass; the oracle's *value* is your
+responsibility.
+
+**Self-check and exit codes.** After generating, the CLI runs Mode A on the test.
+If it trips a HIGH false-green finding, the CLI revises once and re-checks (bounded
+to one revision - it is a command, not an agent loop). The exit code is the CI
+contract, and it fails closed:
+
+| Exit | State | Meaning |
+|---|---|---|
+| 0 | PASSED | self-check ran, no HIGH false-green |
+| 1 | FAILED | a surviving false-green was confirmed (also: bad spec / API error via the offline guards above) |
+| 3 | UNVERIFIED | the self-check could not run; the test is printed to stdout, the banner to stderr, and it is **not** accepted |
+
+Gate CI on the exit code, or on `self_check_passed` in `--json`. The self-check is
+a same-model static review, not an execution: it does not run the test, verify it
+compiles/imports, or confirm the oracle value. `generate` needs a model that both
+fits the ~33k-token prompt and can emit the JSON report - see the provider table
+below.
+
+## OpenAI-compatible providers
+
+Every provider that speaks the OpenAI Chat Completions API works through
+`--provider openai-compatible`: set `FALSEGREEN_API_KEY` to the provider key,
+point `--base-url` at the `/v1` root (the CLI appends `/chat/completions`), and
+pass the provider's model id with `--model`. The table below covers the common
+hosts. "Fits 33k?" is whether the free tier accepts the skill's ~33k-token system
+prompt; a paid tier on the same host usually lifts the cap.
+
+| Provider | `--base-url` | Example `--model` | Free tier fits 33k prompt? |
+|---|---|---|---|
+| Groq | `https://api.groq.com/openai/v1` | `llama-3.3-70b-versatile` | No - 12k TPM cap (HTTP 413) |
+| Cerebras | `https://api.cerebras.ai/v1` | `gpt-oss-120b` | No - token quota (HTTP 429) |
+| OpenRouter | `https://openrouter.ai/api/v1` | `meta-llama/llama-3.3-70b-instruct` (or `:free`) | Partial - `:free` models are rate-limited upstream |
+| NVIDIA NIM | `https://integrate.api.nvidia.com/v1` | `meta/llama-3.3-70b-instruct` | Yes, on most models |
+| DeepInfra | `https://api.deepinfra.com/v1/openai` | `meta-llama/Llama-3.3-70B-Instruct-Turbo` | No - needs positive balance (HTTP 402) |
+| Mistral | `https://api.mistral.ai/v1` | `mistral-large-latest` | Paid |
+| DeepSeek | `https://api.deepseek.com/v1` | `deepseek-chat` | Paid |
+| Fireworks | `https://api.fireworks.ai/inference/v1` | `accounts/fireworks/models/llama-v3p3-70b-instruct` | Paid |
+| Alibaba Qwen | `https://dashscope-intl.aliyuncs.com/compatible-mode/v1` | `qwen-plus` (must be enabled on the account) | Region/plan dependent |
+| Hugging Face | `https://router.huggingface.co/v1` | `meta-llama/Llama-3.3-70B-Instruct` | Yes, within monthly credits |
+| Cohere | `https://api.cohere.ai/compatibility/v1` | `command-a-03-2025` | Trial key works, rate-limited |
+| Ollama (local) | `http://localhost:11434/v1` | `qwen2.5-coder:32b` | Yes - local, no cap, any key placeholder |
+| Ollama Cloud | `https://ollama.com/v1` | `gpt-oss:120b` | Plan dependent |
+
+```bash
+# example: OpenRouter (verified end-to-end for generate and analyze)
+export FALSEGREEN_API_KEY=sk-or-...
+falsegreen-skill analyze tests/test_payment.py \
+  --provider openai-compatible \
+  --base-url https://openrouter.ai/api/v1 \
+  --model meta-llama/llama-3.3-70b-instruct --max-tokens 8192
+```
+
+Notes: Cohere is reached through its dedicated OpenAI-compatibility path
+(`/compatibility/v1`), not its native `/v2/chat`. Ollama ignores the key, so any
+placeholder (`FALSEGREEN_API_KEY=ollama`) works. Raise `--max-tokens` (8192+) for
+reasoning models that spend budget on chain-of-thought and get cut off mid-report.
 
 ## CI usage
 

@@ -9,7 +9,7 @@ private research hub, never in this repo. This file tracks the public product on
 
 ## Version
 
-- Current: **0.6.3** (npm: `npm install falsegreen-skill`)
+- Current: **0.7.0** (npm: `npm install falsegreen-skill`)
 - Versioning: semver; releases via trusted publishing (OIDC).
 
 ## CI health

@@ -30,6 +30,21 @@ const FENCE_BY_EXT = {
   '.resource': 'robotframework',
 };
 
+// Authoring mode (Mode B) targets. ext drives the synthetic filename the Mode A
+// self-check sees (so it picks the right catalog); fence is what the model tags
+// its output with and what we extract.
+const LANG_SPEC = {
+  python: { ext: '.py', fence: 'python', label: 'Python', example: 'test_apply_discount.py' },
+  typescript: { ext: '.ts', fence: 'typescript', label: 'TypeScript', example: 'apply-discount.test.ts' },
+  javascript: { ext: '.js', fence: 'javascript', label: 'JavaScript', example: 'apply-discount.test.js' },
+  // The whole JS/TS family routes through the shared JS* catalog (same as
+  // falsegreen-js over .js/.ts/.tsx/.jsx). tsx/jsx render like ts/js with the
+  // component extension; the self-check maps the ext back to the JS* catalog.
+  tsx: { ext: '.tsx', fence: 'typescript', label: 'TypeScript (TSX)', example: 'apply-discount.test.ts' },
+  jsx: { ext: '.jsx', fence: 'javascript', label: 'JavaScript (JSX)', example: 'apply-discount.test.js' },
+  robot: { ext: '.robot', fence: 'robotframework', label: 'Robot Framework', example: 'apply_discount.robot' },
+};
+
 // ---------------------------------------------------------------- helpers
 
 function readPackageVersion() {
@@ -42,12 +57,20 @@ function printHelp() {
 
 Usage:
   falsegreen-skill analyze <file...> [options]
+  falsegreen-skill generate <spec-file> [--lang <language>] [options]
   falsegreen-skill fix <test-file> --case <code> --line <n> [options]
   falsegreen-skill --help
   falsegreen-skill --version
 
 Commands:
   analyze   Review a test file for false-positive smells (Mode A).
+  generate  Author a test from a language-neutral spec (Mode B). Renders the spec
+            into one language, then runs Mode A on the result so the test cannot
+            be false-green by construction. The spec MUST carry an oracle (the
+            expected value's independent source); without it the command refuses,
+            because a test generated from current output only freezes the bug.
+            One language per run - re-run with --lang to render another stack from
+            the same spec. See examples/authoring/ for a spec and its renders.
   fix       PROPOSE-ONLY AI-fix (Mode C, V1: Python/pytest). The LLM proposes a
             test-file-only patch for a mechanical finding (C2b/C20/C21/C5/C7); a
             local gate then proves it: parse -> preserve (passes on the real SUT)
@@ -66,6 +89,12 @@ Options:
   --temperature <n>     Sampling temperature 0.0-1.0 (default 0.2). Ignored for OpenAI o-series.
   --max-tokens <n>      Max output tokens (default 4096)
   --fail-on-high        Exit 2 when any HIGH finding is present (requires --json)
+
+generate options (in addition to the provider options above):
+  --lang <language>     Target stack: python (default) | typescript | javascript |
+                        tsx | jsx | robot. tsx/jsx cover the React side of the JS/TS
+                        family (same JS* catalog). One language per run; the spec is
+                        the single source, re-run to render another stack.
 
 fix options (in addition to the provider options above):
   --case <code>         Catalog code of the finding to fix (C2b, C20, C21, C5, C7).
@@ -118,6 +147,8 @@ function parseArgs(argv) {
     maxTokens: 4096,
     failOnHigh: false,
     temperature: 0.2,
+    // generate mode
+    lang: null,
     // fix mode
     case: null,
     line: null,
@@ -171,6 +202,9 @@ function parseArgs(argv) {
       }
       case '--fail-on-high':
         opts.failOnHigh = true;
+        break;
+      case '--lang':
+        opts.lang = requireValue(argv, ++i, arg);
         break;
       case '--case':
         opts.case = requireValue(argv, ++i, arg);
@@ -398,7 +432,12 @@ async function callGemini(opts, system, user) {
   const data = await postJson(url, { 'x-goog-api-key': getApiKey('gemini') }, {
     system_instruction: { parts: [{ text: system }] },
     contents: [{ parts: [{ text: user }] }],
-    generationConfig: { maxOutputTokens: opts.maxTokens, temperature: opts.temperature },
+    // In --json mode ask Gemini for native JSON, so the self-check does not rely on
+    // the buried prompt override alone (matches the openai-compatible json path).
+    generationConfig: Object.assign(
+      { maxOutputTokens: opts.maxTokens, temperature: opts.temperature },
+      opts.json ? { responseMimeType: 'application/json' } : {}
+    ),
   });
   // A safety block returns no candidates and a promptFeedback.blockReason; a
   // MAX_TOKENS/RECITATION stop returns a candidate with finishReason but no
@@ -747,6 +786,264 @@ function emitFix(opts, out, patch) {
   if (validation.verdict !== 'accept') process.exitCode = 1;
 }
 
+// -------------------------------------------------------------- generate
+
+// Mode B system prompt: reuse the analysis protocol as the knowledge base (the
+// catalog the generated test must NOT trip), then switch the task to authoring.
+// The generation output is code, not a report, so json stays off here.
+function buildGenerateSystemPrompt(opts, lang) {
+  let prompt = buildSystemPrompt(Object.assign({}, opts, { json: false }));
+  const schemaPath = path.join(PKG_ROOT, 'schema', 'test-spec.json');
+  const specSchema = fs.existsSync(schemaPath) ? fs.readFileSync(schemaPath, 'utf8') : '{}';
+  prompt += [
+    '',
+    '---',
+    '',
+    '## Authoring mode (Mode B) - write a test, do not judge one',
+    '',
+    `You are given a language-neutral test spec. Render it into a single ${LANG_SPEC[lang].label}`,
+    'test whose expected value comes from the spec, not from the code, so it trips no',
+    'false-green finding when the J1-J6 protocol above reviews it.',
+    '',
+    'Hard rules:',
+    '- The expected value comes from the spec\'s `oracle`, NEVER from the code under',
+    '  test. Lifting the expected value from current output is a characterization test',
+    '  (false-green by design) - refuse that.',
+    '- At least one assertion must run unconditionally (no dead guard, no try/except',
+    '  that swallows the failure).',
+    '- Assert at the spec\'s `level`: unit asserts the return value/state with boundaries',
+    '  doubled; integration asserts status AND body, or the persisted row read back;',
+    '  e2e asserts the visible page state. Do not over-mock the unit under test.',
+    '- The assertion checks the specific behaviour in `scenario`, not a weak truthiness',
+    '  or self-comparison.',
+    '- TypeScript/JavaScript: import the test API explicitly',
+    '  (`import { test, expect } from \'vitest\'`, or `@jest/globals` for CommonJS); do not',
+    '  rely on ambient globals. Compare floats with `toBeCloseTo`, not `toBe`.',
+    '- Robot Framework: emit a `*** Test Cases ***` test; keep it runnable as a single',
+    '  file (do not split into a `.resource`).',
+    '',
+    'The spec conforms to this schema:',
+    '```json',
+    specSchema.trim(),
+    '```',
+    generateFewShot(lang),
+    `Output ONLY the ${LANG_SPEC[lang].label} test inside a single fenced code block`,
+    `(\`\`\`${LANG_SPEC[lang].fence}). No prose before or after.`,
+  ].join('\n');
+  return prompt;
+}
+
+// Few-shot anchor: the shipped canonical render for this language, so the model
+// copies the discipline (hardcoded oracle literal with the arithmetic in a
+// comment) instead of re-deriving the formula in the assertion. Empty string if
+// the example is missing, so generation still works without it.
+function generateFewShot(lang) {
+  const name = LANG_SPEC[lang].example;
+  if (!name) return '';
+  const file = path.join(PKG_ROOT, 'examples', 'authoring', name);
+  if (!fs.existsSync(file)) return '';
+  return [
+    '',
+    `Reference render for ${LANG_SPEC[lang].label} (this is the shape to match, from the same example spec):`,
+    '```' + LANG_SPEC[lang].fence,
+    fs.readFileSync(file, 'utf8').trim(),
+    '```',
+    '',
+  ].join('\n');
+}
+
+function buildGenerateUserMessage(specText, lang, specFile) {
+  return [
+    `Write a ${LANG_SPEC[lang].label} test from this spec (Mode B authoring).`,
+    `Spec file: ${path.basename(specFile)}`,
+    '',
+    '```yaml',
+    specText.trim(),
+    '```',
+    '',
+    `Emit ONLY the ${LANG_SPEC[lang].label} test, in one fenced code block. No prose.`,
+  ].join('\n');
+}
+
+// Prefer a fence tagged with the target language, then any fence, then the raw
+// text (a model that skips the fence but returns only source).
+function extractCodeBlockLang(text, fence) {
+  if (typeof text !== 'string') return null;
+  const tagged = text.match(new RegExp('```' + fence + '\\s*([\\s\\S]*?)```', 'i'));
+  if (tagged && tagged[1].trim()) return tagged[1].replace(/\n$/, '');
+  const any = text.match(/```[a-z]*\s*([\s\S]*?)```/i);
+  if (any && any[1].trim()) return any[1].replace(/\n$/, '');
+  return text.trim() ? text.trim() : null;
+}
+
+// Step A4: run Mode A (JSON) on the freshly generated test, as if a developer
+// handed it over for review. Returns the report + whether it trips any HIGH
+// false-green finding. Never throws on a bad report - the caller degrades to
+// UNVERIFIED so a self-check hiccup does not lose the generated test.
+async function selfCheck(opts, testSource, lang) {
+  const jsonOpts = Object.assign({}, opts, { json: true });
+  const system = buildSystemPrompt(jsonOpts);
+  const filename = `generated_test${LANG_SPEC[lang].ext}`;
+  const user = buildUserMessage(filename, testSource, null);
+  let raw;
+  try {
+    raw = await analyzeOne(jsonOpts, system, user);
+  } catch (e) {
+    if (e instanceof FailError) return { report: null, high: false, error: e.message };
+    throw e;
+  }
+  const report = extractJson(raw);
+  if (report === null) return { report: null, high: false, error: 'self-check produced no parseable report' };
+  const errors = validateReport(report, filename);
+  if (errors.length > 0) return { report: null, high: false, error: errors.join('; ') };
+  // Only a HIGH *false-green* finding should force a revision / FAILED verdict.
+  // Maintenance/quality codes (D*/M*/PL*) are real smells but not false-green, so
+  // a HIGH one of those must not block an otherwise-sound generated test.
+  const high = Array.isArray(report.findings) &&
+    report.findings.some((f) => f && f.confidence === 'HIGH' && !/^(D|M|PL)/i.test(String(f.case)));
+  return { report, high };
+}
+
+// Pull the first language out of a spec's `languages` list, mapped to a LANG_SPEC
+// key. Handles both the inline flow form (`languages: [Python, ...]`) and the
+// block form (`languages:\n  - Python`). Text scan (no YAML dep); null if absent
+// or unrecognized.
+function firstSpecLanguage(specText) {
+  const norm = (s) => (s || '').replace(/["'\s]/g, '').toLowerCase();
+  const inline = specText.match(/^\s*["']?languages["']?\s*:\s*\[([^\]]*)\]/im);
+  if (inline) {
+    const first = norm(inline[1].split(',')[0]);
+    return first && first in LANG_SPEC ? first : null;
+  }
+  // Block form: `languages:` on its own line, then the first `- Item` under it.
+  const block = specText.match(/^\s*["']?languages["']?\s*:\s*(?:#.*)?\n\s*-\s*([^\n#]+)/im);
+  if (block) {
+    const first = norm(block[1]);
+    return first && first in LANG_SPEC ? first : null;
+  }
+  return null;
+}
+
+async function runGenerate(opts) {
+  // Offline guards first (no API key needed): spec file, language, oracle. These
+  // are the paths the smoke test exercises without a live provider.
+  const specFile = opts.files[0] || null;
+  if (!specFile) {
+    fail('generate requires a test-spec file. See --help. ' +
+      'Example: examples/authoring/apply-discount.spec.yaml');
+  }
+  if (!fs.existsSync(specFile)) fail(`spec file not found: ${specFile}`);
+  const specText = fs.readFileSync(specFile, 'utf8');
+
+  // --lang wins; otherwise take the spec's first declared language (the spec is
+  // the single source), else default to python.
+  const lang = (opts.lang || firstSpecLanguage(specText) || 'python').toLowerCase();
+  if (!(lang in LANG_SPEC)) {
+    fail(`unknown language "${opts.lang || lang}". Use python, typescript, javascript, tsx, jsx, or robot.`);
+  }
+
+  // Structural refusal, anchored on the `oracle:`/`expected:` KEYS at line start
+  // (a leading `#` is a comment, so `# oracle:` / `# expected:` template comments
+  // no longer satisfy the guard). The oracle's *correctness* (is expected
+  // spec-derived, not code-derived?) stays a judgment for the Mode A self-check; a
+  // hand-copied code value cannot be caught here. Keyword-key sniff, not full
+  // schema validation (zero YAML deps).
+  if (!/^\s*["']?oracle["']?\s*:/im.test(specText) || !/^\s*["']?expected["']?\s*:/im.test(specText)) {
+    fail('spec has no oracle.expected key. Without an independent oracle the generated ' +
+      'test can only freeze current behaviour (a characterization test, false-green by ' +
+      'design). Add an oracle block with an expected value - see schema/test-spec.json.');
+  }
+
+  if (opts.provider === 'openai-compatible') {
+    if (!opts.baseUrl) fail('--base-url is required for --provider openai-compatible');
+    if (!opts.model) fail('--model is required for --provider openai-compatible');
+  }
+  if (!(opts.provider in DEFAULT_MODELS)) {
+    fail(`unknown provider: ${opts.provider}. Use anthropic, openai, gemini, or openai-compatible.`);
+  }
+  if (!opts.model) opts.model = DEFAULT_MODELS[opts.provider];
+
+  // The render output is a fenced source file, never JSON, so force json:false
+  // for the generation calls even when the user passed --json (which only shapes
+  // the CLI's own output via emitGenerate). Otherwise an OpenAI/Gemini provider
+  // would be told to emit a JSON object and the code extraction would fail.
+  const genOpts = Object.assign({}, opts, { json: false });
+  const genSystem = buildGenerateSystemPrompt(opts, lang);
+  const genUser = buildGenerateUserMessage(specText, lang, specFile);
+  let testSource = extractCodeBlockLang(await analyzeOne(genOpts, genSystem, genUser), LANG_SPEC[lang].fence);
+  if (!testSource) fail('the model returned no usable test (no code block).');
+
+  // A4 says repeat-until-clean; we cap at one revision to stay a CLI, not an
+  // agent loop. ponytail: 1-revision ceiling; raise the bound if false-greens
+  // still slip through in practice.
+  let check = await selfCheck(opts, testSource, lang);
+  if (check.report && check.high) {
+    const reviseUser = [
+      'Your previous test tripped HIGH false-green findings in self-review. Rewrite it',
+      'to pass J1-J6. Findings:',
+      '```json',
+      JSON.stringify(check.report.findings.filter((f) => f && f.confidence === 'HIGH'), null, 2),
+      '```',
+      'Previous test:',
+      '```' + LANG_SPEC[lang].fence,
+      testSource,
+      '```',
+      'Original spec:',
+      '```yaml',
+      specText.trim(),
+      '```',
+      `Emit the corrected ${LANG_SPEC[lang].label} test only, in one fenced block.`,
+    ].join('\n');
+    const revised = extractCodeBlockLang(await analyzeOne(genOpts, genSystem, reviseUser), LANG_SPEC[lang].fence);
+    if (revised) {
+      testSource = revised;
+      check = await selfCheck(opts, testSource, lang);
+    }
+  }
+
+  emitGenerate(opts, lang, testSource, check);
+}
+
+function emitGenerate(opts, lang, testSource, check) {
+  const spec = LANG_SPEC[lang];
+  // Deterministic, fail-closed exit contract - set FIRST, so a leaked exitCode
+  // from a caught self-check fail() (fail() sets exitCode=1 before throwing) does
+  // not make the two UNVERIFIED sub-paths (transport error vs bad report) disagree:
+  //   0 = PASSED (self-check ran, no HIGH false-green)
+  //   1 = FAILED (self-check confirmed a surviving false-green)
+  //   3 = UNVERIFIED (self-check could not run - never silently accepted)
+  if (!check.report) process.exitCode = 3;
+  else if (check.high) process.exitCode = 1;
+  else process.exitCode = 0;
+  if (opts.json) {
+    process.stdout.write(JSON.stringify({
+      language: spec.label,
+      test: testSource,
+      self_check: check.report || null,
+      self_check_passed: !!(check.report && !check.high),
+      self_check_error: check.error || null,
+    }, null, 2) + '\n');
+  } else {
+    process.stdout.write(`=== Generated ${spec.label} test (Mode B) ===\n`);
+    process.stdout.write('```' + spec.fence + '\n' + testSource + '\n```\n\n');
+    if (!check.report) {
+      process.stderr.write(`=== Self-check: UNVERIFIED (${check.error || 'no report'}) - exit 3, not accepted ===\n`);
+    } else if (check.high) {
+      process.stdout.write('=== Self-check: FAILED - the generated test still trips false-green findings ===\n');
+      for (const f of check.report.findings.filter((x) => x && x.confidence === 'HIGH')) {
+        process.stdout.write(`  [${f.case}/${f.judgment}] ${f.finding}\n`);
+      }
+      process.stdout.write('\nUsually a missing or weak oracle in the spec. Strengthen it and re-run.\n');
+    } else {
+      process.stdout.write('=== Self-check: PASSED - no HIGH false-green findings (Mode A on the generated test) ===\n');
+    }
+    process.stdout.write('\nHonest limit: the self-check is a same-model static review (Mode A), not an ' +
+      'execution. It catches false-green shapes; it does not run the test, verify it compiles ' +
+      'or imports, or confirm the oracle value is right. A test whose expected value was copied ' +
+      'from the code (a characterization test) can still pass. Review it against your spec.\n');
+  }
+}
+
 // --------------------------------------------------------------- analyze
 
 async function runAnalyze(opts) {
@@ -830,6 +1127,10 @@ async function main() {
     process.stdout.write(readPackageVersion() + '\n');
     return;
   }
+  if (opts.command === 'generate') {
+    await runGenerate(opts);
+    return;
+  }
   if (opts.command === 'fix') {
     await runFix(opts);
     return;
@@ -842,7 +1143,9 @@ async function main() {
 
 // Export internals for unit tests; only run the CLI when invoked directly.
 module.exports = {
-  extractJson, validateReport, balancedObject, normalizeReportKeys, pickContent, extractCodeBlock,
+  extractJson, validateReport, balancedObject, normalizeReportKeys, pickContent, extractCodeBlock, extractCodeBlockLang,
+  // exported for the generate-loop smoke test (stubbed fetch, no live API):
+  runGenerate, selfCheck, emitGenerate, firstSpecLanguage,
   // exported for the provider-parsing regression tests (#111.3): stubbed fetch,
   // no live API.
   callAnthropic, callOpenAIStyle, callGemini, FailError,

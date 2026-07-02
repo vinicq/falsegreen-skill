@@ -191,14 +191,156 @@ async function providerParsingTests() {
   process.exitCode = 0;
 }
 
+// 11. generate (Mode B) offline guards: the command must refuse before any API
+// call when the language is unknown, the spec is missing, or the spec carries no
+// oracle - the last is the whole point (no oracle => characterization test).
+function runFail(args) {
+  try {
+    execFileSync(process.execPath, [CLI, ...args], { encoding: 'utf8', stdio: 'pipe' });
+    return { code: 0, stderr: '' };
+  } catch (e) {
+    return { code: e.status == null ? -1 : e.status, stderr: (e.stderr || '') + (e.stdout || '') };
+  }
+}
+try {
+  const os = require('node:os');
+  const help = run(['--help']);
+  /\bgenerate\b/.test(help) ? ok('--help lists the generate command') : bad('--help missing generate');
+
+  const noSpec = runFail(['generate']);
+  noSpec.code === 1 && /requires a test-spec file/.test(noSpec.stderr)
+    ? ok('generate with no spec refuses (exit 1)') : bad(`generate no-spec: ${noSpec.code} ${noSpec.stderr}`);
+
+  const spec = path.join(ROOT, 'examples/authoring/apply-discount.spec.yaml');
+  const badLang = runFail(['generate', spec, '--lang', 'klingon']);
+  badLang.code === 1 && /unknown language/.test(badLang.stderr)
+    ? ok('generate rejects an unknown --lang (exit 1)') : bad(`generate bad-lang: ${badLang.code} ${badLang.stderr}`);
+
+  // tsx/jsx are valid langs (the whole JS/TS family). Use openai-compatible with
+  // no --base-url so the run stops OFFLINE at the base-url check right after the
+  // language guard - never a real API call, even if ANTHROPIC_API_KEY is set in
+  // the environment. What we assert: it is not rejected as an unknown language.
+  for (const L of ['tsx', 'jsx']) {
+    const r = runFail(['generate', spec, '--lang', L, '--provider', 'openai-compatible']);
+    r.code === 1 && !/unknown language/.test(r.stderr) && /base-url is required/.test(r.stderr)
+      ? ok(`generate accepts --lang ${L} (JS/TS family, stops offline)`) : bad(`generate --lang ${L}: ${r.code} ${r.stderr}`);
+  }
+
+  const noOracle = path.join(os.tmpdir(), 'fg-smoke-no-oracle.yaml');
+  fs.writeFileSync(noOracle, 'level: unit\nunit: foo\nscenario: bar\nact: foo()\n');
+  try {
+    const r = runFail(['generate', noOracle]);
+    r.code === 1 && /no oracle/i.test(r.stderr)
+      ? ok('generate refuses a spec with no oracle (exit 1)') : bad(`generate no-oracle: ${r.code} ${r.stderr}`);
+  } finally { fs.rmSync(noOracle, { force: true }); }
+
+  // Codex P2: a spec that only MENTIONS oracle/expected in comments (no real key)
+  // must still be refused - the guard anchors on line-start keys, not the words.
+  const commentedOracle = path.join(os.tmpdir(), 'fg-smoke-commented-oracle.yaml');
+  fs.writeFileSync(commentedOracle, 'level: unit\nunit: foo\nscenario: bar\nact: foo()\n# oracle: from the spec\n# expected: 170\n');
+  try {
+    const r = runFail(['generate', commentedOracle]);
+    r.code === 1 && /no oracle/i.test(r.stderr)
+      ? ok('generate refuses commented-only oracle keys (exit 1)') : bad(`generate commented-oracle: ${r.code} ${r.stderr}`);
+  } finally { fs.rmSync(commentedOracle, { force: true }); }
+} catch (e) { bad('generate offline-guard tests failed: ' + e.message); }
+
+// 12. extractCodeBlockLang prefers the language-tagged fence, falls back to any
+// fence, then to raw text (drives the generate output extraction).
+try {
+  const { extractCodeBlockLang } = require(CLI);
+  extractCodeBlockLang('prose\n```python\nassert x == 1\n```\ntail', 'python') === 'assert x == 1'
+    ? ok('extractCodeBlockLang pulls the tagged fence') : bad('extractCodeBlockLang missed the tagged fence');
+  extractCodeBlockLang('```\nraw block\n```', 'python') === 'raw block'
+    ? ok('extractCodeBlockLang falls back to a bare fence') : bad('extractCodeBlockLang missed the bare fence');
+  extractCodeBlockLang('no fence here', 'python') === 'no fence here'
+    ? ok('extractCodeBlockLang falls back to raw text') : bad('extractCodeBlockLang missed the raw fallback');
+} catch (e) { bad('extractCodeBlockLang tests failed: ' + e.message); }
+
+// 12b. firstSpecLanguage reads both inline and block-style `languages` lists
+// (Codex P2: block form used to return null and silently default to python).
+try {
+  const { firstSpecLanguage } = require(CLI);
+  firstSpecLanguage('languages: [TypeScript, Python]') === 'typescript'
+    ? ok('firstSpecLanguage reads an inline list') : bad('firstSpecLanguage missed the inline list');
+  firstSpecLanguage('languages:\n  - TypeScript\n  - Python') === 'typescript'
+    ? ok('firstSpecLanguage reads a block list') : bad('firstSpecLanguage missed the block list');
+  firstSpecLanguage('level: unit') === null
+    ? ok('firstSpecLanguage returns null when absent') : bad('firstSpecLanguage should be null when absent');
+} catch (e) { bad('firstSpecLanguage tests failed: ' + e.message); }
+
 function deepEq(actual, expected, label) {
   JSON.stringify(actual) === JSON.stringify(expected) ? ok(label) : bad(`${label} (got ${JSON.stringify(actual)})`);
 }
 
-// Provider tests are async (stubbed fetch); await them before the final tally so
-// their pass/fail counts and never race the exit.
+// 13. The generate render -> self-check -> revise loop and its exit-code contract,
+// driven offline with a stubbed fetch (same pattern as #111.3). This covers the
+// three verdict branches the CLI's CI contract depends on: PASSED=0, FAILED=1,
+// UNVERIFIED=3 (fail-closed). No live API.
+async function generateLoopTests() {
+  const mod = require(CLI);
+  const spec = path.join(ROOT, 'examples/authoring/apply-discount.spec.yaml');
+  const savedFetch = globalThis.fetch;
+  const savedWrite = process.stdout.write.bind(process.stdout);
+  const savedErr = process.stderr.write.bind(process.stderr);
+  const savedKey = process.env.ANTHROPIC_API_KEY;
+  process.env.ANTHROPIC_API_KEY = 'test';
+
+  const anthropic = (text) => ({ stop_reason: 'end_turn', content: [{ type: 'text', text }] });
+  const CLEAN = JSON.stringify({ findings: [], summary: { tests_reviewed: 1, high: 0, low: 0, clean: 1 }, language: 'Python', framework: 'pytest' });
+  const HIGH = JSON.stringify({
+    findings: [{ case: 'C5', judgment: 'J2', confidence: 'HIGH', language: 'Python', level: 'unit',
+      intent: 'behavior', test: { name: 't' }, finding: 'tautology', evidence: ['assert x == x'], fix_hint: 'use an oracle' }],
+    summary: { tests_reviewed: 1, high: 1, low: 0, clean: 0 }, language: 'Python', framework: 'pytest',
+  });
+  const TEST_BLOCK = '```python\ndef test_x():\n    assert apply_discount(200, 0.15) == 170\n```';
+
+  // Drive runGenerate with a queued fetch (each call shifts one response), capturing
+  // the exit code while swallowing the (large) generated-test output.
+  async function run(responses, label) {
+    const queue = responses.slice();
+    globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => queue.shift(), text: async () => '' });
+    process.stdout.write = () => true;
+    process.stderr.write = () => true;
+    process.exitCode = 0;
+    let err = null;
+    try {
+      await mod.runGenerate({ command: 'generate', files: [spec], provider: 'anthropic', model: null,
+        baseUrl: null, json: false, maxTokens: 512, temperature: 0.2, lang: 'python' });
+    } catch (e) { err = e; }
+    const code = process.exitCode;
+    process.stdout.write = savedWrite; process.stderr.write = savedErr;
+    process.exitCode = 0;
+    if (err) bad(`${label}: threw ${err.message}`);
+    return code;
+  }
+
+  // PASSED: generate -> clean self-check -> exit 0.
+  (await run([anthropic(TEST_BLOCK), anthropic(CLEAN)], 'PASSED')) === 0
+    ? ok('generate PASSED (clean self-check) -> exit 0') : bad('generate PASSED did not exit 0');
+
+  // FAILED: generate -> HIGH -> revise -> HIGH again -> exit 1 (surviving false-green).
+  (await run([anthropic(TEST_BLOCK), anthropic(HIGH), anthropic(TEST_BLOCK), anthropic(HIGH)], 'FAILED')) === 1
+    ? ok('generate FAILED (surviving false-green) -> exit 1') : bad('generate FAILED did not exit 1');
+
+  // FAILED-then-clean: HIGH first, revision clears -> exit 0 (revision loop works).
+  (await run([anthropic(TEST_BLOCK), anthropic(HIGH), anthropic(TEST_BLOCK), anthropic(CLEAN)], 'REVISED')) === 0
+    ? ok('generate revised-to-clean -> exit 0 (revision loop)') : bad('generate revision-to-clean did not exit 0');
+
+  // UNVERIFIED: self-check returns unparseable JSON -> fail-closed exit 3.
+  (await run([anthropic(TEST_BLOCK), anthropic('not a json report at all')], 'UNVERIFIED')) === 3
+    ? ok('generate UNVERIFIED (unparseable self-check) -> exit 3 (fail-closed)') : bad('generate UNVERIFIED did not exit 3');
+
+  globalThis.fetch = savedFetch;
+  if (savedKey === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = savedKey;
+  process.exitCode = 0;
+}
+
+// Async suites (stubbed fetch); run sequentially so they never race the shared
+// fetch stub, and tally before exit.
 providerParsingTests()
-  .catch((e) => bad('#111.3/4 provider tests threw: ' + e.message))
+  .then(generateLoopTests)
+  .catch((e) => bad('async smoke suites threw: ' + e.message))
   .finally(() => {
     if (failures) { process.stdout.write(`\n${failures} smoke failure(s)\n`); process.exit(1); }
     process.stdout.write('\nsmoke ok\n');

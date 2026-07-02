@@ -1,6 +1,6 @@
 {
   "name": "falsegreen-skill",
-  "version": "0.6.3",
+  "version": "0.7.0",
   "description": "Detect false-positive tests (tests that pass even when the code breaks) with the J1-J6 judgment framework. Covers Python, TypeScript, JavaScript, and Robot Framework.",
   "contextFileName": "GEMINI.md"
 }

@@ -334,11 +334,21 @@ Full case catalog with language examples: see `reference.md`.
 Everything above is **analysis mode** (Mode A): given a test, judge it. When the
 user asks to **write or create tests** instead, switch to **authoring mode**
 (Mode B). The catalog becomes a generation guard: a test you write must pass the
-same J1-J6 it would be judged by, so it cannot be false-green by construction.
+same J1-J6 it would be judged by, so you do not ship a false-green *shape*. The
+guard is on the shape, not the oracle's truth: it stops a test built from the
+code's current output, but it cannot tell a hand-written wrong oracle from a right
+one. That stays the user's responsibility.
 
-Mode B runs in an editor host (Claude Code, Cursor, Gemini, Codex). It has **no
-CLI surface**: `bin/falsegreen-llm.js` covers `analyze` and `fix` only. Say so if
-a user asks to generate tests from the CLI.
+Mode B runs two ways. In an editor host (Claude Code, Cursor, Gemini, Codex) it
+elicits the missing answers interactively (Steps A0-A1), can render every
+requested language in one pass, and repeats the self-check until clean (A4). On
+the CLI, `falsegreen-skill generate <spec-file> --lang <language>` renders a
+written test-spec - the oracle already supplied in the file - into one language
+and self-checks it once (revising once). It does not elicit, so a spec with no
+oracle is refused rather than guessed; and when its bounded revision cannot reach
+clean it emits the draft with a FAILED/UNVERIFIED verdict and a non-zero exit,
+rather than withholding. Use the host path when the oracle still has to be
+discovered; use the CLI when it is already written down.
 
 ## Step A0: Architect/QA gate (decide before you ask)
 
@@ -443,9 +453,13 @@ self-review, and use the BAD cases in `examples/<language>/family_*` and
 `examples/<language>/semantic_cases.*` as the negative catalog: the generated
 test must not resemble any of them.
 
-If the Mode A pass returns any finding, revise the test and run Mode A again.
-Repeat until the analysis is clean. Only emit a test that passes its own review -
-that is what makes generation and validation one skill, not two.
+If the Mode A pass returns any finding, revise the test and run Mode A again. In
+a host, repeat until the analysis is clean and only emit a test that passes its
+own review - that is what makes generation and validation one skill, not two. The
+CLI bounds this to one revision (it is a command, not an agent loop): if the test
+still trips a HIGH false-green finding it emits the draft with a FAILED verdict
+and exit 1, and if the self-check itself cannot run it reports UNVERIFIED and exit
+3. The CLI never presents an unchecked or still-flagged test as verified.
 
 ## Step A5: Output
 

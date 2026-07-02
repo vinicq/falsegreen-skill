@@ -66,10 +66,12 @@ the reason, and a fix hint. Three steps to try it:
    (J1-J6), why the test cannot fail, and how to fix it. See
    [Quick example](#quick-example).
 
-The full catalog, the judgments, and the per-language reference live in the
+For a step-by-step walkthrough of all three modes with runnable examples and
+flow diagrams, read the [user guide](docs/user-guide.md). The full catalog, the
+judgments, and the per-language reference live in the
 [docs site](https://vinicq.github.io/falsegreen-docs/) and in
-[reference.md](reference.md). For a visual architecture overview - host and
-language routing plus the Mode A/B/C flow diagrams - see
+[reference.md](reference.md). For a visual architecture overview, host and
+language routing plus the Mode A/B/C flow diagrams, see
 [docs/architecture.md](docs/architecture.md).
 
 ---
@@ -95,9 +97,9 @@ taxonomy of false-positive test patterns collected in
 [CREDITS.md](CREDITS.md).
 
 The core insight: a test is useful if and only if there exists some incorrect
-implementation that would cause it to fail. If no such implementation exists —
+implementation that would cause it to fail. If no such implementation exists,
 because the assertion is unreachable, tautological, or verifies the mock
-instead of the code - the test is structurally green regardless of whether the
+instead of the code, the test is structurally green regardless of whether the
 production code is correct.
 
 ---
@@ -147,7 +149,7 @@ Full protocol: [SKILL.md](SKILL.md).
 |---|---|---|
 | C1 | Assert inside `if`/`for` that may not run | `if items: assert items[0].valid` when `items` can be `[]` |
 | C2 | No assertion at all | test body contains only setup calls |
-| C2b | Calls SUT but discards result | `result = process(x)` — result never asserted |
+| C2b | Calls SUT but discards result | `result = process(x)`, result never asserted |
 | C3 | Assert inside `try` whose `except` swallows it | `except Exception: pass` catches `AssertionError` |
 | C4 | Test function nested inside another function | pytest does not collect inner defs |
 | C4b | Test class with `__init__` | pytest skips classes that have `__init__` |
@@ -236,9 +238,9 @@ severity = { D1 = "info", D3 = "info", D4 = "info", D5 = "info", D6 = "info", M2
 
 | Code | Pattern | Why it matters |
 |---|---|---|
-| D1 | Assertion Roulette: 2+ asserts without messages | CI output says only the line number — hard to triage |
+| D1 | Assertion Roulette: 2+ asserts without messages | CI output says only the line number, hard to triage |
 | D3 | Duplicate Assert: exact same assertion written twice | second assertion adds nothing |
-| D4 | Unnamed Parametrize: 3+ cases, no `ids=` | CI shows `test[0]`, `test[1]` — unreadable failure reports |
+| D4 | Unnamed Parametrize: 3+ cases, no `ids=` | CI shows `test[0]`, `test[1]`, unreadable failure reports |
 | D5 | Inline Setup Excess: 5+ setup statements before first assert | test should be split or setup moved to a fixture |
 | D6 | Debug Print: `print()` or `pprint()` in test body | suppressed by default, often a forgotten debug statement |
 | M2 | Long Test Method: test body over 50 lines | trying to verify too many concerns at once |
@@ -310,11 +312,11 @@ mutation testing pass.
 |---|---|
 | Claude Code | `/plugin marketplace add vinicq/falsegreen-skill` then `/plugin install falsegreen-skill@falsegreen` |
 | Claude.ai / Anthropic API Skills | `npm run build:targets`, then package `dist/claude-agent-skill/` as the standalone skill |
-| OpenAI Codex CLI | `codex plugin marketplace add vinicq/falsegreen-skill` — or clone the repo: `AGENTS.md` is auto-loaded |
+| OpenAI Codex CLI | `codex plugin marketplace add vinicq/falsegreen-skill`, or clone the repo: `AGENTS.md` is auto-loaded |
 | Gemini CLI | `gemini extensions install https://github.com/vinicq/falsegreen-skill` |
 | Gemini Agent Skill | workspace skill at `.gemini/skills/falsegreen-skill/SKILL.md`, or `npm run build:targets` for `dist/gemini-skill/` |
 | Cursor | Copy contents of `contexts/cursor.md` to `.cursor/rules/falsegreen-skill.mdc` |
-| CLI | `npx falsegreen-skill analyze tests/test_example.py` — see [docs/cli.md](docs/cli.md) |
+| CLI | `npx falsegreen-skill analyze tests/test_example.py`, see [docs/cli.md](docs/cli.md) |
 | API | Use the defined provider guides in `contexts/claude.md`, `contexts/codex.md`, and `contexts/gemini.md` |
 
 ### Skill or static scanner?
@@ -377,7 +379,7 @@ npx falsegreen-skill analyze tests/test_orders.py
 # multiple files
 npx falsegreen-skill analyze tests/test_orders.py tests/test_payments.py
 
-# JSON report for CI — exits 2 if any HIGH finding is present
+# JSON report for CI, exits 2 if any HIGH finding is present
 npx falsegreen-skill analyze tests/test_orders.py --json --fail-on-high
 
 # deep analysis with a stronger model
@@ -418,9 +420,22 @@ The same protocol runs in reverse. Given a spec and the code under test, the ski
 test with an **independent** oracle: an expected value derived from the spec, not read back
 from the code. Before writing it, an architect/QA gate (**A0**) runs the review judgments and
 the precision rules over the design, so the generated test is one the review pass would accept
-rather than a fresh false-green. This is a host-side (Claude Code, Codex, Gemini, Cursor,
-plain LLM) intent, not a CLI subcommand: ask the skill to "write a test for this function
-against this spec". See [SKILL.md](SKILL.md) and [docs/decisions/0004-authoring-mode.md](docs/decisions/0004-authoring-mode.md).
+rather than a fresh false-green.
+
+Two ways to drive it. In a host (Claude Code, Codex, Gemini, Cursor, plain LLM) ask the skill
+to "write a test for this function against this spec" and it elicits the level, language, and
+oracle interactively. Or on the CLI, write the answers into a test-spec file
+([`schema/test-spec.json`](schema/test-spec.json)) and render one stack, self-checked:
+
+```bash
+# render the shipped example spec to a Python test, then run Mode A on the result
+falsegreen-skill generate examples/authoring/apply-discount.spec.yaml --lang python
+# other stacks from the same spec: --lang typescript | javascript | robot
+```
+
+The CLI does not elicit - a spec with no `oracle` is refused, because a test generated from the
+code's current output only freezes the bug. See [SKILL.md](SKILL.md), [docs/cli.md](docs/cli.md),
+and [docs/decisions/0004-authoring-mode.md](docs/decisions/0004-authoring-mode.md).
 
 ---
 
@@ -550,7 +565,7 @@ falsegreen-skill/
     claude.md           Claude Code CLI, Claude.ai, Anthropic API
     codex.md            ChatGPT, OpenAI API, structured output, batch
     gemini.md           Google AI Studio, Gemini API, long context
-    cursor.md           Cursor IDE — full .cursor/rules/ MDC template
+    cursor.md           Cursor IDE, full .cursor/rules/ MDC template
   examples/
     python/
       family_a_never_checks.py       C1, C2, C2b, C3, C4, C4b, C20, C21, CC
@@ -689,13 +704,27 @@ falsegreen-skill analyze tests/test_payment.py --json \
   --model accounts/fireworks/routers/kimi-k2p6-turbo \
   --max-tokens 8192
 
-# Ollama (local)
+# Ollama (local - no key needed, any placeholder works)
 export FALSEGREEN_API_KEY=ollama
 falsegreen-skill analyze tests/test_payment.py \
   --provider openai-compatible \
   --base-url http://localhost:11434/v1 \
   --model qwen2.5-coder:32b
+
+# Alibaba Qwen (DashScope, OpenAI-compatible mode)
+export FALSEGREEN_API_KEY=sk-...
+falsegreen-skill analyze tests/test_payment.py \
+  --provider openai-compatible \
+  --base-url https://dashscope-intl.aliyuncs.com/compatible-mode/v1 \
+  --model qwen-plus
 ```
+
+> **Prompt size vs. free tiers.** The system prompt carries the full catalog
+> (`llm.md` + `reference.md`), ~33k tokens. Providers with a small per-minute
+> token cap on their free tier (e.g. Groq's 12k TPM) reject the request with
+> HTTP 413/429. Use a provider whose free or paid tier allows a ~35k-token
+> request (Ollama locally, or a large-context model on OpenRouter/NVIDIA/etc.),
+> and raise `--max-tokens` if a reasoning model gets cut off mid-report.
 
 Set `--model` to the id your account actually exposes; the CLI passes the
 string through unchanged. Reasoning models work with `--json` as of 0.5.2:
@@ -753,7 +782,60 @@ fix catches the targeted mutant, not every possible bug; full mutmut
 integration and the deep semantic cases (10/11/12/18) and JS/TS/Robot fix
 paths are deferred to a later version.
 
-### 4. Host setup
+### 4. `generate` - author a test from a spec (Mode B)
+
+```
+falsegreen-skill generate <spec-file> [--lang <language>] [options]
+```
+
+Renders a language-neutral test-spec into a real test, then runs `analyze`
+(Mode A) on the result, so a false-green test cannot pass the self-check
+undetected. It catches false-green *shapes*; it does not, and cannot on its own,
+tell a hand-written wrong oracle from a right one (see the honest limit below).
+The spec is a [`schema/test-spec.json`](schema/test-spec.json) file (YAML or
+JSON); see [`examples/authoring/`](examples/authoring/) for one spec rendered
+into all four stacks. If `--lang` is omitted, the spec's first declared
+`languages` entry is used, else Python.
+
+**generate flags** (in addition to the provider flags above):
+
+| Flag | Meaning |
+|---|---|
+| `--lang <language>` | Target stack: `python`, `typescript`, `javascript`, `tsx`, `jsx`, `robot`. `tsx`/`jsx` cover the React side of the JS/TS family (same JS* catalog). One language per run |
+
+```bash
+# render the example spec to a Python test and self-check it
+falsegreen-skill generate examples/authoring/apply-discount.spec.yaml --lang python
+
+# same spec, TypeScript; the spec is the single source, re-run per stack
+falsegreen-skill generate examples/authoring/apply-discount.spec.yaml --lang typescript
+
+# machine-readable: { language, test, self_check, self_check_passed, self_check_error }
+falsegreen-skill generate my-spec.yaml --lang python --json
+```
+
+**The oracle is mandatory.** A spec with no `oracle.expected` key is refused
+before any API call: a test generated from the code's current output only freezes
+the bug (a characterization test). The oracle's *value* is not checked; that is
+your responsibility. What the command proves is narrower: the generated test
+trips no HIGH false-green finding when Mode A reviews it.
+
+**The self-check is bounded and fails closed.** After generating, the CLI runs
+Mode A on the test once, and if it trips a HIGH false-green finding, revises once
+and re-checks. The exit code is the CI contract:
+
+| Exit | Meaning |
+|---|---|
+| 0 | PASSED: the self-check ran and found no HIGH false-green |
+| 1 | FAILED: a surviving false-green was confirmed (also used for a bad spec or an API error) |
+| 3 | UNVERIFIED: the self-check could not run (small model, provider error). The test is still printed, but it is **not** accepted, so a pipeline never treats an unchecked test as clean |
+
+The self-check is a same-model static review, not an execution: it does not run
+the test, confirm it compiles or imports, or verify the oracle value. A
+characterization test with a code-derived expected can still pass. Review the
+output against your spec.
+
+### 5. Host setup
 
 Each host enables the same J1-J6 protocol; the wiring differs. Steps below come
 straight from the manifests (`.claude-plugin/plugin.json`,

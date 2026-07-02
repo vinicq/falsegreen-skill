@@ -1,5 +1,6 @@
 // Rendered from apply-discount.spec.yaml (Mode B). Level: unit.
 // Non-false-green: the expected value (170) comes from the spec, not the code.
+const { test, expect } = require("@jest/globals");
 const { applyDiscount } = require("../../src/pricing");
 
 test("a 15% discount on 200 returns 170", () => {
