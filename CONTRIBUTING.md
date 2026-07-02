@@ -76,6 +76,35 @@ to users. Before publishing, run `npm version <patch|minor|major>` (the
 them), move the `[Unreleased]` entries in `CHANGELOG.md` under the new version,
 then follow `RELEASE.md`.
 
+## Refreshing the scanner snapshot
+
+`schema/scanner-codes.json` pins, per sibling scanner, the version and the exact
+set of codes it emits. `check-scanner-coverage.mjs` diffs that snapshot against
+the catalog and fails if any sibling emits a code the skill catalog does not
+cover (the #105 regression). The snapshot is generated, not hand-edited:
+
+```bash
+# from checkouts next to this repo (../falsegreen, ../falsegreen-robot, ../falsegreen-js)
+node scripts/refresh-scanner-snapshot.mjs
+
+# point at checkouts elsewhere (per sibling; env vars work too)
+node scripts/refresh-scanner-snapshot.mjs \
+  --falsegreen=/path/to/falsegreen \
+  --falsegreen-js=/path/to/falsegreen-js
+
+# CI-friendly: fail if the committed snapshot lags the checkouts, no write
+node scripts/refresh-scanner-snapshot.mjs --check
+```
+
+The script reads each sibling's version and its `CASES` code set straight from
+source, so the refresh no longer relies on a human copying codes by hand. A
+sibling that is not checked out is skipped with a warning and its existing
+snapshot entry is kept. After refreshing, run `npm run validate` so
+`check-scanner-coverage.mjs` confirms the catalog still covers every code. This
+check is not in `npm run validate` because the sibling repos are not present at
+this repo's CI time (ADR 0002); run it locally against live checkouts before a
+release.
+
 ## Precision over recall
 
 Same rule as the scanner: a finding that wrongly flags a legitimate test is
