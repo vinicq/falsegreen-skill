@@ -66,13 +66,15 @@ base URL and model name, and set `FALSEGREEN_API_KEY` to the provider key.
 
 ```
 falsegreen-skill analyze <file...> [options]
+falsegreen-skill fix <test-file> --case <code> --line <n> [options]
 falsegreen-skill --help
 falsegreen-skill --version
 ```
 
-Multiple files are analyzed in separate API calls. Plain-text output is printed
-under a `=== {filename} ===` header. With `--json`, the CLI validates each model
-response against the canonical schema and emits one aggregate JSON report.
+`analyze` is Mode A (review); `fix` is Mode C (AI-fix). Multiple files given to
+`analyze` are analyzed in separate API calls. Plain-text output is printed under a
+`=== {filename} ===` header. With `--json`, the CLI validates each model response
+against the canonical schema and emits one aggregate JSON report.
 
 ## Flags
 
@@ -107,6 +109,46 @@ Default models: `anthropic` uses `claude-sonnet-4-6`, `openai` uses `gpt-4o`,
 | 0 | Analysis completed (findings may still exist; this is an analysis tool, not a gate) |
 | 1 | Error: missing file, missing API key, bad flag, invalid JSON, schema mismatch, non-2xx API response |
 | 2 | `--fail-on-high` was set and the JSON report contains at least one HIGH finding |
+
+## `fix` - propose a stronger test and prove it
+
+```
+falsegreen-skill fix <test-file> --case <code> --line <n> [options]
+```
+
+`analyze` finds a false-green; `fix` proposes a stronger test and runs a local gate
+to prove it before you trust it. It is opt-in, **Python/pytest only**, and
+**propose-only**: it prints a test-file patch but never applies it and never edits
+production code. The provider flags above apply; `fix` adds these:
+
+| Flag | Description |
+|---|---|
+| `--case <code>` | Catalog code of the finding to fix. V1 fixable set: `C2b`, `C20`, `C21`, `C5`, `C7` |
+| `--line <n>` | Line of the finding in the test file (1-indexed) |
+| `--sut <file>` | Production file the test protects. Required for a validated fix |
+| `--sut-line <n>` | Line in the SUT to mutate. Defaults to `--line` |
+| `--cheap` | Validation tier: parse + preserve only, no mutation gate |
+
+```bash
+# propose a patch for a C2b finding and run the full gate against the real SUT
+falsegreen-skill fix tests/test_discount.py --case C2b --line 14 \
+  --sut src/discount.py --sut-line 12
+
+# parse + preserve only, no mutation gate (no runnable SUT, or a quick pass)
+falsegreen-skill fix tests/test_discount.py --case C5 --line 9 --cheap
+
+# machine-readable gate verdict (schema/fix-validation.json)
+falsegreen-skill fix tests/test_discount.py --case C20 --line 22 \
+  --sut src/discount.py --json
+```
+
+On a clean replica the gate runs three checks: the patch parses (`py_compile`), it
+passes `pytest` against the real code (preserve), and it **fails** on a line-scoped
+mutation of the SUT. A patch is accepted only when it passes on correct code and goes
+red on the mutant. Exit code is 0 on accept, 1 on reject/unvalidated. Without `--sut`
+(or with `--cheap`) the gate degrades to propose-only and labels the fix unvalidated.
+The honest limit: it proves the fix catches the targeted mutant, not every possible
+bug; JS/TS/Robot and the deep semantic cases (10/11/12/18) are v2.
 
 ## CI usage
 
