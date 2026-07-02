@@ -178,6 +178,60 @@ The honest limit: the self-check proves the test is not obviously false-green. I
 does not prove your oracle value is right. If you tell the spec that 15% off 200 is
 150, you get a confident, well-formed, wrong test. The oracle is yours to get right.
 
+### Author tests for the feature you're building
+
+The `apply_discount` walkthrough is just the shape. The same flow works for whatever you are
+actually building: a TypeScript service, a React component, an API endpoint. You describe the unit
+and, crucially, the oracle (the expected result and where it comes from), and the skill writes the
+test. There are two paths.
+
+**In an editor host (Claude Code, Cursor, Gemini).** Ask in natural language. No spec file:
+
+> write a unit test for `applyPromo(cart, code)` in TypeScript; a valid code takes 10% off the
+> subtotal, per the pricing spec
+
+The host elicits the level and oracle if you left them out, renders the test, and runs the same
+self-check. If you never name where the expected value comes from, it asks, because a test with no
+independent oracle is the false-green it refuses to write.
+
+**On the CLI.** Put the same answers in a spec and pick the stack. A realistic feature spec:
+
+```yaml
+level: unit
+unit: applyPromo(cart, code)
+scenario: SAVE10 takes 10% off a 200 subtotal, per the pricing spec
+languages: [TypeScript]
+arrange:
+  - cart = { subtotal: 200 }
+  - code = "SAVE10"
+act: result = applyPromo(cart, "SAVE10")
+oracle:
+  source: spec
+  expected: "180 (200 minus 10% = 200 - 20), from the pricing spec"
+doubles: []
+```
+
+```bash
+falsegreen-skill generate promo.spec.yaml --lang typescript
+```
+
+You get a real TypeScript test whose expected `180` traces back to the pricing spec, not to what
+`applyPromo` happens to return today.
+
+The React side of the family works the same way. A component spec renders through Testing Library:
+
+```bash
+falsegreen-skill generate profile-card.spec.yaml --lang tsx
+```
+
+The rendered test imports its framework explicitly and asserts against the visible state
+(`screen.getByRole(...)`), not the render call's return value, and it clears the self-check like
+any other. `--lang jsx` does the same for plain-JS React.
+
+That last point is the rule for anything above a pure function: the oracle for a component or an
+end-to-end test is the visible state a user would see, not the internal output of the render. The
+higher the level on the test pyramid, the more the oracle is "what the user observes."
+
 ## Mode C: repair a weak test and prove the repair
 
 `analyze` found a false-green. `fix` proposes a stronger version and then proves it
