@@ -7,23 +7,26 @@ structured output, Codex CLI, and batch pipelines.
 
 ## Installation (Codex CLI)
 
-Two official paths:
+Two paths:
 
-1. **Plugin marketplace:**
+1. **Plugin (interactive).** The Codex CLI installs plugins from inside the
+   TUI, not from a subcommand. Start Codex and open the plugins panel:
 
    ```bash
-   codex plugin marketplace add vinicq/falsegreen-skill
+   codex
    ```
 
-   The plugin manifest lives at `.codex-plugin/plugin.json`, the marketplace
-   catalog at `.agents/plugins/marketplace.json`, and the shared skill at
+   Then run `/plugins` and add this repo as a source. The plugin manifest lives
+   at `.codex-plugin/plugin.json`, the marketplace catalog at
+   `.agents/plugins/marketplace.json`, and the shared skill at
    `skills/falsegreen-llm/SKILL.md`.
 
 2. **Clone the repo.** `AGENTS.md` at the repo root loads automatically when
    Codex starts a session inside the clone.
 
-Note: OpenAI deprecated `~/.codex/prompts/` custom prompts in favor of skills.
-Use one of the two paths above instead.
+Note: if you were relying on a `~/.codex/prompts/` custom prompt, the plugin or
+`AGENTS.md` path above is the maintained way to load this protocol. Keep using
+your own prompts if they work for you; nothing here requires removing them.
 
 ---
 
@@ -357,17 +360,22 @@ has neither.
 
 ### Per-session context
 
-Pass `SKILL.md` as a context file using the `--context` flag:
+The Codex CLI has no `--context` flag. To load the protocol for a one-off run,
+pipe the test file on stdin (`-`) and reference the skill from the prompt, or
+prepend `SKILL.md` to the input:
 
 ```bash
-codex --context SKILL.md "Analyze the following test file for false-positive smells" < tests/test_example.py
+codex "Apply the falsegreen-skill J1-J6 protocol from SKILL.md to the test file on stdin, and report false-positive smells" - < tests/test_example.py
 ```
 
-Or pipe with explicit context:
+To feed the protocol text inline, concatenate `SKILL.md` and the test file:
 
 ```bash
-codex --context SKILL.md < tests/test_example.py
+cat SKILL.md tests/test_example.py | codex "Analyze the test file below the protocol for false-positive smells" -
 ```
+
+For a persistent setup, put the skill reference in `AGENTS.md` (next section) so
+every session in the project picks it up without repeating it on the command line.
 
 ### Project-level configuration
 

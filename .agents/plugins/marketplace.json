@@ -3,10 +3,21 @@
   "owner": {
     "name": "Vinicius Queiroz"
   },
+  "interface": {
+    "displayName": "falsegreen"
+  },
   "plugins": [
     {
       "name": "falsegreen-skill",
-      "source": "./",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "category": "code-quality",
+      "policy": {
+        "installation": "manual",
+        "authentication": "none"
+      },
       "description": "Detect false-positive tests (tests that pass even when the code breaks) across Python, TypeScript, JavaScript, and Robot Framework. HIGH/LOW confidence findings with evidence and fix hints."
     }
   ]
