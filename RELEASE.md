@@ -4,6 +4,11 @@ This package ships to npm. Unlike the static scanners, it has no compile step: t
 is the prompt protocol, the host packaging metadata, and the thin CLI. The work before a
 release is keeping every host copy consistent and regenerating the standalone skill targets.
 
+**Reminder:** the host manifests (`plugin.json`, `.codex-plugin/plugin.json`,
+`gemini-extension.json`) pin a `version`. A fix merged to `master` without a
+version bump and publish never reaches installed plugins. Every release cycle
+bumps the version and the `CHANGELOG.md` together.
+
 ## Before you publish
 
 1. Bump `version` in `package.json`. The `version` npm script runs automatically on

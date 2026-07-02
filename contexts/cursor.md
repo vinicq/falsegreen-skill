@@ -24,7 +24,7 @@ Copy this file verbatim to `.cursor/rules/falsegreen-skill.mdc`:
 ````
 ---
 description: falsegreen-skill — false-positive test detection
-globs: ["**/*.test.ts", "**/*.test.tsx", "**/*.test.js", "**/*.test.jsx", "**/*.spec.ts", "**/*.spec.tsx", "**/*.spec.js", "**/*.spec.jsx", "**/test_*.py", "**/*_test.py", "**/*.robot", "**/*.resource"]
+globs: **/*.test.ts, **/*.test.tsx, **/*.test.js, **/*.test.jsx, **/*.spec.ts, **/*.spec.tsx, **/*.spec.js, **/*.spec.jsx, **/test_*.py, **/*_test.py, **/*.robot, **/*.resource
 alwaysApply: false
 ---
 
