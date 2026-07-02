@@ -24,9 +24,9 @@ Model tiers are defined once in [`models.yaml`](models.yaml).
 
 | Provider | Default model | Fast/cheap tier | Deep reasoning tier |
 |---|---|---|---|
-| Anthropic (Claude) | claude-sonnet-4-6 | claude-haiku-4-5-20251001 | claude-opus-4-8 |
-| OpenAI | gpt-4o | gpt-4o-mini | o3 |
-| Google Gemini | gemini-2.5-pro | gemini-2.0-flash | gemini-2.5-pro (thinking) |
+| Anthropic (Claude) | claude-sonnet-5 | claude-haiku-4-5 | claude-opus-4-8 |
+| OpenAI | gpt-5 | gpt-5-mini | gpt-5 (reasoning) |
+| Google Gemini | gemini-2.5-flash | gemini-2.5-flash-lite | gemini-2.5-pro (thinking) |
 | Meta LLaMA (Groq) | llama-3.3-70b-versatile | - | llama-3.1-405b (Together.ai) |
 | Alibaba Qwen | Qwen2.5-72B-Instruct | - | QwQ-32B |
 | Moonshot Kimi | kimi-k2-0711-instruct | - | kimi-k2-0711-preview |
@@ -47,7 +47,7 @@ skill_protocol = open("SKILL.md").read()
 test_code = open("tests/test_example.py").read()
 
 response = client.messages.create(
-    model="claude-sonnet-4-6",
+    model="claude-sonnet-5",
     max_tokens=2048,
     system=skill_protocol,
     messages=[{"role": "user", "content": test_code}]
@@ -70,7 +70,7 @@ skill_protocol = open("SKILL.md").read()
 test_code = open("tests/test_example.py").read()
 
 response = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",
     messages=[
         {"role": "system", "content": skill_protocol},
         {"role": "user", "content": test_code}
@@ -91,15 +91,19 @@ For the Gemini CLI and extension path, see
 [`contexts/gemini.md`](contexts/gemini.md). The minimal API call:
 
 ```python
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
-genai.configure(api_key="YOUR_API_KEY")
-model = genai.GenerativeModel(
-    model_name="gemini-2.5-pro",
-    system_instruction=open("SKILL.md").read()
-)
+client = genai.Client()  # reads GEMINI_API_KEY (or GOOGLE_API_KEY) from environment
+
 test_code = open("tests/test_example.py").read()
-response = model.generate_content(test_code)
+response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=test_code,
+    config=types.GenerateContentConfig(
+        system_instruction=open("SKILL.md").read()
+    ),
+)
 print(response.text)
 ```
 
@@ -211,7 +215,7 @@ they were doing.", user = Pass 1's case 18 finding. If the refuter cannot mount 
 defense, the finding stands as HIGH. If the refuter's argument holds, downgrade to LOW or
 withdraw.
 
-Use `claude-opus-4-8` or `o3` for both passes. See `models.yaml` for the full tier guide.
+Use `claude-opus-4-8` or a GPT-5 reasoning-tier model for both passes. See `models.yaml` for the full tier guide.
 
 ```python
 from openai import OpenAI  # works for any OpenAI-compatible provider
@@ -222,7 +226,7 @@ test_code = open("tests/test_example.py").read()
 
 # Pass 1: finder
 finder_response = client.chat.completions.create(
-    model="o3",
+    model="gpt-5",  # reasoning-tier default your account exposes
     messages=[
         {"role": "system", "content": skill_protocol},
         {
@@ -239,7 +243,7 @@ finder_finding = finder_response.choices[0].message.content
 
 # Pass 2: refuter (fresh context window, no system protocol)
 refuter_response = client.chat.completions.create(
-    model="o3",
+    model="gpt-5",  # reasoning-tier default your account exposes
     messages=[
         {
             "role": "system",
@@ -270,14 +274,14 @@ print(refuter_argument)
 
 ## Choosing a provider
 
-For **highest precision** (production/paper-facing use): Anthropic claude-sonnet-4-6
+For **highest precision** (production/paper-facing use): Anthropic claude-sonnet-5
 or claude-opus-4-8. These providers have the most validated benchmark results.
 
-For **fastest response** (interactive review, many files): claude-haiku-4-5-20251001
-or gpt-4o-mini. Precision may be lower for edge cases.
+For **fastest response** (interactive review, many files): claude-haiku-4-5
+or gpt-5-mini. Precision may be lower for edge cases.
 
 For **deep case 18 analysis** (expected value contradicts spec): claude-opus-4-8
-or OpenAI o3. Both support extended chain-of-thought.
+or an OpenAI GPT-5 reasoning-tier model. Both support extended chain-of-thought.
 
 For **cost-sensitive batch analysis**: LLaMA via Groq
 (free tier available). Validate results against the benchmark before trusting at scale.

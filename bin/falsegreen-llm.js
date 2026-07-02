@@ -12,9 +12,9 @@ const { runFixGate, isV1Fixable } = require('./fix-gate');
 const PKG_ROOT = path.join(__dirname, '..');
 
 const DEFAULT_MODELS = {
-  anthropic: 'claude-sonnet-4-6',
-  openai: 'gpt-4o',
-  gemini: 'gemini-2.5-pro',
+  anthropic: 'claude-sonnet-5',
+  openai: 'gpt-5',
+  gemini: 'gemini-2.5-flash',
   'openai-compatible': null, // must be passed via --model
 };
 
@@ -58,7 +58,7 @@ Commands:
 Options:
   --provider <name>     anthropic (default) | openai | gemini | openai-compatible
   --model <model>       Override the provider default model
-                        (anthropic: claude-sonnet-4-6, openai: gpt-4o, gemini: gemini-2.5-pro)
+                        (anthropic: claude-sonnet-5, openai: gpt-5, gemini: gemini-2.5-flash)
   --base-url <url>      Base URL for the openai-compatible provider
                         (Groq, Ollama, OpenRouter, Kimi, Mistral, DeepSeek)
   --json                Validate and output JSON conforming to schema/report.json
