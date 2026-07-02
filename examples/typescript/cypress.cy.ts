@@ -3,18 +3,21 @@
  * Codes: JS24
  *
  * A Cypress query (cy.get / cy.find / cy.contains) returns a chainable subject.
- * Without a terminating .should / .and, or an expect() inside a .then, the
- * subject is never asserted: the command queue runs, the test reports green, and
- * a broken selector or missing element goes unnoticed. This lives in a .cy.ts
- * file so the scanner reads it as a Cypress spec. It is a scan target, not a
- * runnable suite; get/find/contains resolve at runtime against the DOM.
+ * Cypress retries the query and fails the test if the selector never resolves,
+ * so this is NOT "green while the element is missing". The smell is narrower:
+ * without a terminating .should / .and, or an expect() inside a .then, nothing
+ * beyond the element's implicit existence is checked. The element was found and
+ * its state, text, or value - the thing the test meant to verify - was never
+ * asserted. This lives in a .cy.ts file so the scanner reads it as a Cypress
+ * spec. It is a scan target, not a runnable suite.
  */
 
 // --- JS24: query used as a statement, no terminating assertion --------------
 
-// BAD: the element is fetched and then nothing is checked about it.
+// BAD: the button is found (Cypress would fail if it were absent) but nothing
+// about its state - enabled, text, visibility - is ever asserted.
 it('JS24 - loose cy.get', () => {
-  cy.get('.submit-btn'); // JS24 - no .should/.and, subject never asserted
+  cy.get('.submit-btn'); // JS24 - no .should/.and, only implicit existence
 });
 
 // BAD: chained navigation that still ends without an assertion.
@@ -22,9 +25,10 @@ it('JS24 - find then drop', () => {
   cy.get('form').find('input[name="email"]'); // JS24 - query result discarded
 });
 
-// BAD: contains locates text but asserts nothing about state.
+// BAD: the text is located, but the surrounding state (is the banner visible,
+// is the user actually logged in) is never asserted.
 it('JS24 - contains no check', () => {
-  cy.contains('Welcome back'); // JS24 - presence not asserted, only queried
+  cy.contains('Welcome back'); // JS24 - located, but state never asserted
 });
 
 // BAD: .then opens a callback but never calls expect inside it.

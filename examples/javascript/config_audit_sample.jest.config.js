@@ -18,8 +18,11 @@ module.exports = {
   // PL10: an empty or fully-filtered run reports green instead of failing.
   passWithNoTests: true,
 
-  // PL8: the run stops at the first failure, so the reported pass count is
-  // incomplete - a "green" run may have skipped most of the suite.
+  // PL8: `bail` stops the run after the first failure, so the reported test
+  // count is truncated. The scanner flags it (reference.md PL8) as a run-config
+  // that hides how much of the suite actually executed. (Note: bail only cuts a
+  // run that is already failing; the catalog still surfaces it because a
+  // truncated report understates what was left unverified.)
   bail: 1,
 
   // PL7: there is no coverageThreshold at all, so coverage can fall to zero and
@@ -29,7 +32,10 @@ module.exports = {
 // CLEAN: the fixes for PL7/PL8/PL10.
 //
 //   module.exports = {
-//     // PL7 fixed: coverage cannot silently fall to zero.
+//     // PL7 fixed: collect coverage AND set a floor. coverageThreshold alone
+//     // does nothing under Jest's default collectCoverage:false - nothing is
+//     // measured, so nothing is enforced. Turn collection on too.
+//     collectCoverage: true,
 //     coverageThreshold: { global: { lines: 80, branches: 70, functions: 80 } },
 //     // PL8 fixed: no `bail`, so the whole suite runs and the count is honest.
 //     // PL10 fixed: no `passWithNoTests`, so a no-test run fails instead of
