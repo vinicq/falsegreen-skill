@@ -3,6 +3,13 @@
 Full case catalog with per-language patterns, framework cues, and look-alike
 examples. Use alongside [SKILL.md](SKILL.md).
 
+This catalog is the guard for all three intents. For **authoring** (Mode B,
+generating tests), see SKILL.md "Authoring mode": it opens with an architect/QA
+gate (Step A0), renders from `examples/authoring/`, and self-reviews the
+generated test against these same codes plus `fragments/precision-rules.md` so
+the output is green-for-real, never tautological. Mode B is editor-host only (no
+CLI surface).
+
 Supported languages: **Python, TypeScript, JavaScript, Robot Framework** (Gherkin and Tavern are covered as secondary semantic passes).
 
 ## Language and framework detection cues

@@ -179,13 +179,14 @@ The LLM only proposes; the gate proves. The command never edits the production
 code and never auto-applies the patch, and without a runnable SUT it degrades to
 propose-only and says so (`runFix` and the fix-gate in `bin/`).
 
-## Diagram 4 - Proposed authoring gate (Mode B, A0-A5)
+## Diagram 4 - Authoring gate (Mode B, A0-A5)
 
-**Proposed flow - not yet implemented.** This is the design under discussion in
-issue #119: an architect/QA gate (A0) that runs before authoring, so the skill
-refuses to write a test with no testable unit or a cited oracle it never
-received. It is drawn here to make the proposal reviewable; the shipping
-authoring flow is Diagram 3.
+**Implemented in #117/#119.** SKILL.md now opens Mode B with a named architect/QA
+gate (Step A0) that runs before authoring, so the skill refuses to write a test
+with no testable unit or a cited oracle it never received, and asks only the
+answers that are missing. A3 renders from the `examples/authoring/` few-shots and
+A4 self-reviews against `fragments/precision-rules.md` and the `family_*` BAD
+cases.
 
 ```mermaid
 flowchart TD
@@ -206,7 +207,7 @@ flowchart TD
     A4 -->|clean| OUT[A5: emit test + cited oracle + spec]
 ```
 
-The proposed gate adds an explicit pre-authoring check the current Mode B leaves
+The gate adds an explicit pre-authoring check Mode B previously left
 implicit. A0 asks for a testable unit before anything is written, warns against
 an inverted pyramid (an E2E test where a unit test would do), and confirms the
 four answers authoring needs - level, language, oracle, and test doubles - where

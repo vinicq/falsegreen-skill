@@ -336,6 +336,27 @@ user asks to **write or create tests** instead, switch to **authoring mode**
 (Mode B). The catalog becomes a generation guard: a test you write must pass the
 same J1-J6 it would be judged by, so it cannot be false-green by construction.
 
+Mode B runs in an editor host (Claude Code, Cursor, Gemini, Codex). It has **no
+CLI surface**: `bin/falsegreen-llm.js` covers `analyze` and `fix` only. Say so if
+a user asks to generate tests from the CLI.
+
+## Step A0: Architect/QA gate (decide before you ask)
+
+Before eliciting anything, run one triage pass. It answers three questions at
+once, in a single step - not a separate agent:
+
+- **Should a test be created at all?** If the request names no testable unit or
+  behavior, ask for the target instead of guessing. If the user asks for an E2E
+  test where a unit test would catch the defect, warn (inverted-pyramid) before
+  generating.
+- **How many questions are actually needed?** Ask only the Step A1 answers that
+  are missing. If the request already carries level + language + oracle + doubles,
+  skip straight to Step A2 with zero questions. The oracle is the one answer you
+  must have: without it you can only freeze current behavior, the false-green the
+  skill exists to prevent.
+- **Who decides what?** The architect role owns the pyramid level and its shape;
+  the QA role owns the oracle and the doubled boundaries. Same step, one pass.
+
 ## Step A1: Ask before you write
 
 Do not generate a test from the code's current output - that produces a
@@ -391,7 +412,10 @@ but is itself a smell at unit (J3/J6).
 
 ## Step A3: Emit per language, with the level-appropriate oracle
 
-Render the spec into each framework. The oracle form depends on the level:
+Render the spec into each framework, using the canonical renders in
+`examples/authoring/` (`apply-discount.spec.yaml` rendered to `.py`, `.test.js`,
+`.test.ts`, and `.robot`) as the few-shot template for a green-for-real test in
+each language. The oracle form depends on the level:
 
 - **unit:** assert the return value / state against `oracle.expected`.
 - **integration / API:** assert status AND the response body (not status alone).
@@ -413,6 +437,11 @@ you for review. Concretely, confirm it trips no catalog code:
   API/DB call belongs to integration, not unit).
 - J4: the assertion checks the right, specific thing (no C6/C9 weak check).
 - J5/J6: not coupled to internals; passes in isolation.
+
+Apply the precision-first rules in `fragments/precision-rules.md` during this
+self-review, and use the BAD cases in `examples/<language>/family_*` and
+`examples/<language>/semantic_cases.*` as the negative catalog: the generated
+test must not resemble any of them.
 
 If the Mode A pass returns any finding, revise the test and run Mode A again.
 Repeat until the analysis is clean. Only emit a test that passes its own review -
