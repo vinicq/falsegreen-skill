@@ -191,6 +191,52 @@ async function providerParsingTests() {
   process.exitCode = 0;
 }
 
+// 11. generate (Mode B) offline guards: the command must refuse before any API
+// call when the language is unknown, the spec is missing, or the spec carries no
+// oracle - the last is the whole point (no oracle => characterization test).
+function runFail(args) {
+  try {
+    execFileSync(process.execPath, [CLI, ...args], { encoding: 'utf8', stdio: 'pipe' });
+    return { code: 0, stderr: '' };
+  } catch (e) {
+    return { code: e.status == null ? -1 : e.status, stderr: (e.stderr || '') + (e.stdout || '') };
+  }
+}
+try {
+  const os = require('node:os');
+  const help = run(['--help']);
+  /\bgenerate\b/.test(help) ? ok('--help lists the generate command') : bad('--help missing generate');
+
+  const noSpec = runFail(['generate']);
+  noSpec.code === 1 && /requires a test-spec file/.test(noSpec.stderr)
+    ? ok('generate with no spec refuses (exit 1)') : bad(`generate no-spec: ${noSpec.code} ${noSpec.stderr}`);
+
+  const spec = path.join(ROOT, 'examples/authoring/apply-discount.spec.yaml');
+  const badLang = runFail(['generate', spec, '--lang', 'klingon']);
+  badLang.code === 1 && /unknown --lang/.test(badLang.stderr)
+    ? ok('generate rejects an unknown --lang (exit 1)') : bad(`generate bad-lang: ${badLang.code} ${badLang.stderr}`);
+
+  const noOracle = path.join(os.tmpdir(), 'fg-smoke-no-oracle.yaml');
+  fs.writeFileSync(noOracle, 'level: unit\nunit: foo\nscenario: bar\nact: foo()\n');
+  try {
+    const r = runFail(['generate', noOracle]);
+    r.code === 1 && /no oracle/i.test(r.stderr)
+      ? ok('generate refuses a spec with no oracle (exit 1)') : bad(`generate no-oracle: ${r.code} ${r.stderr}`);
+  } finally { fs.rmSync(noOracle, { force: true }); }
+} catch (e) { bad('generate offline-guard tests failed: ' + e.message); }
+
+// 12. extractCodeBlockLang prefers the language-tagged fence, falls back to any
+// fence, then to raw text (drives the generate output extraction).
+try {
+  const { extractCodeBlockLang } = require(CLI);
+  extractCodeBlockLang('prose\n```python\nassert x == 1\n```\ntail', 'python') === 'assert x == 1'
+    ? ok('extractCodeBlockLang pulls the tagged fence') : bad('extractCodeBlockLang missed the tagged fence');
+  extractCodeBlockLang('```\nraw block\n```', 'python') === 'raw block'
+    ? ok('extractCodeBlockLang falls back to a bare fence') : bad('extractCodeBlockLang missed the bare fence');
+  extractCodeBlockLang('no fence here', 'python') === 'no fence here'
+    ? ok('extractCodeBlockLang falls back to raw text') : bad('extractCodeBlockLang missed the raw fallback');
+} catch (e) { bad('extractCodeBlockLang tests failed: ' + e.message); }
+
 function deepEq(actual, expected, label) {
   JSON.stringify(actual) === JSON.stringify(expected) ? ok(label) : bad(`${label} (got ${JSON.stringify(actual)})`);
 }

@@ -7,6 +7,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- `generate` CLI command: authoring mode (Mode B) on the CLI. It renders a language-neutral
+  test-spec (`schema/test-spec.json`) into one stack with `--lang`, then runs Mode A on the
+  result so the test cannot be false-green by construction. Offline guards refuse an unknown
+  `--lang`, a missing spec, or a spec with no `oracle` before any API call; the self-check is
+  bounded to one revision and degrades to `UNVERIFIED` when the model cannot return a valid
+  report. Documented in README, `docs/cli.md`, `docs/invocation-methods.md`, and ADR 0004.
+- `docs/invocation-methods.md`: the map of every way to run the skill (CLI, API token per
+  provider, editor-host skill, raw protocol, static scanner, CI) with an OpenAI-compatible
+  provider table (Groq, Cerebras, OpenRouter, NVIDIA, DeepInfra, Mistral, DeepSeek, Fireworks,
+  Alibaba, Hugging Face, Cohere, Ollama) and a live validation snapshot.
 - Authoring mode (Mode B) names its architect/QA gate **A0**: before a test is written, the
   skill runs the review judgments and the precision rules over the proposed design, and reuses
   the `examples/` fixtures as reference. Documented in ADR 0004 (#119).

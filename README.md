@@ -418,9 +418,22 @@ The same protocol runs in reverse. Given a spec and the code under test, the ski
 test with an **independent** oracle: an expected value derived from the spec, not read back
 from the code. Before writing it, an architect/QA gate (**A0**) runs the review judgments and
 the precision rules over the design, so the generated test is one the review pass would accept
-rather than a fresh false-green. This is a host-side (Claude Code, Codex, Gemini, Cursor,
-plain LLM) intent, not a CLI subcommand: ask the skill to "write a test for this function
-against this spec". See [SKILL.md](SKILL.md) and [docs/decisions/0004-authoring-mode.md](docs/decisions/0004-authoring-mode.md).
+rather than a fresh false-green.
+
+Two ways to drive it. In a host (Claude Code, Codex, Gemini, Cursor, plain LLM) ask the skill
+to "write a test for this function against this spec" and it elicits the level, language, and
+oracle interactively. Or on the CLI, write the answers into a test-spec file
+([`schema/test-spec.json`](schema/test-spec.json)) and render one stack, self-checked:
+
+```bash
+# render the shipped example spec to a Python test, then run Mode A on the result
+falsegreen-skill generate examples/authoring/apply-discount.spec.yaml --lang python
+# other stacks from the same spec: --lang typescript | javascript | robot
+```
+
+The CLI does not elicit - a spec with no `oracle` is refused, because a test generated from the
+code's current output only freezes the bug. See [SKILL.md](SKILL.md), [docs/cli.md](docs/cli.md),
+and [docs/decisions/0004-authoring-mode.md](docs/decisions/0004-authoring-mode.md).
 
 ---
 
@@ -689,13 +702,27 @@ falsegreen-skill analyze tests/test_payment.py --json \
   --model accounts/fireworks/routers/kimi-k2p6-turbo \
   --max-tokens 8192
 
-# Ollama (local)
+# Ollama (local - no key needed, any placeholder works)
 export FALSEGREEN_API_KEY=ollama
 falsegreen-skill analyze tests/test_payment.py \
   --provider openai-compatible \
   --base-url http://localhost:11434/v1 \
   --model qwen2.5-coder:32b
+
+# Alibaba Qwen (DashScope, OpenAI-compatible mode)
+export FALSEGREEN_API_KEY=sk-...
+falsegreen-skill analyze tests/test_payment.py \
+  --provider openai-compatible \
+  --base-url https://dashscope-intl.aliyuncs.com/compatible-mode/v1 \
+  --model qwen-plus
 ```
+
+> **Prompt size vs. free tiers.** The system prompt carries the full catalog
+> (`llm.md` + `reference.md`), ~33k tokens. Providers with a small per-minute
+> token cap on their free tier (e.g. Groq's 12k TPM) reject the request with
+> HTTP 413/429. Use a provider whose free or paid tier allows a ~35k-token
+> request (Ollama locally, or a large-context model on OpenRouter/NVIDIA/etc.),
+> and raise `--max-tokens` if a reasoning model gets cut off mid-report.
 
 Set `--model` to the id your account actually exposes; the CLI passes the
 string through unchanged. Reasoning models work with `--json` as of 0.5.2:
@@ -753,7 +780,49 @@ fix catches the targeted mutant, not every possible bug; full mutmut
 integration and the deep semantic cases (10/11/12/18) and JS/TS/Robot fix
 paths are deferred to a later version.
 
-### 4. Host setup
+### 4. `generate` - author a test from a spec (Mode B)
+
+```
+falsegreen-skill generate <spec-file> [--lang <language>] [options]
+```
+
+Renders a language-neutral test-spec into a real test, then runs `analyze`
+(Mode A) on the result, so the generated test cannot be false-green by
+construction. The spec is a [`schema/test-spec.json`](schema/test-spec.json)
+file (YAML or JSON); see [`examples/authoring/`](examples/authoring/) for one
+spec rendered into all four stacks.
+
+**generate flags** (in addition to the provider flags above):
+
+| Flag | Meaning |
+|---|---|
+| `--lang <language>` | Target stack: `python` (default), `typescript`, `javascript`, `robot`. One language per run |
+
+```bash
+# render the example spec to a Python test and self-check it
+falsegreen-skill generate examples/authoring/apply-discount.spec.yaml --lang python
+
+# same spec, TypeScript; the spec is the single source, re-run per stack
+falsegreen-skill generate examples/authoring/apply-discount.spec.yaml --lang typescript
+
+# machine-readable: { language, test, self_check, self_check_passed }
+falsegreen-skill generate my-spec.yaml --lang python --json
+```
+
+**The oracle is mandatory.** A spec with no `oracle.expected` is refused before
+any API call - a test generated from the code's current output only freezes the
+bug (a characterization test, false-green by construction). The oracle's *value*
+is not checked; that is your responsibility. What the command proves is narrower:
+the generated test trips no HIGH false-green finding when Mode A reviews it.
+
+**The self-check is bounded.** After generating, the CLI runs Mode A on the test
+once, and if it trips a HIGH finding, revises once and re-checks. If the model
+cannot produce a valid Mode A report (common on small models), the self-check is
+reported as `UNVERIFIED` and the generated test is still printed - it degrades,
+it does not fail. Exit code is 1 only when the self-check confirms a surviving
+false-green.
+
+### 5. Host setup
 
 Each host enables the same J1-J6 protocol; the wiring differs. Steps below come
 straight from the manifests (`.claude-plugin/plugin.json`,

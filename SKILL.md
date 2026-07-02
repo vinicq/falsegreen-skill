@@ -336,9 +336,13 @@ user asks to **write or create tests** instead, switch to **authoring mode**
 (Mode B). The catalog becomes a generation guard: a test you write must pass the
 same J1-J6 it would be judged by, so it cannot be false-green by construction.
 
-Mode B runs in an editor host (Claude Code, Cursor, Gemini, Codex). It has **no
-CLI surface**: `bin/falsegreen-llm.js` covers `analyze` and `fix` only. Say so if
-a user asks to generate tests from the CLI.
+Mode B runs two ways. In an editor host (Claude Code, Cursor, Gemini, Codex) it
+elicits the missing answers interactively (Steps A0-A1) and can render every
+requested language in one pass. On the CLI, `falsegreen-skill generate <spec-file>
+--lang <language>` renders a written test-spec - the oracle already supplied in the
+file - into one language and self-checks it; it does not elicit, so a spec with no
+oracle is refused rather than guessed. Use the host path when the oracle still has
+to be discovered; use the CLI when it is already written down.
 
 ## Step A0: Architect/QA gate (decide before you ask)
 

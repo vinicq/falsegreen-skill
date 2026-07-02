@@ -25,3 +25,13 @@ check closes the loop: authoring runs the analysis judgments on its own output, 
 produce a test that Mode A would flag. The cost is that authoring is not zero-prompt: it must ask
 for the oracle, because without one it can only freeze current behavior, which is the failure it
 exists to avoid.
+
+## CLI surface (added after the decision)
+
+Mode B first shipped host-only, because the elicitation (level, language, oracle, doubles) is a
+conversation. The CLI now exposes the non-interactive slice: `falsegreen-skill generate <spec-file>
+--lang <language>` takes a `schema/test-spec.json` file - where the oracle is already written down -
+renders it into one stack, and runs the Mode A self-check on the result (bounded to one revision so
+it stays a command, not an agent loop). The interactive elicitation stays host-only; the CLI refuses
+a spec with no oracle rather than guessing one. This keeps the guarantee (no generation from current
+output) while making the deterministic render+self-check step scriptable and CI-friendly.
