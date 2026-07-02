@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-02
+
 ### Added
 - `generate` CLI command: authoring mode (Mode B) on the CLI. It renders a language-neutral
   test-spec (`schema/test-spec.json`) into one stack with `--lang` (`python`, `typescript`,
