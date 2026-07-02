@@ -159,6 +159,13 @@ The companion static scanner for these languages is
 where the smell is the same concept and adds JS-specific codes. Apply the catalog,
 then proceed to Step 3 for the semantic judgments no static pass can make.
 
+**Load `reference.md` first (mandatory for non-Python).** The table below is a
+summary. The full JS-series, the Robot R-codes, the PL config-audit codes, and
+the S-series semantic codes are defined only in `reference.md`. Read the matching
+language section in full before judging any TypeScript, JavaScript, or Robot
+Framework test - do not rely on this summary table alone. For Python, Step 2
+above is complete on its own.
+
 | Family | Codes | What to look for |
 |---|---|---|
 | A - never checks | C2, C2b, C21, CC, JS2, JS4, JS6, JS9, JS11 | empty test, no assertion, every assertion conditional, commented-out assertion, `expect()` without a matcher, skipped (`it.skip`/`xit`), empty `describe`, dead literal branch, swallowed `try/catch` |
@@ -171,6 +178,16 @@ then proceed to Step 3 for the semantic judgments no static pass can make.
 If the user has run `falsegreen-js <file>` and provides its JSON output, use that as
 the structural pass and proceed to Step 3 for findings that need semantic review.
 Full TS/JS pattern detail and look-alikes: see `reference.md`.
+
+### Step 2c: Apply the Robot Framework and secondary-language catalogs
+
+For Robot Framework, Gherkin/BDD, and Tavern there is no summary table here: the
+full catalog (the Robot R-codes and the shared C-codes, plus the Gherkin/Tavern
+secondary passes) lives only in `reference.md`. Load it and apply the matching
+language section before Step 3. The companion Robot scanner is
+[robotframework-falsegreen](https://github.com/vinicq/robotframework-falsegreen);
+the skill mirrors its codes as a superset. If the user has run it and provides
+output, use that as the structural pass, then proceed to Step 3.
 
 ### Step 3: Classify test intent
 

@@ -12,7 +12,15 @@ root. Read these files before judging any test:
    It defines Steps 0-7 and the six
    judgments J1-J6.
 2. `reference.md` at the plugin root: the per-language pattern catalog with
-   look-alike exemptions. Consult it before flagging anything as HIGH.
+   look-alike exemptions.
+
+**Mandatory for any non-Python file (JavaScript, TypeScript, Robot Framework,
+Gherkin, Tavern): load `reference.md` in full before you judge.** The tables in
+the root `SKILL.md` carry the complete catalog only for Python; for every other
+language they are a summary, and the full emitted code set (all JS-series codes,
+the Robot R-codes, the PL config-audit codes, and the S-series semantic codes)
+lives only in `reference.md`. Skipping this step silently under-detects
+non-Python tests. For Python the `SKILL.md` catalog is complete on its own.
 
 ## Protocol in one paragraph
 
