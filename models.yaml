@@ -23,9 +23,9 @@ tiers:
     minimum: "7B+ instruction model"
     rationale: "Pattern matching against well-defined structural signatures. Small models handle this reliably."
     models:
-      anthropic: "claude-haiku-4-5-20251001"
-      openai: "gpt-4o-mini"
-      google: "gemini-2.0-flash"
+      anthropic: "claude-haiku-4-5"
+      openai: "gpt-5-mini"
+      google: "gemini-2.5-flash-lite"
       groq: "llama-3.3-70b-versatile"
       local: "qwen2.5-coder:7b"
 
@@ -37,9 +37,9 @@ tiers:
     minimum: "Frontier model or 70B+ local"
     rationale: "Requires reasoning about test intent vs. what is tested. Smaller models produce high false-positive rates on these cases."
     models:
-      anthropic: "claude-sonnet-4-6"
-      openai: "gpt-4o"
-      google: "gemini-2.5-pro"
+      anthropic: "claude-sonnet-5"
+      openai: "gpt-5"
+      google: "gemini-2.5-flash"
       groq: "llama-3.3-70b-versatile"
       local: "qwen2.5-coder:32b"
 
@@ -53,6 +53,6 @@ tiers:
     rationale: "The adversarial refuter pass collapses on smaller models. Use the two-pass procedure documented in providers.md."
     models:
       anthropic: "claude-opus-4-8"
-      openai: "o3"
-      google: "gemini-2.5-pro"
+      openai: "gpt-5"           # use the reasoning-tier default your account exposes
+      google: "gemini-2.5-pro"  # still active; scheduled sunset 2026-10-16, migrate before then
       local: "not recommended"

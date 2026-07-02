@@ -10,8 +10,8 @@ SKILL.md protocol and J1-J6 judgment framework.
 
 | Model | Use case |
 |---|---|
-| `claude-sonnet-4-6` | Default. Best balance of precision and speed for most suites. |
-| `claude-haiku-4-5-20251001` | Fast and cheap. Good for interactive review or large batches where a quick first pass is acceptable. |
+| `claude-sonnet-5` | Default. Best balance of precision and speed for most suites. |
+| `claude-haiku-4-5` | Fast and cheap. Good for interactive review or large batches where a quick first pass is acceptable. |
 | `claude-opus-4-8` | Deep analysis. Use for complex case 18 investigations, contested findings, or paper-facing results. |
 
 ---
@@ -178,7 +178,7 @@ skill_protocol = pathlib.Path("SKILL.md").read_text(encoding="utf-8")
 test_code = pathlib.Path("tests/test_payments.py").read_text(encoding="utf-8")
 
 response = client.messages.create(
-    model="claude-sonnet-4-6",
+    model="claude-sonnet-5",
     max_tokens=4096,
     system=skill_protocol,
     messages=[
@@ -206,7 +206,7 @@ Test file:
 """
 
 response = client.messages.create(
-    model="claude-sonnet-4-6",
+    model="claude-sonnet-5",
     max_tokens=4096,
     system=skill_protocol,
     messages=[
@@ -226,10 +226,8 @@ thinking when this case is suspected or when running deep analysis with
 response = client.messages.create(
     model="claude-opus-4-8",
     max_tokens=16000,
-    thinking={
-        "type": "enabled",
-        "budget_tokens": 10000
-    },
+    thinking={"type": "adaptive"},
+    output_config={"effort": "high"},
     system=skill_protocol,
     messages=[
         {
@@ -244,9 +242,11 @@ response = client.messages.create(
 )
 ```
 
-Extended thinking is available on `claude-opus-4-8` and `claude-sonnet-4-6`.
-Set `budget_tokens` between 5000 and 16000 depending on how many tests need
-deep verification.
+On `claude-opus-4-8` (and the current Sonnet/Opus tiers), thinking is adaptive:
+the model decides how much to think, and `output_config={"effort": ...}`
+(`low`/`medium`/`high`/`max`) tunes the depth. The older
+`thinking={"type": "enabled", "budget_tokens": N}` form is rejected with an
+HTTP 400 on these models - use adaptive thinking plus an effort hint instead.
 
 ### Batch analysis across a directory
 
@@ -263,7 +263,7 @@ results = {}
 for test_file in sorted(test_dir.rglob("test_*.py")):
     test_code = test_file.read_text(encoding="utf-8")
     response = client.messages.create(
-        model="claude-sonnet-4-6",
+        model="claude-sonnet-5",
         max_tokens=4096,
         system=skill_protocol,
         messages=[{"role": "user", "content": test_code}]
@@ -282,7 +282,7 @@ cache:
 
 ```python
 response = client.messages.create(
-    model="claude-sonnet-4-6",
+    model="claude-sonnet-5",
     max_tokens=4096,
     system=[
         {

@@ -11,7 +11,7 @@ playground to the Python API to enterprise Vertex AI.
 |---|---|
 | `gemini-2.5-pro` | Default. Best accuracy across J1-J6, especially case 18. |
 | `gemini-2.5-flash` | Balanced. Good for interactive review where you need results quickly. |
-| `gemini-2.0-flash` | Fast/cheap batch. Use for large dataset passes; validate findings against the benchmark before trusting at scale. |
+| `gemini-2.5-flash-lite` | Fast/cheap batch. Use for large dataset passes; validate findings against the benchmark before trusting at scale. |
 
 ---
 
@@ -68,7 +68,7 @@ in the standard CASE / SUMMARY format.
 ```
 
 **Model comparison.** AI Studio has a "Compare models" feature. Use it to run
-the same test through `gemini-2.5-pro` and `gemini-2.0-flash` side by side and
+the same test through `gemini-2.5-pro` and `gemini-2.5-flash` side by side and
 check for precision differences on borderline cases.
 
 ---
@@ -324,7 +324,7 @@ For thinking mode on Vertex AI, pass `generation_config` with
 | Single file analysis | `google-genai` SDK, `gemini-2.5-pro` |
 | Full test suite (large project) | `google-genai` SDK, long context, all files in one request |
 | Case 18 adversarial verify | `gemini-2.5-pro` with `thinking_budget=8192` |
-| Batch scoring / CI | `gemini-2.0-flash`, validate against a public benchmark first |
+| Batch scoring / CI | `gemini-2.5-flash-lite`, validate against a public benchmark first |
 | Structured output for tooling | `response_mime_type="application/json"` with `response_schema` |
 | Enterprise / GCP-native | Vertex AI client, same model names |
 
