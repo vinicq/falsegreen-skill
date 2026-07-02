@@ -31,7 +31,7 @@ contexts that intentionally duplicate protocol details.
 Each host that supports plugin discovery requires one or more manifest files.
 This section documents their structure and field semantics.
 
-### `.claude-plugin/plugin.json` — Claude Code plugin manifest
+### `.claude-plugin/plugin.json`: Claude Code plugin manifest
 
 Official schema: `https://json.schemastore.org/claude-code-plugin-manifest.json`
 
@@ -57,7 +57,7 @@ Skills are declared by placing them under `skills/<name>/SKILL.md` in the
 plugin root. Claude Code discovers them from that directory automatically;
 no explicit `skills` field is needed in `plugin.json`.
 
-### `.claude-plugin/marketplace.json` — Claude Code marketplace catalog
+### `.claude-plugin/marketplace.json`: Claude Code marketplace catalog
 
 Consumed by `codex plugin marketplace add <owner>/<plugin>` and the Claude
 Code plugin marketplace UI.
@@ -79,7 +79,7 @@ Code plugin marketplace UI.
 }
 ```
 
-### `.codex-plugin/plugin.json` — Codex plugin manifest
+### `.codex-plugin/plugin.json`: Codex plugin manifest
 
 No official public schema exists for this file. The format below reflects
 the structure consumed by the Codex CLI in practice, derived from working
@@ -109,7 +109,7 @@ plugin examples in the community.
 The `skills` field is required: it tells the Codex CLI where to look for
 `SKILL.md` entry points. Without it, skills in the plugin are not discoverable.
 
-### `.agents/plugins/marketplace.json` — Codex marketplace catalog
+### `.agents/plugins/marketplace.json`: Codex marketplace catalog
 
 No official public schema. This catalog format is recognized by the Codex
 CLI's plugin marketplace resolution when the plugin is installed via

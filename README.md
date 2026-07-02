@@ -66,10 +66,12 @@ the reason, and a fix hint. Three steps to try it:
    (J1-J6), why the test cannot fail, and how to fix it. See
    [Quick example](#quick-example).
 
-The full catalog, the judgments, and the per-language reference live in the
+For a step-by-step walkthrough of all three modes with runnable examples and
+flow diagrams, read the [user guide](docs/user-guide.md). The full catalog, the
+judgments, and the per-language reference live in the
 [docs site](https://vinicq.github.io/falsegreen-docs/) and in
-[reference.md](reference.md). For a visual architecture overview - host and
-language routing plus the Mode A/B/C flow diagrams - see
+[reference.md](reference.md). For a visual architecture overview, host and
+language routing plus the Mode A/B/C flow diagrams, see
 [docs/architecture.md](docs/architecture.md).
 
 ---
@@ -95,9 +97,9 @@ taxonomy of false-positive test patterns collected in
 [CREDITS.md](CREDITS.md).
 
 The core insight: a test is useful if and only if there exists some incorrect
-implementation that would cause it to fail. If no such implementation exists —
+implementation that would cause it to fail. If no such implementation exists,
 because the assertion is unreachable, tautological, or verifies the mock
-instead of the code - the test is structurally green regardless of whether the
+instead of the code, the test is structurally green regardless of whether the
 production code is correct.
 
 ---
@@ -147,7 +149,7 @@ Full protocol: [SKILL.md](SKILL.md).
 |---|---|---|
 | C1 | Assert inside `if`/`for` that may not run | `if items: assert items[0].valid` when `items` can be `[]` |
 | C2 | No assertion at all | test body contains only setup calls |
-| C2b | Calls SUT but discards result | `result = process(x)` — result never asserted |
+| C2b | Calls SUT but discards result | `result = process(x)`, result never asserted |
 | C3 | Assert inside `try` whose `except` swallows it | `except Exception: pass` catches `AssertionError` |
 | C4 | Test function nested inside another function | pytest does not collect inner defs |
 | C4b | Test class with `__init__` | pytest skips classes that have `__init__` |
@@ -236,9 +238,9 @@ severity = { D1 = "info", D3 = "info", D4 = "info", D5 = "info", D6 = "info", M2
 
 | Code | Pattern | Why it matters |
 |---|---|---|
-| D1 | Assertion Roulette: 2+ asserts without messages | CI output says only the line number — hard to triage |
+| D1 | Assertion Roulette: 2+ asserts without messages | CI output says only the line number, hard to triage |
 | D3 | Duplicate Assert: exact same assertion written twice | second assertion adds nothing |
-| D4 | Unnamed Parametrize: 3+ cases, no `ids=` | CI shows `test[0]`, `test[1]` — unreadable failure reports |
+| D4 | Unnamed Parametrize: 3+ cases, no `ids=` | CI shows `test[0]`, `test[1]`, unreadable failure reports |
 | D5 | Inline Setup Excess: 5+ setup statements before first assert | test should be split or setup moved to a fixture |
 | D6 | Debug Print: `print()` or `pprint()` in test body | suppressed by default, often a forgotten debug statement |
 | M2 | Long Test Method: test body over 50 lines | trying to verify too many concerns at once |
@@ -310,11 +312,11 @@ mutation testing pass.
 |---|---|
 | Claude Code | `/plugin marketplace add vinicq/falsegreen-skill` then `/plugin install falsegreen-skill@falsegreen` |
 | Claude.ai / Anthropic API Skills | `npm run build:targets`, then package `dist/claude-agent-skill/` as the standalone skill |
-| OpenAI Codex CLI | `codex plugin marketplace add vinicq/falsegreen-skill` — or clone the repo: `AGENTS.md` is auto-loaded |
+| OpenAI Codex CLI | `codex plugin marketplace add vinicq/falsegreen-skill`, or clone the repo: `AGENTS.md` is auto-loaded |
 | Gemini CLI | `gemini extensions install https://github.com/vinicq/falsegreen-skill` |
 | Gemini Agent Skill | workspace skill at `.gemini/skills/falsegreen-skill/SKILL.md`, or `npm run build:targets` for `dist/gemini-skill/` |
 | Cursor | Copy contents of `contexts/cursor.md` to `.cursor/rules/falsegreen-skill.mdc` |
-| CLI | `npx falsegreen-skill analyze tests/test_example.py` — see [docs/cli.md](docs/cli.md) |
+| CLI | `npx falsegreen-skill analyze tests/test_example.py`, see [docs/cli.md](docs/cli.md) |
 | API | Use the defined provider guides in `contexts/claude.md`, `contexts/codex.md`, and `contexts/gemini.md` |
 
 ### Skill or static scanner?
@@ -377,7 +379,7 @@ npx falsegreen-skill analyze tests/test_orders.py
 # multiple files
 npx falsegreen-skill analyze tests/test_orders.py tests/test_payments.py
 
-# JSON report for CI — exits 2 if any HIGH finding is present
+# JSON report for CI, exits 2 if any HIGH finding is present
 npx falsegreen-skill analyze tests/test_orders.py --json --fail-on-high
 
 # deep analysis with a stronger model
@@ -563,7 +565,7 @@ falsegreen-skill/
     claude.md           Claude Code CLI, Claude.ai, Anthropic API
     codex.md            ChatGPT, OpenAI API, structured output, batch
     gemini.md           Google AI Studio, Gemini API, long context
-    cursor.md           Cursor IDE — full .cursor/rules/ MDC template
+    cursor.md           Cursor IDE, full .cursor/rules/ MDC template
   examples/
     python/
       family_a_never_checks.py       C1, C2, C2b, C3, C4, C4b, C20, C21, CC
