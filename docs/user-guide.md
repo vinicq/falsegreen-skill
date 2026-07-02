@@ -27,8 +27,32 @@ review before you trust it.
 
 ## Before you start
 
-You need Node 18 or newer and an API key for one provider. The CLI ships with zero
-npm dependencies, so there is nothing to build.
+There are two ways to run falsegreen, and which one fits depends on how you already work.
+
+### A) Inside your agent, on your login (no API key)
+
+If you already use Claude Code, Codex CLI, Gemini CLI, or Cursor - often on a Pro/Plus/Advanced
+plan - install falsegreen there and it runs on the host's own model, using your logged-in session.
+No API key, nothing to export, no per-token cost beyond your existing plan. This is what most
+people on those tools want.
+
+Enable it once, per host:
+
+- **Claude Code:** `/plugin marketplace add vinicq/falsegreen-skill` then
+  `/plugin install falsegreen-skill@falsegreen`
+- **Codex CLI:** `codex plugin marketplace add vinicq/falsegreen-skill` (or clone the repo - the
+  root `AGENTS.md` auto-loads)
+- **Gemini CLI:** `gemini extensions install https://github.com/vinicq/falsegreen-skill`
+- **Cursor:** copy `contexts/cursor.md` into `.cursor/rules/falsegreen-skill.mdc`
+
+Then attach a test and ask for analysis, or ask it to write a test for your feature. The same
+analyze / generate / fix flows in this guide work; you talk to your agent instead of running a
+command. Per-host detail is in [invocation-methods.md](invocation-methods.md).
+
+### B) Standalone CLI, with your own API key (pay-per-token)
+
+For CI, scripts, or when you are not inside a host. Needs Node 18 or newer and a provider API key.
+The CLI ships with zero npm dependencies, so there is nothing to build.
 
 ```bash
 # run it once without installing
@@ -50,6 +74,8 @@ full table of base URLs and models lives in [cli.md](cli.md#openai-compatible-pr
 One caveat that trips people up: the protocol prompt is about 33k tokens, so a
 provider whose free tier caps tokens per minute will reject the request. If you hit
 an HTTP 413 or 429, that is why. Run Ollama locally or use a host with a larger tier.
+Path A uses whatever model your agent is already logged into, so the provider keys here do not
+apply to it.
 
 ## Mode A: review a test you already have
 
@@ -265,6 +291,9 @@ The honest limit: the gate proves the patch catches that one mutant, not every b
 that could ever exist. It is a floor, not a guarantee.
 
 ## Choosing a provider
+
+This section is about path B, the standalone CLI. Path A uses whatever model your agent is logged
+into, so none of these keys apply there.
 
 The three built-in providers each read their own key and need no `--base-url`. Every
 command (`analyze`, `generate`, `fix`) takes the same flags, so switching provider is
