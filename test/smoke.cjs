@@ -213,8 +213,16 @@ try {
 
   const spec = path.join(ROOT, 'examples/authoring/apply-discount.spec.yaml');
   const badLang = runFail(['generate', spec, '--lang', 'klingon']);
-  badLang.code === 1 && /unknown --lang/.test(badLang.stderr)
+  badLang.code === 1 && /unknown language/.test(badLang.stderr)
     ? ok('generate rejects an unknown --lang (exit 1)') : bad(`generate bad-lang: ${badLang.code} ${badLang.stderr}`);
+
+  // tsx/jsx are valid langs (the whole JS/TS family): they pass the lang guard and
+  // only stop later at the missing API key, never at "unknown language".
+  for (const L of ['tsx', 'jsx']) {
+    const r = runFail(['generate', spec, '--lang', L]);
+    !/unknown language/.test(r.stderr)
+      ? ok(`generate accepts --lang ${L} (JS/TS family)`) : bad(`generate rejected --lang ${L}: ${r.stderr}`);
+  }
 
   const noOracle = path.join(os.tmpdir(), 'fg-smoke-no-oracle.yaml');
   fs.writeFileSync(noOracle, 'level: unit\nunit: foo\nscenario: bar\nact: foo()\n');
@@ -241,10 +249,74 @@ function deepEq(actual, expected, label) {
   JSON.stringify(actual) === JSON.stringify(expected) ? ok(label) : bad(`${label} (got ${JSON.stringify(actual)})`);
 }
 
-// Provider tests are async (stubbed fetch); await them before the final tally so
-// their pass/fail counts and never race the exit.
+// 13. The generate render -> self-check -> revise loop and its exit-code contract,
+// driven offline with a stubbed fetch (same pattern as #111.3). This covers the
+// three verdict branches the CLI's CI contract depends on: PASSED=0, FAILED=1,
+// UNVERIFIED=3 (fail-closed). No live API.
+async function generateLoopTests() {
+  const mod = require(CLI);
+  const spec = path.join(ROOT, 'examples/authoring/apply-discount.spec.yaml');
+  const savedFetch = globalThis.fetch;
+  const savedWrite = process.stdout.write.bind(process.stdout);
+  const savedErr = process.stderr.write.bind(process.stderr);
+  const savedKey = process.env.ANTHROPIC_API_KEY;
+  process.env.ANTHROPIC_API_KEY = 'test';
+
+  const anthropic = (text) => ({ stop_reason: 'end_turn', content: [{ type: 'text', text }] });
+  const CLEAN = JSON.stringify({ findings: [], summary: { tests_reviewed: 1, high: 0, low: 0, clean: 1 }, language: 'Python', framework: 'pytest' });
+  const HIGH = JSON.stringify({
+    findings: [{ case: 'C5', judgment: 'J2', confidence: 'HIGH', language: 'Python', level: 'unit',
+      intent: 'behavior', test: { name: 't' }, finding: 'tautology', evidence: ['assert x == x'], fix_hint: 'use an oracle' }],
+    summary: { tests_reviewed: 1, high: 1, low: 0, clean: 0 }, language: 'Python', framework: 'pytest',
+  });
+  const TEST_BLOCK = '```python\ndef test_x():\n    assert apply_discount(200, 0.15) == 170\n```';
+
+  // Drive runGenerate with a queued fetch (each call shifts one response), capturing
+  // the exit code while swallowing the (large) generated-test output.
+  async function run(responses, label) {
+    const queue = responses.slice();
+    globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => queue.shift(), text: async () => '' });
+    process.stdout.write = () => true;
+    process.stderr.write = () => true;
+    process.exitCode = 0;
+    let err = null;
+    try {
+      await mod.runGenerate({ command: 'generate', files: [spec], provider: 'anthropic', model: null,
+        baseUrl: null, json: false, maxTokens: 512, temperature: 0.2, lang: 'python' });
+    } catch (e) { err = e; }
+    const code = process.exitCode;
+    process.stdout.write = savedWrite; process.stderr.write = savedErr;
+    process.exitCode = 0;
+    if (err) bad(`${label}: threw ${err.message}`);
+    return code;
+  }
+
+  // PASSED: generate -> clean self-check -> exit 0.
+  (await run([anthropic(TEST_BLOCK), anthropic(CLEAN)], 'PASSED')) === 0
+    ? ok('generate PASSED (clean self-check) -> exit 0') : bad('generate PASSED did not exit 0');
+
+  // FAILED: generate -> HIGH -> revise -> HIGH again -> exit 1 (surviving false-green).
+  (await run([anthropic(TEST_BLOCK), anthropic(HIGH), anthropic(TEST_BLOCK), anthropic(HIGH)], 'FAILED')) === 1
+    ? ok('generate FAILED (surviving false-green) -> exit 1') : bad('generate FAILED did not exit 1');
+
+  // FAILED-then-clean: HIGH first, revision clears -> exit 0 (revision loop works).
+  (await run([anthropic(TEST_BLOCK), anthropic(HIGH), anthropic(TEST_BLOCK), anthropic(CLEAN)], 'REVISED')) === 0
+    ? ok('generate revised-to-clean -> exit 0 (revision loop)') : bad('generate revision-to-clean did not exit 0');
+
+  // UNVERIFIED: self-check returns unparseable JSON -> fail-closed exit 3.
+  (await run([anthropic(TEST_BLOCK), anthropic('not a json report at all')], 'UNVERIFIED')) === 3
+    ? ok('generate UNVERIFIED (unparseable self-check) -> exit 3 (fail-closed)') : bad('generate UNVERIFIED did not exit 3');
+
+  globalThis.fetch = savedFetch;
+  if (savedKey === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = savedKey;
+  process.exitCode = 0;
+}
+
+// Async suites (stubbed fetch); run sequentially so they never race the shared
+// fetch stub, and tally before exit.
 providerParsingTests()
-  .catch((e) => bad('#111.3/4 provider tests threw: ' + e.message))
+  .then(generateLoopTests)
+  .catch((e) => bad('async smoke suites threw: ' + e.message))
   .finally(() => {
     if (failures) { process.stdout.write(`\n${failures} smoke failure(s)\n`); process.exit(1); }
     process.stdout.write('\nsmoke ok\n');

@@ -13,10 +13,12 @@ that does not guard against its own catalog would emit exactly the tests the cat
 
 The skill has two modes. Mode A (analysis) judges a given test. Mode B (authoring) writes tests, and
 the catalog becomes a generation guard: a test the skill writes must pass the same J1-J6 it would be
-judged by, so it cannot be false-green by construction. Mode B refuses to generate from current
-output; it asks the user for what only they can supply (the pyramid level, the language and
-framework, the behavior and its independent oracle, the doubled boundaries) and then self-checks the
-draft against the judgments before emitting it.
+judged by, so it does not ship a false-green *shape*. The guard is on the shape, not the oracle's
+truth: it refuses to generate from the code's current output, but it cannot tell a hand-written wrong
+oracle from a right one (no static read recovers the expected value's provenance). Mode B asks the
+user for what only they can supply (the pyramid level, the language and framework, the behavior and
+its independent oracle, the doubled boundaries) and then self-checks the draft against the judgments
+before emitting it.
 
 ## Consequences
 

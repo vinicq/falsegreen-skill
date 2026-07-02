@@ -789,16 +789,19 @@ falsegreen-skill generate <spec-file> [--lang <language>] [options]
 ```
 
 Renders a language-neutral test-spec into a real test, then runs `analyze`
-(Mode A) on the result, so the generated test cannot be false-green by
-construction. The spec is a [`schema/test-spec.json`](schema/test-spec.json)
-file (YAML or JSON); see [`examples/authoring/`](examples/authoring/) for one
-spec rendered into all four stacks.
+(Mode A) on the result, so a false-green test cannot pass the self-check
+undetected. It catches false-green *shapes*; it does not, and cannot on its own,
+tell a hand-written wrong oracle from a right one (see the honest limit below).
+The spec is a [`schema/test-spec.json`](schema/test-spec.json) file (YAML or
+JSON); see [`examples/authoring/`](examples/authoring/) for one spec rendered
+into all four stacks. If `--lang` is omitted, the spec's first declared
+`languages` entry is used, else Python.
 
 **generate flags** (in addition to the provider flags above):
 
 | Flag | Meaning |
 |---|---|
-| `--lang <language>` | Target stack: `python` (default), `typescript`, `javascript`, `robot`. One language per run |
+| `--lang <language>` | Target stack: `python`, `typescript`, `javascript`, `tsx`, `jsx`, `robot`. `tsx`/`jsx` cover the React side of the JS/TS family (same JS* catalog). One language per run |
 
 ```bash
 # render the example spec to a Python test and self-check it
@@ -807,22 +810,30 @@ falsegreen-skill generate examples/authoring/apply-discount.spec.yaml --lang pyt
 # same spec, TypeScript; the spec is the single source, re-run per stack
 falsegreen-skill generate examples/authoring/apply-discount.spec.yaml --lang typescript
 
-# machine-readable: { language, test, self_check, self_check_passed }
+# machine-readable: { language, test, self_check, self_check_passed, self_check_error }
 falsegreen-skill generate my-spec.yaml --lang python --json
 ```
 
-**The oracle is mandatory.** A spec with no `oracle.expected` is refused before
-any API call - a test generated from the code's current output only freezes the
-bug (a characterization test, false-green by construction). The oracle's *value*
-is not checked; that is your responsibility. What the command proves is narrower:
-the generated test trips no HIGH false-green finding when Mode A reviews it.
+**The oracle is mandatory.** A spec with no `oracle.expected` key is refused
+before any API call: a test generated from the code's current output only freezes
+the bug (a characterization test). The oracle's *value* is not checked; that is
+your responsibility. What the command proves is narrower: the generated test
+trips no HIGH false-green finding when Mode A reviews it.
 
-**The self-check is bounded.** After generating, the CLI runs Mode A on the test
-once, and if it trips a HIGH finding, revises once and re-checks. If the model
-cannot produce a valid Mode A report (common on small models), the self-check is
-reported as `UNVERIFIED` and the generated test is still printed - it degrades,
-it does not fail. Exit code is 1 only when the self-check confirms a surviving
-false-green.
+**The self-check is bounded and fails closed.** After generating, the CLI runs
+Mode A on the test once, and if it trips a HIGH false-green finding, revises once
+and re-checks. The exit code is the CI contract:
+
+| Exit | Meaning |
+|---|---|
+| 0 | PASSED: the self-check ran and found no HIGH false-green |
+| 1 | FAILED: a surviving false-green was confirmed (also used for a bad spec or an API error) |
+| 3 | UNVERIFIED: the self-check could not run (small model, provider error). The test is still printed, but it is **not** accepted, so a pipeline never treats an unchecked test as clean |
+
+The self-check is a same-model static review, not an execution: it does not run
+the test, confirm it compiles or imports, or verify the oracle value. A
+characterization test with a code-derived expected can still pass. Review the
+output against your spec.
 
 ### 5. Host setup
 

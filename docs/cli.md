@@ -159,14 +159,15 @@ falsegreen-skill generate <spec-file> [--lang <language>] [options]
 ```
 
 Renders a language-neutral test-spec into a real test, then runs `analyze` (Mode A)
-on the result so the generated test cannot be false-green by construction. The spec
-is a [`schema/test-spec.json`](../schema/test-spec.json) file (YAML or JSON);
+on the result so a false-green test cannot pass the self-check undetected. It
+catches false-green *shapes*, not a wrong-but-well-formed oracle. The spec is a
+[`schema/test-spec.json`](../schema/test-spec.json) file (YAML or JSON);
 [`examples/authoring/apply-discount.spec.yaml`](../examples/authoring/) is one spec
 rendered into all four stacks.
 
 | Flag | Meaning | Default |
 |---|---|---|
-| `--lang <language>` | `python`, `typescript`, `javascript`, or `robot`. One language per run - the spec is the single source, re-run to render another stack | `python` |
+| `--lang <language>` | `python`, `typescript`, `javascript`, `tsx`, `jsx`, or `robot`. `tsx`/`jsx` cover the React side of the JS/TS family (same shared JS* catalog `falsegreen-js` uses over `.js`/`.ts`/`.tsx`/`.jsx`). One language per run - the spec is the single source, re-run to render another stack | spec's first `languages` entry, else `python` |
 
 ```bash
 # render the example spec to a Python test and self-check it
@@ -179,19 +180,29 @@ falsegreen-skill generate examples/authoring/apply-discount.spec.yaml --lang typ
 falsegreen-skill generate my-spec.yaml --lang python --json
 ```
 
-**Offline guards (no API call).** The command refuses early - exit 1 - when the
-`--lang` is unknown, the spec file is missing, or the spec carries no `oracle`
-with an `expected`. The last is the point: a test generated from the code's current
-output only freezes the bug (a characterization test). The oracle's *value* is your
-responsibility; the CLI only checks it is present.
+**Offline guards (no API call).** The command refuses early, exit 1, when the
+language is unknown, the spec file is missing, or the spec carries no `oracle:` /
+`expected:` key. The last is the point: a test generated from the code's current
+output only freezes the bug (a characterization test). The guard anchors on the
+keys, so the words in a comment no longer pass; the oracle's *value* is your
+responsibility.
 
-**Self-check.** After generating, the CLI runs Mode A on the test. If it trips a
-HIGH false-green finding, the CLI revises once and re-checks (bounded to one
-revision - it is a command, not an agent loop). If the model cannot return a valid
-Mode A report (common on small models), the self-check is reported `UNVERIFIED` and
-the test is still printed. Exit code is 1 only when a surviving false-green is
-confirmed. `generate` needs a model that both fits the ~33k-token prompt and can
-emit the JSON report - see the provider table below.
+**Self-check and exit codes.** After generating, the CLI runs Mode A on the test.
+If it trips a HIGH false-green finding, the CLI revises once and re-checks (bounded
+to one revision - it is a command, not an agent loop). The exit code is the CI
+contract, and it fails closed:
+
+| Exit | State | Meaning |
+|---|---|---|
+| 0 | PASSED | self-check ran, no HIGH false-green |
+| 1 | FAILED | a surviving false-green was confirmed (also: bad spec / API error via the offline guards above) |
+| 3 | UNVERIFIED | the self-check could not run; the test is printed to stdout, the banner to stderr, and it is **not** accepted |
+
+Gate CI on the exit code, or on `self_check_passed` in `--json`. The self-check is
+a same-model static review, not an execution: it does not run the test, verify it
+compiles/imports, or confirm the oracle value. `generate` needs a model that both
+fits the ~33k-token prompt and can emit the JSON report - see the provider table
+below.
 
 ## OpenAI-compatible providers
 

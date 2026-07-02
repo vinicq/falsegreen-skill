@@ -84,8 +84,9 @@ are interactive/propose steps, not gates.
 
 ## Provider validation snapshot
 
-Live end-to-end runs of `generate` (Mode B: render + self-check) through the
-OpenAI-compatible path, to record what actually works today:
+Snapshot as of 2026-07-02; free-tier caps and model ids drift, so re-check before
+relying on a specific row. Live end-to-end runs of `generate` (Mode B: render +
+self-check) through the OpenAI-compatible path, to record what actually works:
 
 | Provider | Reached API | `generate` result |
 |---|---|---|
@@ -115,7 +116,7 @@ host that fits the prompt and loop:
 export FALSEGREEN_API_KEY=...     # a host from the table that fits 33k
 for repo in $(cat repos.txt); do
   git clone --depth 1 "$repo" _audit/$(basename "$repo")
-  find _audit/$(basename "$repo") -name 'test_*.py' -o -name '*.test.ts' | while read f; do
+  find _audit/$(basename "$repo") \( -name 'test_*.py' -o -name '*.test.ts' \) | while read f; do
     falsegreen-skill analyze "$f" --json \
       --provider openai-compatible \
       --base-url https://openrouter.ai/api/v1 \

@@ -149,12 +149,15 @@ stacks equivalent instead of drifting apart.
 
 After writing the test, the CLI runs Mode A on it. Three outcomes:
 
-- **PASSED** - the generated test tripped no HIGH false-green finding. Use it.
-- **FAILED** - the test still looks false-green; the CLI already revised once and
+- **PASSED (exit 0)** - the generated test tripped no HIGH false-green finding. Use it.
+- **FAILED (exit 1)** - the test still looks false-green; the CLI already revised once and
   it did not clear. Usually the spec's oracle is too weak. Tighten it and re-run.
-- **UNVERIFIED** - the model could not produce a valid review report (common on
-  small models). The test is still printed; you just do not get the safety check.
-  Try a stronger model for the self-check.
+- **UNVERIFIED (exit 3)** - the model could not produce a valid review report (common on
+  small models). The test is still printed, but it is not accepted, so a pipeline
+  never treats an unchecked test as clean. Try a stronger model for the self-check.
+
+The self-check is a same-model static review, not an execution: it does not run
+the test, confirm it compiles or imports, or verify the oracle value.
 
 ```mermaid
 flowchart TD
