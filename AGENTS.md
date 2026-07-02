@@ -69,8 +69,8 @@ Scan against all falsegreen pattern families in order:
 
 | Family | Codes | What to look for |
 |---|---|---|
-| A - never checks | C1, C2, C2b, C3, C4, C4b, C20, C21, C38, C39, C43, C45, CC | assertion unreachable, missing, swallowed, uncollected, name-shadowed, returned-not-asserted, mid-test skip, empty parametrize |
-| B - weak/always-true | C5, C6, C6b, C7, C8, C9, C11a, C13, C13b, C14, C16, C18, C25, C34, C42, C44 | tautology, truthiness-only, self-compare, broad exception, string repr, generator/lambda truthy, numeric tautology |
+| A - never checks | C1, C2, C2b, C2c, C3, C4, C4b, C20, C21, C38, C39, C43, C45, C49, C50, C51, C59, CC | assertion unreachable, missing, swallowed, uncollected, name-shadowed, returned-not-asserted, discarded-comparison statement, empty/multi-call raises-warns context, captured log/output never asserted, mid-test skip, empty parametrize |
+| B - weak/always-true | C5, C6, C6b, C6c, C7, C8, C8b, C9, C11a, C13, C13b, C14, C16, C18, C25, C34, C42, C44, C52, C55, C56, C57 | tautology, truthiness-only, self-compare, broad exception, string repr, generator/lambda truthy, numeric tautology, membership self-confirmation, mock-rooted compare, never-awaited coroutine, unconfigured Mock attribute |
 | C - checks own setup | C19, C28, C29 | pytest.raises wraps too much, binding unread, env mutation |
 | D - external state | C17, C23, C24, C27, C30, C31, C32, C35 | skip-on-failure, hard path, shared mutable, try/pass, flaky |
 | E - wrong thing | C33, C36, C37, C41 | metric not asserted, fail without reason, duplicate case, None-returning mutator |
@@ -78,8 +78,9 @@ Scan against all falsegreen pattern families in order:
 
 Report each structural finding before proceeding to Steps 3-6.
 
-For TypeScript / JavaScript (JS1-JS22) and Robot Framework (R-codes), apply their
-catalogs from `reference.md`, then proceed to Step 3.
+For TypeScript / JavaScript (shared C-codes plus JS1-JS31) and Robot Framework
+(R-codes plus reused C-codes), the summaries here are partial - load the matching
+`reference.md` section in full before judging, then proceed to Step 3.
 
 ### Step 3: Classify test intent
 
@@ -143,7 +144,7 @@ Never report case 18 based on pattern-matching alone.
 For each finding:
 
 ```
-CASE {number} ({J-code}) - {HIGH|LOW} - {language} - {intent}
+{code} ({J}) - {confidence: HIGH | LOW} - {language} - {level: unit|integration|e2e|fixture} - {intent: spec|char|regression|behavior|scaffold}
 
 Test: {function name, line range}
 Finding: {one sentence describing what is wrong}
@@ -151,6 +152,10 @@ Evidence: {the specific line(s) that triggered this}
 Oracle: {for case 18 only: cite the independent oracle}
 Fix hint: {one sentence suggestion}
 ```
+
+`{code}` is any catalog id: a semantic case (CASE-10/11/12/15/18), a structural
+C-code (C*), a JS/TS code (JS*), a Robot code (R*), or a semantic S-code (S*).
+`{J}` is the judgment that failed (J1-J6).
 
 Then a summary block:
 

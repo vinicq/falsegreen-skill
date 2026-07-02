@@ -28,13 +28,20 @@ bumps the version and the `CHANGELOG.md` together.
 
 ## Publishing a version
 
+The publish is automated by `.github/workflows/release.yml`, which builds the package and
+publishes it to npm via Trusted Publishing (OIDC) - no long-lived `NPM_TOKEN` in the repo,
+the same setup as the sibling scanners. It fires when a GitHub release is published (or
+manually via `workflow_dispatch` against an existing tag).
+
 1. Commit: `git add -A && git commit -m "release: X.Y.Z"`.
 2. Tag and push: `git tag -a vX.Y.Z -m "falsegreen-skill vX.Y.Z" && git push origin main --tags`.
-3. Publish: `npm publish`. Confirm it is live: <https://www.npmjs.com/package/falsegreen-skill>.
+3. Publish the GitHub release for `vX.Y.Z` (release-drafter drafts the notes). The workflow
+   runs on publish and pushes to npm. Confirm it is live:
+   <https://www.npmjs.com/package/falsegreen-skill>.
 
-There is no GitHub release workflow for this package yet. When one is added, the recommended
-setup is npm Trusted Publishing (OIDC), the same as the sibling scanners, so no long-lived
-`NPM_TOKEN` lives in the repo. Until then, publish from a trusted local environment.
+One-time setup before the first run: add `falsegreen-skill` as a Trusted Publisher on npm
+(owner `vinicq`, repo `falsegreen-skill`, workflow `release.yml`). To publish from a trusted
+local environment instead, run `npm publish` after step 2.
 
 ## Version scheme
 

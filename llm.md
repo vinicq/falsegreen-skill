@@ -99,8 +99,8 @@ If the user provides existing `falsegreen` scanner output, use it as the
 structural pass result and proceed directly to Step 3.
 
 For TypeScript / JavaScript and Robot Framework, apply their catalogs from
-`reference.md` (JS1-JS22, the shared C-codes, and the Robot R-codes), then proceed
-to Step 3. The full multi-stack catalog and the AI-only semantic codes (S1-S16)
+`reference.md` (JS1-JS31, the shared C-codes, and the Robot R-codes), then proceed
+to Step 3. The full multi-stack catalog and the AI-only semantic codes (S1-S21)
 live in `reference.md`; this file carries the Python catalog inline as the most
 common case.
 

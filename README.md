@@ -215,6 +215,12 @@ Semantic patterns require LLM judgment - no static rule can detect them.
 | 15 | Passes only when another test has already run |
 | 18 | Expected value contradicts the spec (freezes a bug as correct) |
 
+The tables above are the most common Python and semantic patterns, not the whole catalog.
+The full set is **125 codes**: the Python `C*` series (up to C59), the TS/JS `JS*` series
+(up to JS31), the Robot `R*` series (up to R8b), the project-layer `PL*` and diagnostic
+`D*`/`M*` codes, and the semantic `S1`-`S21` series. Each carries a bad-pattern example and
+a clean look-alike in [reference.md](reference.md), the canonical catalog.
+
 ---
 
 ## Diagnostic and coupling codes (opt-in)
@@ -406,6 +412,18 @@ The gate runs three checks on a clean replica: the patch parses, it passes `pyte
 
 ---
 
+### Author a test from a spec (authoring mode, Mode B)
+
+The same protocol runs in reverse. Given a spec and the code under test, the skill proposes a
+test with an **independent** oracle: an expected value derived from the spec, not read back
+from the code. Before writing it, an architect/QA gate (**A0**) runs the review judgments and
+the precision rules over the design, so the generated test is one the review pass would accept
+rather than a fresh false-green. This is a host-side (Claude Code, Codex, Gemini, Cursor,
+plain LLM) intent, not a CLI subcommand: ask the skill to "write a test for this function
+against this spec". See [SKILL.md](SKILL.md) and [docs/decisions/0004-authoring-mode.md](docs/decisions/0004-authoring-mode.md).
+
+---
+
 ### Claude Code (primary path)
 
 Add the marketplace and install the plugin:
@@ -455,6 +473,10 @@ false-positive smells, and the J1-J6 protocol runs automatically.
 | Python | pytest, unittest |
 | TypeScript | Jest, Vitest, Mocha + Chai, React Testing Library, Vue Test Utils, Angular TestBed |
 | JavaScript | Jest, Vitest, Mocha + Chai, Jasmine, React Testing Library |
+| Robot Framework | BuiltIn, Collections, SeleniumLibrary, Browser, RequestsLibrary, RESTinstance, DatabaseLibrary, AppiumLibrary |
+
+Gherkin/BDD (Cucumber.js, behave, pytest-bdd) and Tavern are covered as secondary
+semantic passes in [reference.md](reference.md).
 
 Frontend component tests - React, Vue, Angular, Svelte - use the same J1-J6
 framework as backend tests. The structural failures are identical: a J4 weak

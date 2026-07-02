@@ -6,6 +6,33 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- Authoring mode (Mode B) names its architect/QA gate **A0**: before a test is written, the
+  skill runs the review judgments and the precision rules over the proposed design, and reuses
+  the `examples/` fixtures as reference. Documented in ADR 0004 (#119).
+- `docs/architecture.md`: an architecture overview with Mermaid flow diagrams for host and
+  language routing and the Mode A/B/C flow (#122).
+
+### Fixed
+- AI-fix mutation gate made reliable (#110): the gate now takes an explicit `--sut-line`,
+  keeps the SUT's package path in the clean replica, discards an invalid mutant instead of
+  scoring it as a kill, and scopes both the preserve run and the mutation run to the target
+  test.
+- `mutateLine` no longer mutates an operator that appears only in a comment (which produced a
+  null mutant), the finding schema now accepts the `fixture`/`scaffold` axes, and provider
+  parsing no longer crashes on an unexpected response shape (#111).
+- SKILL.md-led hosts now load the full `reference.md` catalog before reviewing any
+  non-Python test, closing a recall gap where a host that read only SKILL.md missed the
+  JS/Robot/semantic codes (#117).
+
+### Changed
+- Codex host docs corrected: removed references to non-existent CLI commands and realigned the
+  manifest examples with `schema/finding.json` (#115).
+- Model and provider references refreshed: dropped the retired `gemini-2.0-flash`, the legacy
+  Gemini SDK, and the `budget_tokens` thinking form that now returns HTTP 400 (#116).
+- Host-conformance hardening: comma-separated Cursor globs, and the skill-path and release
+  contracts documented in CONTRIBUTING/RELEASE (#121).
+
 ## [0.6.3] - 2026-06-29
 
 ### Added
@@ -331,7 +358,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Multi-agent adversarial verification protocol for case 18 (bug-freezing).
 - CREDITS.md citing the research base.
 
-[Unreleased]: https://github.com/vinicq/falsegreen-skill/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/vinicq/falsegreen-skill/compare/v0.6.3...HEAD
+[0.6.3]: https://github.com/vinicq/falsegreen-skill/compare/v0.6.2...v0.6.3
+[0.6.2]: https://github.com/vinicq/falsegreen-skill/compare/v0.6.1...v0.6.2
+[0.6.1]: https://github.com/vinicq/falsegreen-skill/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/vinicq/falsegreen-skill/compare/v0.5.2...v0.6.0
+[0.5.2]: https://github.com/vinicq/falsegreen-skill/compare/v0.5.1...v0.5.2
+[0.5.1]: https://github.com/vinicq/falsegreen-skill/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/vinicq/falsegreen-skill/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/vinicq/falsegreen-skill/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/vinicq/falsegreen-skill/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/vinicq/falsegreen-skill/compare/v0.1.0...v0.2.0

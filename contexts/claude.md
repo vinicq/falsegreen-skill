@@ -321,7 +321,7 @@ handles the full pass.
 All three modes produce the same output structure defined in SKILL.md Step 6:
 
 ```
-CASE {number} ({J1-J6}) - {HIGH | LOW} - {language} - {level: unit|integration|e2e} - {intent}
+{code} ({J}) - {HIGH | LOW} - {language} - {level: unit|integration|e2e|fixture} - {intent}
 
 Test: {function name, line range}
 Finding: {one sentence}

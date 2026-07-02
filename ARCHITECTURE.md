@@ -12,18 +12,40 @@ There is no parser here. The "engine" is a protocol the model follows, defined o
 
 | Asset | Role |
 |-------|------|
-| `SKILL.md` | the canonical protocol: J1-J6, the structural catalog, the step order |
+| `SKILL.md` | the canonical protocol: J1-J6, the structural catalog, the step order, Modes A/B/C |
 | `reference.md` | per-language pattern catalog and look-alike exemptions |
-| `schema/finding.json`, `schema/report.json` | the source of truth for JSON output |
+| `schema/finding.json`, `schema/report.json` | the source of truth for Mode A JSON output |
+| `schema/test-spec.json` | Mode B input contract: the spec a generated test must satisfy |
+| `schema/fix-validation.json` | Mode C output contract: the gate verdict (clean/mutated replica, accept/reject) |
 | `skills/`, `.claude-plugin/`, `.codex-plugin/`, `.gemini/` | host packaging metadata |
 | `contexts/` | host-specific usage guides |
 | `llm.md`, `GEMINI.md` | host-specific renderings of the same protocol |
 | `bin/`, `scripts/` | the CLI and the validate/build-targets scripts |
 | `models.yaml` | documented model names per provider |
+| `examples/<lang>/` | documentation fixtures (annotated BAD/CLEAN pairs), not loaded at runtime |
 
 The design rule is one canonical protocol, many thin entry points. A host file references
 `SKILL.md` instead of copying the catalog, so the judgment logic does not drift between
 Claude, Codex, Gemini, Cursor, a plain prompt, the API, and the npm CLI.
+
+The `examples/<lang>/` files are reference fixtures for the docs and for authoring (Mode B),
+not a corpus the runtime loads: the CLI builds its prompt from `llm.md` plus `reference.md`,
+never from `examples/`.
+
+## Three modes
+
+The same J1-J6 protocol runs in three intents:
+
+- **Mode A - Review** (default). Read a test, apply the six judgments, report findings against
+  `schema/finding.json` / `schema/report.json`. This is what the CLI `analyze` command does.
+- **Mode B - Authoring.** Given a spec (`schema/test-spec.json`), propose a test with an
+  independent oracle. An architect/QA gate (A0) runs the review judgments and the precision
+  rules over the design first, so the generated test is one Mode A would accept rather than a
+  fresh false-green. Host-side only (ADR 0004).
+- **Mode C - AI-fix.** Given a Mode A finding, propose a stronger test and prove it on a clean
+  replica: parse, preserve (passes on correct code), and a line-scoped mutation of the SUT that
+  the patch must catch. The verdict follows `schema/fix-validation.json`. Shipped in the CLI as
+  `fix` (Python/pytest, propose-only).
 
 ## The protocol
 
