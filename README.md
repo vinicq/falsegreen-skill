@@ -635,8 +635,8 @@ aggregate JSON report.
 | `--max-tokens <n>` | Max output tokens per request | `4096` |
 | `--fail-on-high` | Exit 2 when any HIGH finding is present. Requires `--json` | off |
 
-Default models per provider: `anthropic` -> `claude-sonnet-4-6`,
-`openai` -> `gpt-4o`, `gemini` -> `gemini-2.5-pro`. The `openai-compatible`
+Default models per provider: `anthropic` -> `claude-sonnet-5`,
+`openai` -> `gpt-5`, `gemini` -> `gemini-2.5-flash`. The `openai-compatible`
 provider has no default model, so `--model` and `--base-url` are both required.
 
 **Exit codes:**

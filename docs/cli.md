@@ -91,8 +91,8 @@ aggregate JSON report.
 | `--max-tokens <n>` | Max output tokens per request | `4096` |
 | `--fail-on-high` | Exit with code 2 when any HIGH finding is present. Requires `--json` | off |
 
-Default models: `anthropic` uses `claude-sonnet-4-6`, `openai` uses `gpt-4o`,
-`gemini` uses `gemini-2.5-pro`. For deep case 18 analysis, pass `--model claude-opus-4-8`
+Default models: `anthropic` uses `claude-sonnet-5`, `openai` uses `gpt-5`,
+`gemini` uses `gemini-2.5-flash`. For deep case 18 analysis, pass `--model claude-opus-4-8`
 (Anthropic) or `--model o3` (OpenAI). When using `o3`, `--temperature` is ignored automatically.
 
 ## Environment variables
