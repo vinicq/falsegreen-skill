@@ -40,8 +40,11 @@ Enable it once, per host:
 
 - **Claude Code:** `/plugin marketplace add vinicq/falsegreen-skill` then
   `/plugin install falsegreen-skill@falsegreen`
-- **Codex CLI:** clone the repo and run `codex` - the root `AGENTS.md` auto-loads
-  (the plugin marketplace path is not supported for this repo yet; see `contexts/codex.md`)
+- **Codex CLI:** no single-command install. For your own project, copy this repo's `AGENTS.md`
+  into your project's `AGENTS.md` (or `~/.codex/AGENTS.md` to load it everywhere); Codex
+  auto-loads it and runs the compact routine protocol. For the full protocol, clone the repo and
+  run `codex` inside it (scoped to the clone). The plugin marketplace path is not supported for
+  this repo yet; see `contexts/codex.md`.
 - **Antigravity CLI (`agy`):** `agy plugin install https://github.com/vinicq/falsegreen-skill`, or open the repo and `agy` discovers the workspace skill at `.agents/skills/falsegreen-skill/SKILL.md` (from Gemini CLI: `agy plugin import gemini`)
 - **Cursor:** copy `contexts/cursor.md` into `.cursor/rules/falsegreen-skill.mdc`
 

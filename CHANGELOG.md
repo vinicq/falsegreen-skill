@@ -6,6 +6,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-07-08
+
+### Fixed
+- Codex plugin schema doc: `docs/packaging.md` listed `ON_FIRST_USE` as a
+  `policy.authentication` value. The official docs example shows `ON_INSTALL`
+  and describes the alternative as first-use auth; the Codex resolver accepts
+  `ON_USE` and rejects `ON_FIRST_USE`. Reworded to attribute the value to the
+  resolver and to point readers at their Codex CLI if it disagrees.
+- Codex install docs across `README.md`, `docs/user-guide.md`,
+  `docs/packaging.md`, and `contexts/codex.md`: stated plainly that Codex has no
+  single-command install for this repo and documented two consistent paths -
+  clone for the full protocol (scoped to the clone, all relative references
+  resolve), or copy `AGENTS.md` into the user's own project / `~/.codex/AGENTS.md`
+  for the compact routine protocol. Noted that the `AGENTS.md`-only path is
+  compact-only: its on-demand references to `reference.md`/`SKILL.md` resolve
+  only when those files sit beside it. Raised by the automated Codex review
+  on #157.
+
 ## [0.8.1] - 2026-07-08
 
 ### Fixed
