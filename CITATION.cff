@@ -4,7 +4,7 @@ title: "falsegreen-skill: semantic LLM pass for false-green tests"
 authors:
   - family-names: Queiroz
     given-names: Vinicius
-version: 0.8.0
+version: 0.8.1
 date-released: "2026-07-08"
 license: MIT
 repository-code: "https://github.com/vinicq/falsegreen-skill"

@@ -7,25 +7,28 @@ structured output, Codex CLI, and batch pipelines.
 
 ## Installation (Codex CLI)
 
-Two paths:
+**Clone the repo (reliable path).** `AGENTS.md` at the repo root loads
+automatically when Codex starts a session inside the clone, so the protocol is
+in scope with no extra setup:
 
-1. **Plugin.** Add the marketplace from the command line, then install the
-   plugin:
+```bash
+git clone https://github.com/vinicq/falsegreen-skill
+cd falsegreen-skill
+codex
+```
 
-   ```bash
-   codex plugin marketplace add vinicq/falsegreen-skill
-   codex plugin add falsegreen-skill
-   ```
+The shared skill lives at `skills/falsegreen-skill/SKILL.md` and the plugin
+manifest at `.codex-plugin/plugin.json`.
 
-   `codex plugin marketplace add` also accepts a Git URL or a local directory,
-   and marketplace/plugin management (`list`, `remove`, `upgrade`) is available
-   from the CLI as well as the `/plugins` panel inside the TUI. The plugin
-   manifest lives at `.codex-plugin/plugin.json`, the marketplace catalog at
-   `.agents/plugins/marketplace.json`, and the shared skill at
-   `skills/falsegreen-skill/SKILL.md`.
-
-2. **Clone the repo.** `AGENTS.md` at the repo root loads automatically when
-   Codex starts a session inside the clone.
+**On the plugin marketplace.** Codex does have plugin subcommands
+(`codex plugin marketplace add <source>`, `codex plugin add <plugin>@<marketplace>`,
+`list`/`remove`/`upgrade`, plus the `/plugins` TUI panel). This repo is itself
+the plugin, so its catalog at `.agents/plugins/marketplace.json` uses a
+repo-root source (`"path": "./"`). Codex's marketplace resolver expects a plugin
+nested in a subdirectory of the marketplace root, so `codex plugin marketplace add`
+does not install this repo as-is - use the clone path above. If you install it
+from a conforming marketplace, qualify the plugin with the catalog name
+(`falsegreen`): `codex plugin add falsegreen-skill@falsegreen`.
 
 Note: if you were relying on a `~/.codex/prompts/` custom prompt, the plugin or
 `AGENTS.md` path above is the maintained way to load this protocol. Keep using
