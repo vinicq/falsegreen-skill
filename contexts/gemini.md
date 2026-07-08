@@ -9,9 +9,13 @@ playground to the Python API to enterprise Vertex AI.
 
 | Model | Use case |
 |---|---|
-| `gemini-2.5-pro` | Default. Best accuracy across J1-J6, especially case 18. |
-| `gemini-2.5-flash` | Balanced. Good for interactive review where you need results quickly. |
-| `gemini-2.5-flash-lite` | Fast/cheap batch. Use for large dataset passes; validate findings against the benchmark before trusting at scale. |
+| `gemini-2.5-pro` | Deep accuracy, especially case 18 (adversarial tier). Scheduled to sunset 2026-10-16 - migrate to the current pro tier before then. |
+| `gemini-2.5-flash` | Default for the CLI and interactive review (semantic tier). Good balance of speed and accuracy. |
+| `gemini-2.5-flash-lite` | Fast/cheap batch (structural tier). Use for large dataset passes; validate findings against the benchmark before trusting at scale. |
+
+These map to the structural/semantic/adversarial tiers in
+[`models.yaml`](../models.yaml), the canonical tier-to-model reference. The
+`gemini-2.5-pro` sunset is tracked there too.
 
 ---
 
