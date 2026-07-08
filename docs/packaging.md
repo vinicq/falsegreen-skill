@@ -114,9 +114,12 @@ The `skills` field is required: it tells the Codex CLI where to look for
 
 Official schema: https://developers.openai.com/codex/plugins/build. A marketplace
 is identified by `name` (no top-level `owner` - that is the Claude schema). Each
-plugin entry needs a `source` and a `policy` with enum values:
-`installation` ∈ `AVAILABLE`/`INSTALLED_BY_DEFAULT`/`NOT_AVAILABLE`,
-`authentication` ∈ `ON_INSTALL`/`ON_USE`.
+plugin entry needs a `source` and a `policy`. For `installation` the docs list
+`AVAILABLE`/`INSTALLED_BY_DEFAULT`/`NOT_AVAILABLE`. For `authentication` the docs
+example shows `ON_INSTALL` and describes the alternative as first-use auth; the
+Codex plugin resolver accepts `ON_USE` for that and rejects `ON_FIRST_USE`, so
+use `ON_INSTALL`/`ON_USE`. Confirm against your Codex CLI version if the resolver
+disagrees.
 
 ```json
 {
@@ -137,8 +140,9 @@ plugin entry needs a `source` and a `policy` with enum values:
 Caveat for this repo: the plugin IS the repository, so its entry uses
 `"path": "./"`. Codex's resolver expects the plugin nested in a subdirectory of
 the marketplace root (`./plugins/<name>`), so `codex plugin marketplace add` does
-not install this repo as-is. The supported Codex path is cloning the repo and
-letting `AGENTS.md` auto-load (see `contexts/codex.md`).
+not install this repo as-is. Use one of the two supported paths instead - clone
+the repo for the full protocol, or copy `AGENTS.md` into your own project for
+compact review (see `contexts/codex.md`).
 
 The `.agents/` directory is blocked by `.gitignore` for research and internal
 content. The single exception is `.agents/plugins/`, which holds this catalog

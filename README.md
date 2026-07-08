@@ -312,7 +312,7 @@ mutation testing pass.
 |---|---|
 | Claude Code | `/plugin marketplace add vinicq/falsegreen-skill` then `/plugin install falsegreen-skill@falsegreen` |
 | Claude.ai / Anthropic API Skills | `npm run build:targets`, then package `dist/claude-agent-skill/` as the standalone skill |
-| OpenAI Codex CLI | Clone the repo and run `codex`: `AGENTS.md` at the root is auto-loaded (see [`contexts/codex.md`](contexts/codex.md) on the plugin marketplace) |
+| OpenAI Codex CLI | No single-command install: clone the repo and run `codex` for the full protocol (scoped to the clone), or copy `AGENTS.md` into your own project / `~/.codex/AGENTS.md` for compact review (see [`contexts/codex.md`](contexts/codex.md)) |
 | Antigravity CLI (`agy`) | Install as a plugin: `agy plugin install https://github.com/vinicq/falsegreen-skill` (subpath `.antigravity-plugin/`), or open the repo and `agy` discovers the workspace skill at `.agents/skills/falsegreen-skill/SKILL.md`. From Gemini CLI: `agy plugin import gemini` |
 | Gemini Agent Skill | workspace skill at `.agents/skills/falsegreen-skill/SKILL.md`, or `npm run build:targets` for `dist/gemini-skill/` |
 | Cursor | Copy contents of `contexts/cursor.md` to `.cursor/rules/falsegreen-skill.mdc` |
@@ -860,8 +860,9 @@ Full guide: [`contexts/claude.md`](contexts/claude.md).
 
 #### OpenAI Codex CLI
 
-Clone the repo and start Codex - `AGENTS.md` at the root auto-loads as project
-context:
+Codex has no single-command install for this repo. Clone it and start Codex for
+the full protocol - `AGENTS.md` at the root auto-loads as project context and
+every relative reference resolves:
 
 ```bash
 git clone https://github.com/vinicq/falsegreen-skill
@@ -869,11 +870,16 @@ cd falsegreen-skill
 codex
 ```
 
+The protocol is scoped to that directory. To run it in your own project instead,
+copy `AGENTS.md` into your project (or `~/.codex/AGENTS.md` to load it
+everywhere); that gives the compact routine protocol, and for deep look-alike
+checks you also bring `reference.md`/`SKILL.md` or work from the clone.
+
 The plugin manifest is `.codex-plugin/plugin.json`, the marketplace catalog
 `.agents/plugins/marketplace.json`, the shared skill
 `skills/falsegreen-skill/SKILL.md`. Codex has plugin subcommands, but this
 repo-is-the-plugin catalog uses a repo-root source that Codex's marketplace
-resolver does not accept, so the clone path above is the supported one (details
+resolver does not accept, so the two paths above are the supported ones (details
 in [`contexts/codex.md`](contexts/codex.md)). Codex has a ~32 KiB context
 budget; load `AGENTS.md` eagerly (it carries the compact protocol) and pull
 `reference.md` or `SKILL.md` on demand. Full guide:

@@ -7,10 +7,30 @@ structured output, Codex CLI, and batch pipelines.
 
 ## Installation (Codex CLI)
 
-**Use it in your own project (reliable path).** Codex auto-loads an `AGENTS.md`
-from the working directory (and `~/.codex/AGENTS.md` globally), so to run the
-protocol against *your* codebase, copy this repo's `AGENTS.md` into your
-project's `AGENTS.md` - or into `~/.codex/AGENTS.md` to load it in every project:
+Codex has no single-command install for this repo (see the marketplace note
+below). There are two working paths; pick by whether you want the full protocol
+or a persistent hook in your own project.
+
+**Full protocol (clone).** Cloning gives Codex every protocol file with its
+relative references intact, so on-demand escalation to `reference.md` and
+`SKILL.md` resolves. `AGENTS.md` at the repo root auto-loads when you start
+Codex inside the clone:
+
+```bash
+git clone https://github.com/vinicq/falsegreen-skill
+cd falsegreen-skill
+codex
+```
+
+The protocol is scoped to this directory: when you `cd` to your own project,
+Codex no longer has it loaded. The shared skill lives at
+`skills/falsegreen-skill/SKILL.md` and the plugin manifest at
+`.codex-plugin/plugin.json`.
+
+**Persistent in your own project (compact).** Codex auto-loads `AGENTS.md` from
+the working directory and `~/.codex/AGENTS.md` globally. Copy this repo's
+`AGENTS.md` into your project (or `~/.codex/AGENTS.md` to load it everywhere) to
+run routine J1-J6 review against your own codebase:
 
 ```bash
 # per project
@@ -19,19 +39,11 @@ curl -o AGENTS.md https://raw.githubusercontent.com/vinicq/falsegreen-skill/mast
 curl -o ~/.codex/AGENTS.md https://raw.githubusercontent.com/vinicq/falsegreen-skill/master/AGENTS.md
 ```
 
-**Try it inside this repo.** Cloning and running `codex` in the clone also works,
-but it only scopes the protocol to the clone - Codex loses it when you switch to
-your own project, so this is for trying the skill on the bundled examples, not a
-persistent per-project install:
-
-```bash
-git clone https://github.com/vinicq/falsegreen-skill
-cd falsegreen-skill
-codex
-```
-
-The shared skill lives at `skills/falsegreen-skill/SKILL.md` and the plugin
-manifest at `.codex-plugin/plugin.json`.
+`AGENTS.md` carries the compact protocol and is self-sufficient for routine
+review. Its on-demand references to `reference.md` and `SKILL.md` (the full
+per-language catalog and long-form protocol) resolve only when those files sit
+beside it, so for deep look-alike checks either drop `reference.md`/`SKILL.md`
+next to the copied `AGENTS.md` or run from the clone above.
 
 **On the plugin marketplace.** Codex does have plugin subcommands
 (`codex plugin marketplace add <source>`, `codex plugin add <plugin>@<marketplace>`,
@@ -39,7 +51,7 @@ manifest at `.codex-plugin/plugin.json`.
 the plugin, so its catalog at `.agents/plugins/marketplace.json` uses a
 repo-root source (`"path": "./"`). Codex's marketplace resolver expects a plugin
 nested in a subdirectory of the marketplace root, so `codex plugin marketplace add`
-does not install this repo as-is - use the clone path above. If you install it
+does not install this repo as-is - use one of the two paths above. If you install it
 from a conforming marketplace, qualify the plugin with the catalog name
 (`falsegreen`): `codex plugin add falsegreen-skill@falsegreen`.
 
