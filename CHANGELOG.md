@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-08
+
 ### Added
 - Antigravity CLI (`agy`) support, Google's successor to the discontinued Gemini
   CLI. Two enable paths: an installable plugin at `.antigravity-plugin/`
@@ -30,6 +32,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `falsegreen-skill`), matching the Antigravity, Gemini, npm, and plugin
   identities. The CLI script filename `bin/falsegreen-llm.js` is unchanged; the
   user-facing CLI command was already `falsegreen-skill`.
+- Aligned every host guide's model recommendations to `models.yaml`, the
+  canonical tier-to-model map: refreshed `contexts/cursor.md` (was
+  `claude-sonnet-4-6`/`gpt-4o`), added concrete ids to `contexts/codex.md`, and
+  flagged the `gemini-2.5-pro` sunset (2026-10-16) in `contexts/gemini.md`.
+
+### Fixed
+- Codex marketplace catalog (`.agents/plugins/marketplace.json`) used invalid
+  policy enum values (`installation: "manual"`, `authentication: "none"`) and a
+  non-schema top-level `owner`. Now uses `AVAILABLE`/`ON_INSTALL` and drops
+  `owner`, per the official Codex plugin marketplace schema.
+- `contexts/codex.md` wrongly stated Codex has no plugin subcommand; corrected
+  to `codex plugin marketplace add` / `codex plugin add`.
+- README and `docs/cli.md` documented stale CLI default models; synced them to
+  the code (`claude-sonnet-5`/`gpt-5`/`gemini-2.5-flash`).
 
 ## [0.7.0] - 2026-07-02
 
