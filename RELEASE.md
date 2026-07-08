@@ -7,7 +7,10 @@ release is keeping every host copy consistent and regenerating the standalone sk
 **Reminder:** the host manifests (`plugin.json`, `.codex-plugin/plugin.json`,
 `gemini-extension.json`) pin a `version`. A fix merged to `master` without a
 version bump and publish never reaches installed plugins. Every release cycle
-bumps the version and the `CHANGELOG.md` together.
+bumps the version and the `CHANGELOG.md` together. Note:
+`.antigravity-plugin/plugin.json` is deliberately versionless - the Antigravity
+plugin schema is strict (`additionalProperties: false`, only `$schema`/`name`/
+`description`), so it is not part of the version-sync script.
 
 ## Before you publish
 
@@ -24,7 +27,7 @@ bumps the version and the `CHANGELOG.md` together.
    catalog entry - the regression that caused #105.
 5. Validate: `npm run validate`. It must pass before tagging.
 6. Rebuild the standalone targets: `npm run build:targets` (the packaged Claude/Gemini
-   skill bundles).
+   skill bundles and the self-contained `dist/antigravity-plugin/`).
 
 ## Publishing a version
 

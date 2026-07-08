@@ -6,6 +6,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- Antigravity CLI (`agy`) support, Google's successor to the discontinued Gemini
+  CLI. Two enable paths: an installable plugin at `.antigravity-plugin/`
+  (`agy plugin install https://github.com/vinicq/falsegreen-skill`) and a
+  workspace Agent Skill at `.agents/skills/falsegreen-skill/SKILL.md`, both
+  exposed as the `/falsegreen-skill` slash command. `agy` also auto-parses
+  `AGENTS.md`/`GEMINI.md` at the workspace root as codebase rule files.
+  `npm run build:targets` now emits a self-contained `dist/antigravity-plugin/`.
+  The Antigravity plugin manifest is versionless by design (its schema allows
+  only `$schema`/`name`/`description`), so it stays out of the version-sync.
+
+### Changed
+- Docs now present the Antigravity CLI as the CLI host in place of the
+  discontinued Gemini CLI (README, `docs/user-guide.md`, `docs/packaging.md`,
+  `docs/architecture.md`, `providers.md`, `contexts/gemini.md`). The Gemini
+  provider/API paths (AI Studio, Gemini API, Vertex, `--provider gemini`) are
+  unchanged. Legacy `gemini-extension.json`, `GEMINI.md`, and `.gemini/` are
+  kept as the import source for `agy plugin import gemini`.
+
 ## [0.7.0] - 2026-07-02
 
 ### Added

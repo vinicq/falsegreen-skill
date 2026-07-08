@@ -74,7 +74,8 @@ bumped and published - a fix merged to `master` without a release is invisible
 to users. Before publishing, run `npm version <patch|minor|major>` (the
 `version` npm script syncs the number into all three manifests and stages
 them), move the `[Unreleased]` entries in `CHANGELOG.md` under the new version,
-then follow `RELEASE.md`.
+then follow `RELEASE.md`. (`.antigravity-plugin/plugin.json` is intentionally
+versionless - its schema forbids a `version` key - so it stays out of the sync.)
 
 ## Refreshing the scanner snapshot
 

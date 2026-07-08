@@ -83,8 +83,37 @@ function buildGeminiSkill() {
   copy('schema/fix-validation.json', `${dir}/schema/fix-validation.json`);
 }
 
+function buildAntigravityPlugin() {
+  const root = 'dist/antigravity-plugin';
+  const skillDir = `${root}/skills/falsegreen-skill`;
+  write(`${root}/plugin.json`, read('.antigravity-plugin/plugin.json'));
+  const skill = [
+    '---',
+    'name: falsegreen-skill',
+    'description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when reviewing Python, TypeScript, JavaScript, or Robot Framework tests for weak assertions, vacuous passes, mock misuse, async assertion gaps, or whether a test can actually fail.',
+    '---',
+    '',
+    '# falsegreen-skill (Antigravity CLI plugin)',
+    '',
+    'Read `references/protocol.md` before judging any test. Read',
+    '`references/reference.md` before reporting a HIGH finding.',
+    '',
+    'Use the model long context for whole-suite analysis when the user provides a',
+    'directory. For JSON output, conform to `schema/report.json` exactly.',
+    '',
+  ].join('\n');
+  write(`${skillDir}/SKILL.md`, skill);
+  write(`${skillDir}/references/protocol.md`, rootProtocol() + '\n');
+  copy('reference.md', `${skillDir}/references/reference.md`);
+  copy('schema/finding.json', `${skillDir}/schema/finding.json`);
+  copy('schema/report.json', `${skillDir}/schema/report.json`);
+  copy('schema/test-spec.json', `${skillDir}/schema/test-spec.json`);
+  copy('schema/fix-validation.json', `${skillDir}/schema/fix-validation.json`);
+}
+
 cleanDist();
 buildClaudeAgentSkill();
 buildGeminiSkill();
+buildAntigravityPlugin();
 
 process.stdout.write('built targets in dist/\n');

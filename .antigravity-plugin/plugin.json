@@ -1,0 +1,5 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "falsegreen-skill",
+  "description": "LLM-based semantic analysis for false-positive test detection. Applies the J1-J6 judgment framework across Python, TypeScript, JavaScript, and Robot Framework, plus semantic patterns no static tool can see."
+}

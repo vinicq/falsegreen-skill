@@ -91,11 +91,28 @@ exists('reference.md');
 exists('schema/finding.json');
 exists('schema/report.json');
 validateSkill('skills/falsegreen-llm/SKILL.md', 'falsegreen-llm');
+validateSkill('.agents/skills/falsegreen-skill/SKILL.md', 'falsegreen-skill');
+validateSkill('.antigravity-plugin/skills/falsegreen-skill/SKILL.md', 'falsegreen-skill');
 validateSkill('.gemini/skills/falsegreen-skill/SKILL.md', 'falsegreen-skill');
 
 const codexPlugin = readJson('.codex-plugin/plugin.json');
 if (codexPlugin && codexPlugin.skills !== './skills/') {
   fail('.codex-plugin/plugin.json: expected "skills": "./skills/"');
+}
+
+const antigravityPlugin = readJson('.antigravity-plugin/plugin.json');
+if (antigravityPlugin) {
+  if (antigravityPlugin.name !== 'falsegreen-skill') {
+    fail('.antigravity-plugin/plugin.json: expected name "falsegreen-skill"');
+  }
+  // Antigravity plugin schema is strict (additionalProperties: false): only
+  // $schema, name, description are allowed. No version/author/keywords.
+  const allowed = new Set(['$schema', 'name', 'description']);
+  for (const key of Object.keys(antigravityPlugin)) {
+    if (!allowed.has(key)) {
+      fail(`.antigravity-plugin/plugin.json: unexpected key "${key}" (schema forbids extra properties)`);
+    }
+  }
 }
 
 const geminiExtension = readJson('gemini-extension.json');

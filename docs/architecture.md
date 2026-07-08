@@ -44,7 +44,7 @@ flowchart TD
     U["User: analyze this test"] --> H{Which host?}
     H -->|Claude Code plugin| P1["skills/falsegreen-llm/SKILL.md<br/>(thin entry)"]
     H -->|Codex| P2[".codex-plugin/plugin.json"]
-    H -->|Gemini| P3[".gemini/skills/.../SKILL.md"]
+    H -->|Antigravity CLI| P3[".agents/skills/.../SKILL.md"]
     H -->|Cursor| P4["contexts/cursor.md + .mdc"]
     H -->|npm CLI| P5["bin/falsegreen-llm.js"]
     P1 --> C["Canonical protocol:<br/>SKILL.md + reference.md"]
