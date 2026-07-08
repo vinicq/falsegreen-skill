@@ -6,6 +6,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-07-08
+
+### Fixed
+- Codex install docs: the `.agents/plugins/marketplace.json` catalog uses a
+  repo-root source (`"path": "./"`), which Codex's marketplace resolver does not
+  accept (it expects the plugin nested in a subdirectory of the marketplace
+  root). Stopped advertising `codex plugin marketplace add` as an install path
+  for this repo and documented the supported path (clone + `AGENTS.md`
+  auto-load) across README, `docs/user-guide.md`, `docs/packaging.md`, and
+  `contexts/codex.md`. Where the plugin command is shown, it is now qualified
+  with the marketplace name (`codex plugin add falsegreen-skill@falsegreen`).
+  Also corrected the `.claude-plugin/marketplace.json` doc, which wrongly said
+  it was consumed by `codex plugin marketplace add`. Raised by the automated
+  Codex review on #149.
+
 ## [0.8.0] - 2026-07-08
 
 ### Added

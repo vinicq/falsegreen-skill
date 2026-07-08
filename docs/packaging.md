@@ -60,8 +60,8 @@ no explicit `skills` field is needed in `plugin.json`.
 
 ### `.claude-plugin/marketplace.json`: Claude Code marketplace catalog
 
-Consumed by `codex plugin marketplace add <owner>/<plugin>` and the Claude
-Code plugin marketplace UI.
+Consumed by `/plugin marketplace add <owner>/<plugin>` and the Claude Code
+plugin marketplace UI.
 
 ```json
 {
@@ -112,23 +112,33 @@ The `skills` field is required: it tells the Codex CLI where to look for
 
 ### `.agents/plugins/marketplace.json`: Codex marketplace catalog
 
-No official public schema. This catalog format is recognized by the Codex
-CLI's plugin marketplace resolution when the plugin is installed via
-`codex plugin marketplace add <owner>/<plugin>`.
+Official schema: https://developers.openai.com/codex/plugins/build. A marketplace
+is identified by `name` (no top-level `owner` - that is the Claude schema). Each
+plugin entry needs a `source` and a `policy` with enum values:
+`installation` ∈ `AVAILABLE`/`INSTALLED_BY_DEFAULT`/`NOT_AVAILABLE`,
+`authentication` ∈ `ON_INSTALL`/`ON_FIRST_USE`.
 
 ```json
 {
-  "name": "catalog-name",          // required
-  "owner": { "name": "Author" },   // required
+  "name": "catalog-name",              // required
+  "interface": { "displayName": "…" },
   "plugins": [
     {
-      "name": "plugin-name",       // required; matches .codex-plugin/plugin.json name
-      "source": "./",              // required; path to plugin root (relative to this file)
-      "description": "…"          // recommended
+      "name": "plugin-name",           // required; matches .codex-plugin/plugin.json name
+      "source": { "source": "local", "path": "./plugins/<name>" },
+      "category": "code-quality",
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "description": "…"
     }
   ]
 }
 ```
+
+Caveat for this repo: the plugin IS the repository, so its entry uses
+`"path": "./"`. Codex's resolver expects the plugin nested in a subdirectory of
+the marketplace root (`./plugins/<name>`), so `codex plugin marketplace add` does
+not install this repo as-is. The supported Codex path is cloning the repo and
+letting `AGENTS.md` auto-load (see `contexts/codex.md`).
 
 The `.agents/` directory is blocked by `.gitignore` for research and internal
 content. The single exception is `.agents/plugins/`, which holds this catalog
