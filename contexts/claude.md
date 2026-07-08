@@ -19,7 +19,7 @@ SKILL.md protocol and J1-J6 judgment framework.
 ## Mode 1: Claude Code (CLI)
 
 Claude Code is the primary path. The skill ships as a Claude Code plugin and
-loads from `skills/falsegreen-llm/SKILL.md`.
+loads from `skills/falsegreen-skill/SKILL.md`.
 
 ### Setup
 
@@ -31,14 +31,14 @@ Install the plugin from the marketplace:
 ```
 
 After install, the skill is available as the namespaced command
-`/falsegreen-skill:falsegreen-llm`. It also triggers on natural-language
+`/falsegreen-skill:falsegreen-skill`. It also triggers on natural-language
 intent, so a plain request like "analyze this test file for false-positive
 smells" works without the slash command.
 
 ### Basic usage
 
 ```
-/falsegreen-skill:falsegreen-llm
+/falsegreen-skill:falsegreen-skill
 ```
 
 Then say what to analyze:
@@ -56,11 +56,11 @@ component tests (React, Vue, Angular) are found in the same pass.
 ### Useful prompts
 
 ```
-/falsegreen-skill:falsegreen-llm analyze tests/unit/ - focus on J2 and J3
+/falsegreen-skill:falsegreen-skill analyze tests/unit/ - focus on J2 and J3
 ```
 
 ```
-/falsegreen-skill:falsegreen-llm I only care about HIGH confidence findings
+/falsegreen-skill:falsegreen-skill I only care about HIGH confidence findings
 ```
 
 ```
@@ -98,7 +98,7 @@ findings block. A coordinator agent merges results and deduplicates.
 In Claude Code:
 
 ```
-/falsegreen-skill:falsegreen-llm For each file in tests/, spawn a subagent that
+/falsegreen-skill:falsegreen-skill For each file in tests/, spawn a subagent that
 applies the full J1-J6 protocol and returns findings as JSON. Merge and
 summarize at the end.
 ```

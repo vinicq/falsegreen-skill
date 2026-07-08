@@ -90,7 +90,7 @@ exists('SKILL.md');
 exists('reference.md');
 exists('schema/finding.json');
 exists('schema/report.json');
-validateSkill('skills/falsegreen-llm/SKILL.md', 'falsegreen-llm');
+validateSkill('skills/falsegreen-skill/SKILL.md', 'falsegreen-skill');
 validateSkill('.agents/skills/falsegreen-skill/SKILL.md', 'falsegreen-skill');
 validateSkill('.antigravity-plugin/skills/falsegreen-skill/SKILL.md', 'falsegreen-skill');
 validateSkill('.gemini/skills/falsegreen-skill/SKILL.md', 'falsegreen-skill');

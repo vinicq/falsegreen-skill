@@ -42,7 +42,7 @@ model then narrows to the right language section of the catalog.
 ```mermaid
 flowchart TD
     U["User: analyze this test"] --> H{Which host?}
-    H -->|Claude Code plugin| P1["skills/falsegreen-llm/SKILL.md<br/>(thin entry)"]
+    H -->|Claude Code plugin| P1["skills/falsegreen-skill/SKILL.md<br/>(thin entry)"]
     H -->|Codex| P2[".codex-plugin/plugin.json"]
     H -->|Antigravity CLI| P3[".agents/skills/.../SKILL.md"]
     H -->|Cursor| P4["contexts/cursor.md + .mdc"]
@@ -67,7 +67,7 @@ flowchart TD
 ```
 
 Each host contributes only packaging metadata and a pointer. The Claude Code and
-Codex plugins share the same entry point under `skills/falsegreen-llm/`; the
+Codex plugins share the same entry point under `skills/falsegreen-skill/`; the
 Gemini extension and the Cursor rules point at the same protocol; all of them
 resolve to `SKILL.md` plus `reference.md`. The one host that cannot reference a
 file on disk at prompt time is the npm CLI: `bin/falsegreen-llm.js` loads

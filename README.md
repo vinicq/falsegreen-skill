@@ -448,7 +448,7 @@ Add the marketplace and install the plugin:
 /plugin install falsegreen-skill@falsegreen
 ```
 
-Then invoke the skill with `/falsegreen-skill:falsegreen-llm`, or just attach a
+Then invoke the skill with `/falsegreen-skill:falsegreen-skill`, or just attach a
 test file and ask for false-positive analysis - the skill triggers on intent.
 The skill identifies the language and framework, classifies the test intent,
 applies the six-judgment protocol, and reports findings with case numbers,
@@ -550,7 +550,7 @@ falsegreen-skill/
   .codex-plugin/        Codex CLI plugin manifest
   .agents/plugins/      Codex CLI marketplace catalog
   skills/
-    falsegreen-llm/     shared skill entry point (Claude Code + Codex plugins)
+    falsegreen-skill/   shared skill entry point (Claude Code + Codex plugins)
   bin/
     falsegreen-llm.js   zero-dependency CLI (npx falsegreen-skill)
   scripts/
@@ -853,7 +853,7 @@ Add the marketplace, then install the plugin:
 ```
 
 After install the skill is the namespaced command
-`/falsegreen-skill:falsegreen-llm`, and it also triggers on natural-language
+`/falsegreen-skill:falsegreen-skill`, and it also triggers on natural-language
 intent ("analyze this test for false-positive smells"). Claude Code discovers
 test files with its own Glob/Read tools, so you can point it at a directory.
 Full guide: [`contexts/claude.md`](contexts/claude.md).
@@ -872,7 +872,7 @@ git clone https://github.com/vinicq/falsegreen-skill
 
 The plugin manifest is `.codex-plugin/plugin.json`, the marketplace catalog
 `.agents/plugins/marketplace.json`, the shared skill
-`skills/falsegreen-llm/SKILL.md`. Codex has a ~32 KiB context budget; load
+`skills/falsegreen-skill/SKILL.md`. Codex has a ~32 KiB context budget; load
 `AGENTS.md` eagerly (it carries the compact protocol) and pull `reference.md`
 or `SKILL.md` on demand. Full guide: [`contexts/codex.md`](contexts/codex.md).
 

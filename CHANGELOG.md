@@ -24,6 +24,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   provider/API paths (AI Studio, Gemini API, Vertex, `--provider gemini`) are
   unchanged. Legacy `gemini-extension.json`, `GEMINI.md`, and `.gemini/` are
   kept as the import source for `agy plugin import gemini`.
+- Unified the skill name to `falsegreen-skill` across every host. The shared
+  Claude/Codex skill moved from `skills/falsegreen-llm/` to
+  `skills/falsegreen-skill/` (frontmatter `name` and the Claude command are now
+  `falsegreen-skill`), matching the Antigravity, Gemini, npm, and plugin
+  identities. The CLI script filename `bin/falsegreen-llm.js` is unchanged; the
+  user-facing CLI command was already `falsegreen-skill`.
 
 ## [0.7.0] - 2026-07-02
 
