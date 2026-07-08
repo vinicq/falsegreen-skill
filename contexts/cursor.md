@@ -327,14 +327,15 @@ chat header.
 
 | Model | When to use |
 |---|---|
-| `claude-sonnet-4-6` | Default choice. Best balance of precision and speed for J1-J6. |
-| `gpt-4o` | Solid alternative. Slightly less precise on case 18. |
+| `claude-sonnet-5` | Default choice. Best balance of precision and speed for J1-J6. |
+| `gpt-5` | Solid alternative. Slightly less precise on case 18. |
 | `claude-opus-4-8` | Case 18 deep analysis only. Slower and more expensive. |
-| `o3` | Case 18 deep analysis with extended reasoning. Use when the oracle is ambiguous. |
+| a reasoning-tier model (extended reasoning on) | Case 18 deep analysis when the oracle is ambiguous. |
 
-For routine test reviews, `claude-sonnet-4-6` or `gpt-4o` is enough. Switch to
-`claude-opus-4-8` or `o3` only when you need to confirm a suspected case 18 before
-acting on it.
+For routine test reviews, `claude-sonnet-5` or `gpt-5` is enough. Switch to
+`claude-opus-4-8` or a reasoning-tier model only when you need to confirm a
+suspected case 18 before acting on it. These map to the semantic and adversarial
+tiers in [`models.yaml`](../models.yaml), the canonical tier-to-model reference.
 
 ---
 

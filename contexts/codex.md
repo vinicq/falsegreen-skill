@@ -81,11 +81,15 @@ writing). The CLI picks the version; this guide does not pin one, because a
 hard version string goes stale on the next release. The table below maps the
 three analysis passes to the capability you need, not to a frozen model id.
 
-| Use case | Model |
-|---|---|
-| Default (production review) | Codex's current default model |
-| Fast / cheap batch | A smaller, faster sibling of the default (for example a `mini` variant) |
-| Reasoning-heavy, case 18 analysis | A reasoning-tier model, with extended reasoning enabled |
+| Use case | Capability | models.yaml reference |
+|---|---|---|
+| Default (production review) | Codex's current default model | `gpt-5` (semantic tier) |
+| Fast / cheap batch | A smaller, faster sibling (a `mini` variant) | `gpt-5-mini` (structural tier) |
+| Reasoning-heavy, case 18 analysis | A reasoning-tier model, extended reasoning on | `gpt-5`, reasoning tier (adversarial) |
+
+The `models.yaml` column names the id validated for this release; if your
+account exposes a newer default, prefer it - the capability, not the frozen id,
+is what matters.
 
 The current default handles all six judgments reliably, including the semantic
 cases (10, 11, 12, 15, 18). Drop to a smaller sibling when throughput or cost
