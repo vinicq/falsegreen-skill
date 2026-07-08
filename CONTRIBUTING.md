@@ -51,7 +51,7 @@ Two host-packaging details depend on the current file layout. Keep them in mind
 before moving or renaming files at the repo root.
 
 - **The Claude skill entry point is a thin pointer that resolves the protocol by
-  relative path.** `skills/falsegreen-llm/SKILL.md` references `../../SKILL.md`
+  relative path.** `skills/falsegreen-skill/SKILL.md` references `../../SKILL.md`
   and `../../reference.md`. Those paths resolve two levels up, at the repo root,
   inside the installed plugin cache. Moving `SKILL.md` or `reference.md` out of
   the root, or relocating the skill directory, breaks the reference silently -

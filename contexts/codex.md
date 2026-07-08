@@ -22,7 +22,7 @@ Two paths:
    from the CLI as well as the `/plugins` panel inside the TUI. The plugin
    manifest lives at `.codex-plugin/plugin.json`, the marketplace catalog at
    `.agents/plugins/marketplace.json`, and the shared skill at
-   `skills/falsegreen-llm/SKILL.md`.
+   `skills/falsegreen-skill/SKILL.md`.
 
 2. **Clone the repo.** `AGENTS.md` at the repo root loads automatically when
    Codex starts a session inside the clone.
@@ -355,7 +355,7 @@ print(f"\nSUMMARY: {s['tests_reviewed']} reviewed, {s['high']} high, {s['low']} 
 
 ## 4. Codex CLI
 
-If you installed the plugin, Codex discovers `skills/falsegreen-llm/SKILL.md`
+If you installed the plugin, Codex discovers `skills/falsegreen-skill/SKILL.md`
 through `.codex-plugin/plugin.json`. If you only cloned this repo, Codex reads
 `AGENTS.md` as project guidance; that is useful, but it is not the same as an
 installed skill. The options below cover running the protocol in a project that

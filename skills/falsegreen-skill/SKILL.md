@@ -1,9 +1,9 @@
 ---
-name: falsegreen-llm
+name: falsegreen-skill
 description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when the user asks to review tests for false positives, weak assertions, mock misuse, test smells, or asks whether a test can actually fail. Covers Python (pytest, unittest), TypeScript, JavaScript (Jest, Vitest, Mocha), and Robot Framework.
 ---
 
-# falsegreen-llm: false-positive test detection
+# falsegreen-skill: false-positive test detection
 
 This skill is a thin entry point. The canonical protocol lives at the plugin
 root. Read these files before judging any test:
