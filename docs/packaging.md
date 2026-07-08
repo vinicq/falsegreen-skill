@@ -116,7 +116,7 @@ Official schema: https://developers.openai.com/codex/plugins/build. A marketplac
 is identified by `name` (no top-level `owner` - that is the Claude schema). Each
 plugin entry needs a `source` and a `policy` with enum values:
 `installation` ∈ `AVAILABLE`/`INSTALLED_BY_DEFAULT`/`NOT_AVAILABLE`,
-`authentication` ∈ `ON_INSTALL`/`ON_FIRST_USE`.
+`authentication` ∈ `ON_INSTALL`/`ON_USE`.
 
 ```json
 {

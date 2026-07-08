@@ -7,9 +7,22 @@ structured output, Codex CLI, and batch pipelines.
 
 ## Installation (Codex CLI)
 
-**Clone the repo (reliable path).** `AGENTS.md` at the repo root loads
-automatically when Codex starts a session inside the clone, so the protocol is
-in scope with no extra setup:
+**Use it in your own project (reliable path).** Codex auto-loads an `AGENTS.md`
+from the working directory (and `~/.codex/AGENTS.md` globally), so to run the
+protocol against *your* codebase, copy this repo's `AGENTS.md` into your
+project's `AGENTS.md` - or into `~/.codex/AGENTS.md` to load it in every project:
+
+```bash
+# per project
+curl -o AGENTS.md https://raw.githubusercontent.com/vinicq/falsegreen-skill/master/AGENTS.md
+# or globally, for every project
+curl -o ~/.codex/AGENTS.md https://raw.githubusercontent.com/vinicq/falsegreen-skill/master/AGENTS.md
+```
+
+**Try it inside this repo.** Cloning and running `codex` in the clone also works,
+but it only scopes the protocol to the clone - Codex loses it when you switch to
+your own project, so this is for trying the skill on the bundled examples, not a
+persistent per-project install:
 
 ```bash
 git clone https://github.com/vinicq/falsegreen-skill

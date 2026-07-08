@@ -6,6 +6,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-07-08
+
+### Fixed
+- Codex plugin schema doc: `docs/packaging.md` listed `ON_FIRST_USE` as an
+  `policy.authentication` enum value; the Codex spec accepts `ON_INSTALL` and
+  `ON_USE`. Corrected to `ON_USE`.
+- Codex install path in `docs/user-guide.md` and `contexts/codex.md`: cloning
+  this repo and running `codex` only scopes the protocol to the clone, so it is
+  not a persistent per-project install. Documented copying this repo's
+  `AGENTS.md` into the user's own project `AGENTS.md` (or `~/.codex/AGENTS.md`
+  globally) as the reliable path; kept the clone as a try-it-here path. Raised
+  by the automated Codex review on #157.
+
 ## [0.8.1] - 2026-07-08
 
 ### Fixed
