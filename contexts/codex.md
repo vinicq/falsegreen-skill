@@ -9,15 +9,18 @@ structured output, Codex CLI, and batch pipelines.
 
 Two paths:
 
-1. **Plugin (interactive).** The Codex CLI installs plugins from inside the
-   TUI, not from a subcommand. Start Codex and open the plugins panel:
+1. **Plugin.** Add the marketplace from the command line, then install the
+   plugin:
 
    ```bash
-   codex
+   codex plugin marketplace add vinicq/falsegreen-skill
+   codex plugin add falsegreen-skill
    ```
 
-   Then run `/plugins` and add this repo as a source. The plugin manifest lives
-   at `.codex-plugin/plugin.json`, the marketplace catalog at
+   `codex plugin marketplace add` also accepts a Git URL or a local directory,
+   and marketplace/plugin management (`list`, `remove`, `upgrade`) is available
+   from the CLI as well as the `/plugins` panel inside the TUI. The plugin
+   manifest lives at `.codex-plugin/plugin.json`, the marketplace catalog at
    `.agents/plugins/marketplace.json`, and the shared skill at
    `skills/falsegreen-llm/SKILL.md`.
 
