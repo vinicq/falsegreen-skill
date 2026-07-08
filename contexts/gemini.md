@@ -15,33 +15,44 @@ playground to the Python API to enterprise Vertex AI.
 
 ---
 
-## Gemini CLI extension
+## Antigravity CLI (`agy`)
 
-Install the skill as a Gemini CLI extension:
+The Gemini CLI is discontinued; Google's successor is the Antigravity CLI
+(`agy`). It discovers workspace Agent Skills under `.agents/skills/`, parses
+`AGENTS.md`/`GEMINI.md` at the workspace root as codebase rule files on startup,
+and can import legacy Gemini extensions.
+
+Install it as a plugin (stages into `~/.gemini/antigravity-cli/plugins/`):
 
 ```bash
-gemini extensions install https://github.com/vinicq/falsegreen-skill
+agy plugin install https://github.com/vinicq/falsegreen-skill
 ```
 
-The manifest `gemini-extension.json` at the repo root registers the extension
-and loads `GEMINI.md` as persistent context (`contextFileName`). After install,
-every Gemini CLI session carries the J1-J6 protocol; ask in natural language,
-for example "analyze tests/ for false-positive smells".
+Or run `agy` inside the repo with no install: it registers the workspace skill
+at `.agents/skills/falsegreen-skill/SKILL.md`. Either way it is the
+`/falsegreen-skill` slash command; invoke it or ask in natural language, for
+example "analyze tests/ for false-positive smells". For a self-contained plugin
+with the protocol bundled, run `npm run build:targets` and install
+`dist/antigravity-plugin/`.
 
-## Gemini Agent Skill
+If you still have the old Gemini CLI extension installed, migrate it once with
+`agy plugin import gemini`. This parses your legacy extension manifests and
+converts skills, commands, and MCP servers into native Antigravity plugins (the
+workspace-skill path moved from `.gemini/skills/` to `.agents/skills/`).
 
-The repo also ships a canonical Gemini Agent Skill entry point at
-`.gemini/skills/falsegreen-skill/SKILL.md`. Use it as a workspace skill when
-you want Gemini's skill discovery rather than extension-wide context.
+## Agent Skill package
 
-For a standalone package, run:
+The repo ships the canonical Agent Skill entry point at
+`.agents/skills/falsegreen-skill/SKILL.md` (the legacy copy at
+`.gemini/skills/falsegreen-skill/SKILL.md` is kept for `agy plugin import
+gemini`). For a standalone package, run:
 
 ```bash
 npm run build:targets
 ```
 
 Then install or package `dist/gemini-skill/falsegreen-skill/` according to the
-Gemini CLI skill workflow.
+`agy` skill workflow.
 
 ---
 

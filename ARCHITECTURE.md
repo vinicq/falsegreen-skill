@@ -17,9 +17,9 @@ There is no parser here. The "engine" is a protocol the model follows, defined o
 | `schema/finding.json`, `schema/report.json` | the source of truth for Mode A JSON output |
 | `schema/test-spec.json` | Mode B input contract: the spec a generated test must satisfy |
 | `schema/fix-validation.json` | Mode C output contract: the gate verdict (clean/mutated replica, accept/reject) |
-| `skills/`, `.claude-plugin/`, `.codex-plugin/`, `.gemini/` | host packaging metadata |
+| `skills/`, `.claude-plugin/`, `.codex-plugin/`, `.antigravity-plugin/`, `.agents/`, `.gemini/` | host packaging metadata (`.antigravity-plugin/` = Antigravity CLI plugin, `.agents/skills/` = Antigravity CLI workspace skill, `.gemini/` = legacy Gemini CLI) |
 | `contexts/` | host-specific usage guides |
-| `llm.md`, `GEMINI.md` | host-specific renderings of the same protocol |
+| `llm.md`, `AGENTS.md`, `GEMINI.md` | host-specific renderings of the same protocol |
 | `bin/`, `scripts/` | the CLI and the validate/build-targets scripts |
 | `models.yaml` | documented model names per provider |
 | `examples/<lang>/` | documentation fixtures (annotated BAD/CLEAN pairs), not loaded at runtime |

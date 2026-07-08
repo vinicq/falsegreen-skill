@@ -24,8 +24,11 @@ You can attach a single file, paste a snippet, or point to a directory.
 
 ### Test discovery
 
-Gemini CLI loads the protocol via the extension context on every session. Its
-file tools let it read test files without you pasting them manually. Say:
+The Antigravity CLI (`agy`) auto-parses this file as a workspace rule file on
+startup, and registers the `.agents/skills/falsegreen-skill/SKILL.md` skill as
+the `/falsegreen-skill` slash command, so the protocol is always in scope. The
+agent's file tools let it read test files without you pasting them manually.
+Say:
 
 - "find and analyze all tests in this project"
 - "run falsegreen on the tests/ directory"

@@ -41,7 +41,8 @@ try {
 for (const rel of [
   'schema/finding.json', 'schema/report.json', 'schema/test-spec.json', 'schema/fix-validation.json',
   '.claude-plugin/plugin.json', '.claude-plugin/marketplace.json',
-  '.codex-plugin/plugin.json', 'gemini-extension.json', '.agents/plugins/marketplace.json',
+  '.codex-plugin/plugin.json', '.antigravity-plugin/plugin.json',
+  'gemini-extension.json', '.agents/plugins/marketplace.json',
   'package.json',
 ]) {
   try { JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8')); ok(`valid JSON: ${rel}`); }

@@ -13,7 +13,7 @@ Per-host wiring lives in `contexts/` and is not duplicated here:
 |---|---|
 | Claude Code / Claude.ai / Anthropic API | [`contexts/claude.md`](contexts/claude.md) |
 | OpenAI Codex CLI | [`contexts/codex.md`](contexts/codex.md) |
-| Gemini CLI / extension | [`contexts/gemini.md`](contexts/gemini.md) |
+| Antigravity CLI (`agy`) / Gemini API | [`contexts/gemini.md`](contexts/gemini.md) |
 | Cursor | [`contexts/cursor.md`](contexts/cursor.md) |
 
 Model tiers are defined once in [`models.yaml`](models.yaml).
@@ -87,7 +87,7 @@ first user message instead.
 
 ## Google Gemini
 
-For the Gemini CLI and extension path, see
+For the Antigravity CLI (`agy`) host path, see
 [`contexts/gemini.md`](contexts/gemini.md). The minimal API call:
 
 ```python

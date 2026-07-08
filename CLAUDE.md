@@ -25,7 +25,7 @@ This repo should contain only public product assets:
 - `reference.md` - per-language pattern catalog and look-alike exemptions.
 - `schema/` - canonical machine-readable output contracts.
 - `skills/` - plugin skill entry points.
-- `.claude-plugin/`, `.codex-plugin/`, `.gemini/`, `.agents/plugins/` - host packaging metadata.
+- `.claude-plugin/`, `.codex-plugin/`, `.antigravity-plugin/`, `.agents/`, `.gemini/` - host packaging metadata (`.antigravity-plugin/` = Antigravity CLI plugin for `agy plugin install`; `.agents/skills/` = Antigravity CLI workspace skill; `.gemini/` = legacy Gemini CLI copy).
 - `contexts/` - host-specific usage guides.
 - `bin/` and `scripts/` - CLI and packaging/validation scripts.
 - `examples/` - public examples only.

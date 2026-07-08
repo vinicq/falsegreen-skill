@@ -31,7 +31,7 @@ There are two ways to run falsegreen, and which one fits depends on how you alre
 
 ### A) Inside your agent, on your login (no API key)
 
-If you already use Claude Code, Codex CLI, Gemini CLI, or Cursor - often on a Pro/Plus/Advanced
+If you already use Claude Code, Codex CLI, Antigravity CLI, or Cursor - often on a Pro/Plus/Advanced
 plan - install falsegreen there and it runs on the host's own model, using your logged-in session.
 No API key, nothing to export, no per-token cost beyond your existing plan. This is what most
 people on those tools want.
@@ -42,7 +42,7 @@ Enable it once, per host:
   `/plugin install falsegreen-skill@falsegreen`
 - **Codex CLI:** `codex plugin marketplace add vinicq/falsegreen-skill` (or clone the repo - the
   root `AGENTS.md` auto-loads)
-- **Gemini CLI:** `gemini extensions install https://github.com/vinicq/falsegreen-skill`
+- **Antigravity CLI (`agy`):** `agy plugin install https://github.com/vinicq/falsegreen-skill`, or open the repo and `agy` discovers the workspace skill at `.agents/skills/falsegreen-skill/SKILL.md` (from Gemini CLI: `agy plugin import gemini`)
 - **Cursor:** copy `contexts/cursor.md` into `.cursor/rules/falsegreen-skill.mdc`
 
 Then attach a test and ask for analysis, or ask it to write a test for your feature. The same

@@ -13,9 +13,11 @@ Thumbs.db
 .claude/settings.local.json
 
 # internal development / research - stays in falsegreen-skill-audit (private)
-# exception: .agents/plugins/ is the Codex CLI plugin marketplace catalog (public)
+# exceptions: .agents/plugins/ (Codex CLI marketplace catalog) and
+# .agents/skills/ (Antigravity CLI Agent Skill) are public host packaging
 .agents/*
 !.agents/plugins/
+!.agents/skills/
 
 # pointer to private audit hub - never commit
 CLAUDE.local.md

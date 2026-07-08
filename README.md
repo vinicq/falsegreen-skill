@@ -313,8 +313,8 @@ mutation testing pass.
 | Claude Code | `/plugin marketplace add vinicq/falsegreen-skill` then `/plugin install falsegreen-skill@falsegreen` |
 | Claude.ai / Anthropic API Skills | `npm run build:targets`, then package `dist/claude-agent-skill/` as the standalone skill |
 | OpenAI Codex CLI | `codex plugin marketplace add vinicq/falsegreen-skill`, or clone the repo: `AGENTS.md` is auto-loaded |
-| Gemini CLI | `gemini extensions install https://github.com/vinicq/falsegreen-skill` |
-| Gemini Agent Skill | workspace skill at `.gemini/skills/falsegreen-skill/SKILL.md`, or `npm run build:targets` for `dist/gemini-skill/` |
+| Antigravity CLI (`agy`) | Install as a plugin: `agy plugin install https://github.com/vinicq/falsegreen-skill` (subpath `.antigravity-plugin/`), or open the repo and `agy` discovers the workspace skill at `.agents/skills/falsegreen-skill/SKILL.md`. From Gemini CLI: `agy plugin import gemini` |
+| Gemini Agent Skill | workspace skill at `.agents/skills/falsegreen-skill/SKILL.md`, or `npm run build:targets` for `dist/gemini-skill/` |
 | Cursor | Copy contents of `contexts/cursor.md` to `.cursor/rules/falsegreen-skill.mdc` |
 | CLI | `npx falsegreen-skill analyze tests/test_example.py`, see [docs/cli.md](docs/cli.md) |
 | API | Use the defined provider guides in `contexts/claude.md`, `contexts/codex.md`, and `contexts/gemini.md` |
@@ -536,14 +536,16 @@ Full matrix on the docs site: [patterns by test level](https://vinicq.github.io/
 ```
 falsegreen-skill/
   SKILL.md              the skill protocol (language and LLM agnostic)
-  AGENTS.md             Codex CLI context (auto-loaded from project root)
-  GEMINI.md             Gemini CLI context (auto-loaded, extension contextFileName)
+  AGENTS.md             Codex + Antigravity CLI rule file (auto-parsed at workspace root)
+  GEMINI.md             Antigravity CLI rule file (auto-parsed) + legacy Gemini CLI contextFileName / import source
   llm.md                self-contained prompt context used by CLI/API examples
   reference.md          per-language case catalog and framework cues
   providers.md          multi-LLM invocation guide (API snippets)
   CREDITS.md            the research this skill builds on
-  gemini-extension.json Gemini CLI extension manifest
-  .gemini/              Gemini Agent Skill entry point
+  gemini-extension.json legacy Gemini CLI manifest (source for `agy plugin import gemini`)
+  .antigravity-plugin/  Antigravity CLI (`agy`) plugin manifest + skill (`agy plugin install`)
+  .agents/skills/       Antigravity CLI (`agy`) workspace Agent Skill entry point
+  .gemini/              legacy Gemini Agent Skill entry point
   .claude-plugin/       Claude Code plugin manifest + marketplace catalog
   .codex-plugin/        Codex CLI plugin manifest
   .agents/plugins/      Codex CLI marketplace catalog
@@ -874,18 +876,28 @@ The plugin manifest is `.codex-plugin/plugin.json`, the marketplace catalog
 `AGENTS.md` eagerly (it carries the compact protocol) and pull `reference.md`
 or `SKILL.md` on demand. Full guide: [`contexts/codex.md`](contexts/codex.md).
 
-#### Gemini CLI
+#### Antigravity CLI (`agy`)
+
+Antigravity is Google's successor to the discontinued Gemini CLI. There are
+three ways to enable it.
+
+Install it as a plugin (the `.antigravity-plugin/` bundle stages into
+`~/.gemini/antigravity-cli/plugins/`):
 
 ```bash
-gemini extensions install https://github.com/vinicq/falsegreen-skill
+agy plugin install https://github.com/vinicq/falsegreen-skill
 ```
 
-`gemini-extension.json` registers the extension and loads `GEMINI.md` as
-persistent context (`contextFileName`). Every session then carries the
-protocol; ask in natural language. For Gemini's skill discovery instead of
-extension-wide context, use the workspace skill at
-`.gemini/skills/falsegreen-skill/SKILL.md`, or run `npm run build:targets` for
-a standalone `dist/gemini-skill/` package. Full guide:
+Or run `agy` inside the repo with no install: it discovers the workspace Agent
+Skill at `.agents/skills/falsegreen-skill/SKILL.md` and parses `AGENTS.md` /
+`GEMINI.md` at the root as codebase rule files on startup. Either way the skill
+is the `/falsegreen-skill` slash command; invoke it or ask in natural language,
+for example "analyze tests/ for false-positive smells".
+
+For a self-contained plugin (no repo checkout), run `npm run build:targets` and
+install `dist/antigravity-plugin/`. If you still have the old Gemini CLI
+extension installed, migrate it with `agy plugin import gemini`, which converts
+the legacy `gemini-extension.json` + `GEMINI.md` plugin. Full guide:
 [`contexts/gemini.md`](contexts/gemini.md).
 
 #### Cursor
