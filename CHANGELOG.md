@@ -67,6 +67,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `npm run validate` fails if a host that advertises standalone use stops naming
   every emitted code. That assertion is the checkable form of self-containment and
   it would have caught this before review.
+- The project layer went missing from the compact index. PL codes audit project
+  config, not test source, so they are language-agnostic, but the index built its
+  row set from the js and robot scanners and `falsegreen` is the only emitter of
+  PL1 and PL2. The two checks for `python -O` assertion stripping and warnings not
+  promoted were in no compact host. Every PL code any scanner emits is in every
+  index now.
+- The range assertion accepted a cross-series typo. The endpoint prefix was a
+  non-capturing group, so `S1-C18` consumed the C, discarded it, and validated
+  S1..S18 as a clean range: the gate passed the exact shape it exists to reject.
+  Endpoints must now share a series.
 - The structural index named 39 of the 67 codes the non-Python scanners emit. It
   filtered on the `JS`, `R` and `PL` prefixes, so it dropped every shared C-code,
   the Robot-only C9b and D2, and the diagnostics, while promising to name the

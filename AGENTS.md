@@ -101,33 +101,33 @@ them only when the user asks.
 <!-- fg:structural-codes-compact:start -->
 | Code | Scanner | Severity | What to look for |
 |---|---|---|---|
-| C2 | js/rf | HIGH | Test body contains no assertion at all |
-| C2b | js/rf | LOW | Test calls production code but verifies nothing |
-| C3 | rf | HIGH | Assert inside try whose except swallows the error |
-| C5 | js/rf | HIGH | Always-true assertion |
-| C6 | js/rf | LOW | Weak assertion: only checks that something came back |
-| C7 | js/rf | HIGH | Self-comparison: both sides are identical |
-| C8 | js | LOW | Float exact equality |
-| C8b | js | LOW | Approximate equality with no explicit tolerance |
-| C9 | js/rf | LOW | pytest.raises too broad |
+| C2 | py/js/rf | HIGH | Test body contains no assertion at all |
+| C2b | py/js/rf | LOW | Test calls production code but verifies nothing |
+| C3 | py/rf | HIGH | Assert inside try whose except swallows the error |
+| C5 | py/js/rf | HIGH | Always-true assertion |
+| C6 | py/js/rf | LOW | Weak assertion: only checks that something came back |
+| C7 | py/js/rf | HIGH | Self-comparison: both sides are identical |
+| C8 | py/js | LOW | Float exact equality |
+| C8b | py/js | LOW | Approximate equality with no explicit tolerance |
+| C9 | py/js/rf | LOW | pytest.raises too broad |
 | C9b | rf | - | RequestsLibrary `expected_status=any` |
-| C11a | js/rf | LOW | Self-confirming literal: test assigns then asserts the same value |
-| C16 | js/rf | LOW | Result depends on uncontrolled time, randomness, or sleep |
-| C18 | js | LOW | String/repr comparison |
-| C20 | js/rf | HIGH | Assertion after unconditional return/raise/fail |
-| C21 | js/rf | LOW | Every assertion is inside a conditional; none runs unconditionally |
-| C23 | js/rf | LOW | Hard-coded absolute or home-relative file path |
-| C31 | rf | LOW | capsys.readouterr() result discarded |
-| C32 | rf | LOW | @pytest.mark.skip without reason |
-| C37 | js/rf | LOW | Duplicate parametrize case |
-| C44 | js/rf | HIGH | Numeric tautology |
-| C48 | js | LOW | Dark patch: flips a test-mode flag then asserts |
-| CC | js/rf | LOW | Commented-out assert |
-| D1 | js | LOW | Assertion Roulette: multiple asserts, none with a message |
+| C11a | py/js/rf | LOW | Self-confirming literal: test assigns then asserts the same value |
+| C16 | py/js/rf | LOW | Result depends on uncontrolled time, randomness, or sleep |
+| C18 | py/js | LOW | String/repr comparison |
+| C20 | py/js/rf | HIGH | Assertion after unconditional return/raise/fail |
+| C21 | py/js/rf | LOW | Every assertion is inside a conditional; none runs unconditionally |
+| C23 | py/js/rf | LOW | Hard-coded absolute or home-relative file path |
+| C31 | py/rf | LOW | capsys.readouterr() result discarded |
+| C32 | py/rf | LOW | @pytest.mark.skip without reason |
+| C37 | py/js/rf | LOW | Duplicate parametrize case |
+| C44 | py/js/rf | HIGH | Numeric tautology |
+| C48 | py/js | LOW | Dark patch: flips a test-mode flag then asserts |
+| CC | py/js/rf | LOW | Commented-out assert |
+| D1 | py/js | LOW | Assertion Roulette: multiple asserts, none with a message |
 | D2 | rf | - | Control flow at test level |
-| D3 | js | LOW | Duplicate Assert: same assertion appears twice |
-| D4 | js | LOW | Unnamed parametrize cases |
-| D6 | js | LOW | Debug print in test |
+| D3 | py/js | LOW | Duplicate Assert: same assertion appears twice |
+| D4 | py/js | LOW | Unnamed parametrize cases |
+| D6 | py/js | LOW | Debug print in test |
 | D7 | js | LOW | Anonymous test: empty or missing description |
 | D8 | js | LOW | Magic number in an assertion |
 | JS1 | js | HIGH | focused test (`it.only`/`fit`) skips the rest of the suite |
@@ -154,9 +154,11 @@ them only when the user asks.
 | JS29 | js | LOW | `expect(...).resolves`/`.rejects` chain is a bare statement, not awaited or returned - the test finishes green before the matcher settles |
 | JS30 | js | HIGH | literal-vs-literal assertion (`expect(2).toBe(3)`, chai `expect(x).to.equal(y)`) - both operands are fixed at parse time |
 | JS31 | js | LOW | `try/catch` swallows a possible throw with no assertion on the exception - a unit that stops throwing still passes green |
-| M2 | js/rf | LOW | Long test method |
-| PL7 | js | - | No coverage gate |
-| PL8 | js | - | Run stops early |
+| M2 | py/js/rf | LOW | Long test method |
+| PL1 | py | - | Asserts stripped at runtime |
+| PL2 | py | - | Warnings not promoted |
+| PL7 | py/js | - | No coverage gate |
+| PL8 | py/js | - | Run stops early |
 | PL9 | rf | - | Skip-on-failure run option |
 | PL10 | js | - | passWithNoTests |
 | R1 | rf | - | Forced green |

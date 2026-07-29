@@ -60,8 +60,15 @@ function renderStructuralIndex(packages) {
   const scanners = JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'schema/scanner-codes.json'), 'utf8'));
   const pre = (id) => id.replace(/\d.*$/, '');
   const num = (id) => Number((id.match(/\d+/) || [0])[0]);
-  const tag = (id) => packages.filter((k) => scanners[k].codes.includes(id)).map((k) => SCANNER_TAG[k]).join('/');
-  const ids = [...new Set(packages.flatMap((k) => scanners[k].codes))]
+  const tag = (id) => Object.keys(SCANNER_TAG).filter((k) => scanners[k].codes.includes(id)).map((k) => SCANNER_TAG[k]).join('/');
+  // The project layer is language-agnostic: PL codes audit project config, not test source,
+  // so every PL code any scanner emits belongs in every index. falsegreen is the only
+  // emitter of PL1 and PL2, so a js/robot union silently dropped them.
+  const projectLayer = Object.entries(scanners)
+    .filter(([k, v]) => !k.startsWith('$') && v && Array.isArray(v.codes))
+    .flatMap(([, v]) => v.codes)
+    .filter((id) => /^PL\d/.test(id));
+  const ids = [...new Set([...packages.flatMap((k) => scanners[k].codes), ...projectLayer])]
     .sort((a, b) => pre(a).localeCompare(pre(b)) || num(a) - num(b) || a.localeCompare(b));
   const rows = ['| Code | Scanner | Severity | What to look for |', '|---|---|---|---|'];
   for (const id of ids) rows.push(`| ${id} | ${tag(id)} | ${(catalog[id] || {}).severity || '-'} | ${(catalog[id] || {}).title || '-'} |`);

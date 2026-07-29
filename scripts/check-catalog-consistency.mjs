@@ -198,7 +198,10 @@ for (const host of HOSTS) {
 // forms on purpose while describing the releases that carried them. .cursor/rules/*.mdc and
 // dist/ are absent too - both are generated verbatim from sources already in this list, and
 // sync-cursor-mdc --check / build:targets keep them honest.
-const SERIES = /\b([A-Z]{1,2})(\d+)\s*[-–—]\s*(?:[A-Z]{1,2})?(\d+)\b/g;
+// The endpoint prefix is captured, not discarded. It used to be a non-capturing group, so
+// `S1-C18` consumed the C, threw it away, and then validated S1..S18 as a clean range: a
+// cross-series typo passed the gate that exists to reject impossible ranges.
+const SERIES = /\b([A-Z]{1,2})(\d+)\s*[-–—]\s*([A-Z]{1,2})?(\d+)\b/g;
 for (const doc of [...HOSTS, 'README.md', 'STATUS.md', 'reference.md', 'models.yaml', 'docs/architecture.md']) {
   let text;
   try {
@@ -206,9 +209,13 @@ for (const doc of [...HOSTS, 'README.md', 'STATUS.md', 'reference.md', 'models.y
   } catch {
     continue;
   }
-  for (const [range, prefix, fromRaw, toRaw] of text.matchAll(SERIES)) {
+  for (const [range, prefix, fromRaw, endPrefix, toRaw] of text.matchAll(SERIES)) {
     const from = Number(fromRaw);
     const to = Number(toRaw);
+    if (endPrefix && endPrefix !== prefix) {
+      fail(`${doc}: advertises "${range}", whose endpoints are in different series - a range cannot start in ${prefix} and end in ${endPrefix}`);
+      continue;
+    }
     // A suffixed id counts as the number being defined: the catalog spells C11a and R8b
     // with no bare C11 or R8, and a range covering 11 is not lying about C11a.
     const defines = (n) => Object.hasOwn(committed, `${prefix}${n}`) || Object.keys(committed).some((id) => new RegExp(`^${prefix}${n}[a-z]$`).test(id));
