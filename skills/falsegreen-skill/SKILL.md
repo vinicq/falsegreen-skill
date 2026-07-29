@@ -9,8 +9,10 @@ This skill is a thin entry point. The canonical protocol lives at the plugin
 root. Read these files before judging any test:
 
 1. `SKILL.md` at the plugin root (relative to this file: `../../SKILL.md`).
-   It defines Steps 0-7 and the six
-   judgments J1-J6.
+   It defines Steps 0-7 and the six judgments J1-J6. At ~36 KiB it is a
+   large-context read: on a ~32 KiB host, work from this file plus the fragments
+   it names and pull `../../SKILL.md` only for the long-form judgment wording or
+   Mode B/C.
 2. `reference.md` at the plugin root: the per-language pattern catalog with
    look-alike exemptions.
 
@@ -37,17 +39,69 @@ non-Python tests.
 Load sections, not the whole file. `reference.md` is ~92 KiB, so an eager full
 read overruns a small host-context budget (Codex CLI allows roughly 32 KiB) and
 truncates mid-file, which degrades the analysis without any warning. On a tight
-budget the semantic floor is the part you keep and the language section is the
-part you defer. The floor is two fragments:
-`fragments/semantic-cases-compact.md` (~4.7 KiB, a row per S-code) plus
-`fragments/semantic-exemptions.md` (~2.8 KiB, the look-alike exemptions). At
-7.5 KiB it covers every S-code and its exemptions with no `reference.md` read at
-all, against ~13 KiB for the equivalent prose section, which leaves no room
-beside Python (~27 KiB) or TS/JS (~19 KiB). Start from those two plus
-`fragments/precision-rules.md`, then pull the passage of the `reference.md`
-language section that defines the code you are about to report. Pull the passage,
-not the section: a whole-section read is 15 to 19 KiB for Robot or TS/JS and does
-not co-reside with an eager host file.
+budget the floor is the part you keep and the language section is the part you
+defer. The floor is three things: the structural code index below (~3 KiB, all 39
+TS/JS, Robot and project-layer codes), `fragments/semantic-cases-compact.md`
+(~4.7 KiB, a row per S-code), and `fragments/semantic-exemptions.md` (~2.8 KiB,
+the look-alike exemptions). At ~10.5 KiB together they name every code and its
+exemptions with no `reference.md` read at all, against ~19 KiB for the TS/JS
+section alone. Add `fragments/precision-rules.md`, then pull the passage of the
+`reference.md` language section that defines a code only when a finding needs its
+full definition. The index has to come first: a passage cannot be requested for a
+code the reader has never seen named, which is why deferring the section without
+the index does not work.
+
+## Structural code index (TS/JS, Robot, project layer)
+
+Generated from `schema/code-catalog.json`, so it cannot drift from
+`reference.md`. Severity `-` means the code carries no fixed severity.
+
+<!-- fg:structural-codes-compact:start -->
+| Code | Severity | What to look for |
+|---|---|---|
+| **TypeScript / JavaScript** | | 24 codes |
+| JS1 | HIGH | focused test (`it.only`/`fit`) skips the rest of the suite |
+| JS2 | HIGH | `expect(x)` with no matcher |
+| JS3 | LOW | snapshot is the only assertion |
+| JS4 | LOW | skipped test (`it.skip`/`xit`/`it.todo`) |
+| JS5 | LOW | async query/event not awaited (`findBy*`/`waitFor`/user-event) |
+| JS6 | HIGH | empty `describe`/`suite` |
+| JS7 | LOW | assertion in a non-awaited `setTimeout`/`then` callback |
+| JS8 | LOW | mocks the unit under test and asserts it directly |
+| JS9 | HIGH | assertion in a dead literal branch (`if(false)`) |
+| JS11 | LOW | `try/catch` swallows the assertion |
+| JS13 | LOW | `queryBy*`/`queryAllBy*` query (returns null when absent) as a loose statement, never asserted - `getBy*`/`getAllBy*`/`findBy*`/`findAllBy*` throw on absence and ARE the assertion |
+| JS15 | LOW | comparison wrapped in a boolean (`expect(a===b).toBe(true)`) |
+| JS17 | LOW | commented-out test block (`// it(...)`) |
+| JS18 | LOW | `done` callback instead of async/await |
+| JS21 | HIGH | matcher referenced but never called (`expect(x).toBe` with no `()`) |
+| JS22 | HIGH | empty `it.each`/`test.each` table |
+| JS23 | HIGH | `expect.assertions(N)` with fewer unconditional reachable `expect()` calls than `N` |
+| JS24 | LOW | Cypress `cy.get/find/contains` query statement with no `.should`/`.and`/`.then` assertion |
+| JS25 | HIGH | the only assertion sits inside an array-iterator callback (`forEach`/`map`/`filter`/`some`/`every`/`flatMap`) - runs zero times on an empty collection |
+| JS26 | LOW | fake timers installed but never advanced (`runAllTimers`/`advanceTimersByTime`/`tick`) - the scheduled callback never fires, so the assertion reads un-mutated state |
+| JS27 | LOW | `toHaveBeenCalled*` is the sole oracle on a locally-created double - verifies wiring, not behaviour |
+| JS29 | LOW | `expect(...).resolves`/`.rejects` chain is a bare statement, not awaited or returned - the test finishes green before the matcher settles |
+| JS30 | HIGH | literal-vs-literal assertion (`expect(2).toBe(3)`, chai `expect(x).to.equal(y)`) - both operands are fixed at parse time |
+| JS31 | LOW | `try/catch` swallows a possible throw with no assertion on the exception - a unit that stops throwing still passes green |
+| **Robot Framework** | | 9 codes |
+| R1 | - | Forced green |
+| R2 | - | Hollow verifier keyword |
+| R3 | - | Test Cases in a .resource |
+| R4 | - | No Operation only |
+| R5 | - | Empty [Template] |
+| R6 | - | Should Be True on a string literal |
+| R7 | - | Hollow [Template] keyword |
+| R8 | - | Verification only in Setup |
+| R8b | - | Verification only in Teardown |
+| **Project layer** | | 6 codes |
+| PL1 | - | Asserts stripped at runtime |
+| PL2 | - | Warnings not promoted |
+| PL7 | - | No coverage gate |
+| PL8 | - | Run stops early |
+| PL9 | - | Skip-on-failure run option |
+| PL10 | - | passWithNoTests |
+<!-- fg:structural-codes-compact:end -->
 
 ## Protocol in one paragraph
 

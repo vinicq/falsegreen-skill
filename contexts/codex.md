@@ -65,8 +65,8 @@ your own prompts if they work for you; nothing here requires removing them.
 
 Codex loads project guidance into a host context with a working budget of
 about **32 KiB**. The full set of protocol files does not fit: `SKILL.md`
-(~35 KiB) already breaks the budget on its own, and with `AGENTS.md` (~22 KiB)
-plus this guide (~25 KiB) the three come to roughly 82 KiB loaded together.
+(~36 KiB) already breaks the budget on its own, and with `AGENTS.md` (~23 KiB)
+plus this guide (~25 KiB) the three come to roughly 84 KiB loaded together.
 Loading them at once truncates the protocol mid-file and the analysis degrades
 silently.
 
@@ -88,8 +88,8 @@ On demand (load only when the case calls for it, never eagerly):
 
 2. **`reference.md`** - the full per-language pattern catalog with examples and
    look-alike exemptions. At ~92 KiB it never fits eagerly, and neither does a
-   whole language section: `AGENTS.md` (~22 KiB) plus the TS/JS section
-   (~19 KiB) is ~41 KiB, past the budget before any test source loads, and
+   whole language section: `AGENTS.md` (~23 KiB) plus the TS/JS section
+   (~19 KiB) is ~42 KiB, past the budget before any test source loads, and
    Robot (~15 KiB) is over too. You do not need either. `AGENTS.md` carries the
    complete structural code index and the complete semantic table, so it names
    every code on its own; come here for the passage that defines a code only

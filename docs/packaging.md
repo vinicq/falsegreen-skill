@@ -163,9 +163,9 @@ keep it in CLI/provider examples only when there is a clear maintenance reason.
 ### Codex context budget (~32 KiB)
 
 Codex loads project guidance into a host context with a working budget of about
-**32 KiB**. The protocol files do not all fit at once: `SKILL.md` (~35 KiB) is
-over budget by itself, and with `AGENTS.md` (~22 KiB) plus `contexts/codex.md`
-(~25 KiB) the three come to roughly 82 KiB together, so loading them truncates
+**32 KiB**. The protocol files do not all fit at once: `SKILL.md` (~36 KiB) is
+over budget by itself, and with `AGENTS.md` (~23 KiB) plus `contexts/codex.md`
+(~25 KiB) the three come to roughly 84 KiB together, so loading them truncates
 the protocol mid-file.
 
 The supported path for Codex is the compact load order documented in
@@ -177,7 +177,7 @@ forks a duplicate of the canonical protocol.
 
 Respect this budget on future edits. Growing `AGENTS.md` past what fits the budget
 on its own, or telling Codex to load `SKILL.md` eagerly, breaks the compact path.
-At ~22 KiB `AGENTS.md` no longer co-resides with a whole `reference.md` language
+At ~23 KiB `AGENTS.md` no longer co-resides with a whole `reference.md` language
 section (TS/JS ~19 KiB, Robot ~15 KiB), so the on-demand pull is a passage, not a
 section. An instruction that says "in full" on the Codex path is a budget bug, and
 one that says "read the passage for each code you are about to report" without
@@ -187,6 +187,8 @@ code on its own; keep it that way and the on-demand pull stays optional.
 
 Byte figures in this file and in `contexts/codex.md` are hand-measured and have
 gone stale three times in one change. Re-measure them, do not copy them forward.
+The prose rounds to whole KiB, so a re-measure is only required when a figure
+moves by 0.5 KiB or more.
 
 ## Scripts
 

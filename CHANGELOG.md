@@ -59,6 +59,30 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `dist/` is gitignored and validate never builds it, so that is the only place
   those paths exist. Against the previous state it reports 9 dangling paths across
   the three packages.
+- A TypeScript, JavaScript, or Robot review driven by `GEMINI.md` ran no
+  structural pass at all. Its Step 2 carried a Python family table and then said
+  "For TypeScript/JavaScript, skip to Step 3", with no TS/JS table, no Robot
+  section, no index, and no instruction to open `reference.md`. Not a missing
+  index, a missing pass, and it predates this change. Gemini has no budget
+  constraint, so it loads the matching section in full.
+- The S-series sat outside the ordered step sequence in four of the seven hosts.
+  `SKILL.md` scoped it to Step 2b ("TS/JS only"), `llm.md` to Step 2 ("Python
+  only"), and `AGENTS.md` and `GEMINI.md` named it in a preamble with the table
+  after the last step. In all four an agent could follow every numbered step
+  without ever screening S1-S18 and S21, which is the under-detection this change
+  exists to fix, surviving inside the fix. The mandate now lives in Step 4, where
+  J1-J6 runs, in every host. `contexts/cursor.md` already did this and was the
+  pattern the other four now follow.
+- `npm run validate` asserts that placement. A static check cannot tell an
+  imperative from a description, but it can tell where the S-series sits, and
+  location was the real defect both times a reviewer caught it: an S-code mention
+  must appear between a host's Step 4 heading and its Step 5 heading. Against the
+  previous commit the assertion names all four hosts.
+- The Codex plugin entry point told a ~32 KiB host to read a ~36 KiB file.
+  `.codex-plugin/plugin.json` points Codex at `skills/falsegreen-skill/SKILL.md`,
+  whose first instruction was to read the root `SKILL.md`, so its own two
+  instructions could not both be followed. It now carries the structural index
+  itself and treats the root protocol as the large-context read it is.
 - The structural catalog had the same defect as the semantic one, and the compact
   instruction made it circular. `SKILL.md` Step 2b's TS/JS table carries 10 of the
   24 JS-codes and Robot had no table at all, so 23 structural codes were reachable

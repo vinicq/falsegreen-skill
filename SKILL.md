@@ -251,6 +251,14 @@ Does the test depend on execution order, shared mutable state, or fixtures set
 up by a sibling test? A test that passes only in a specific order is not
 reliably testing anything.
 
+**Then screen every S-code, on every file, whatever the language.** S1-S18 and
+S21 are part of this step, not a preamble to it: walk them one by one against
+`## Patterns only the semantic pass can catch (AI-only)` in `reference.md`, check
+each candidate against the look-alike block that closes that section, then move
+on. Step 4 is not complete until every S-code has been considered. The S-series
+does not belong to Step 2b or 2c, so a Python run that skipped both still runs it
+in full.
+
 ### Step 5: Adversarial verify for case 18
 
 Case 18 (expected value contradicts what the code should do) is the highest-

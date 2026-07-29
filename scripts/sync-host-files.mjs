@@ -80,6 +80,7 @@ const TARGETS = {
   'AGENTS.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions', 'structural-codes-compact'],
   'GEMINI.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions'],
   'contexts/cursor.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions', 'structural-codes-compact'],
+  'skills/falsegreen-skill/SKILL.md': ['structural-codes-compact'],
 };
 
 function markers(key) {

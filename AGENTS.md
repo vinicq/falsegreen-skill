@@ -84,7 +84,7 @@ per code, so you can run every code without opening `reference.md` first. Work
 from the index, then pull the `reference.md` passage for a code only when a
 finding needs its full definition or its look-alike exemption.
 
-That order matters and the reverse does not work. This file is ~22 KiB and the
+That order matters and the reverse does not work. This file is ~23 KiB and the
 TS/JS section is ~19 KiB, so loading a whole section puts the pair past the
 ~32 KiB Codex budget before any test source loads and the host truncates
 mid-file. But you also cannot ask for the passage of a code you have never seen
@@ -192,6 +192,13 @@ call order - even though the public contract still holds?
 **J6 - Does the test pass in isolation?**
 Does the test depend on execution order or shared mutable state? A test that
 passes only in a specific order is not reliably testing anything.
+
+**Then screen every S-code, on every file, whatever the language.** S1-S18 and
+S21 are part of this step, not a preamble to it: walk the table under "Semantic
+cases (quick reference)" below row by row, check each candidate against
+"Look-alike exemptions for the semantic codes", then move on. Step 4 is not
+complete until every S-code has been considered, and nothing outside this file is
+needed to do it.
 
 ### Step 5: Adversarial verify for case 18
 

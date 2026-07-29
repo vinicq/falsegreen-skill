@@ -6,10 +6,8 @@ TypeScript, JavaScript, and Robot Framework, plus semantic patterns no static
 tool can see.
 
 Full protocol: `SKILL.md`. Language patterns: `reference.md`.
-The S1-S18 and S21 semantic codes are language-agnostic and apply to every language,
-Python included: `reference.md` under
-`## Patterns only the semantic pass can catch (AI-only)`, or the compact table
-below, which carries a row for each one.
+The S1-S18 and S21 semantic codes are language-agnostic; Step 4 below applies
+them, and the compact table further down carries a row for each one.
 Gemini-specific API guide: `contexts/gemini.md`.
 Report schema: `schema/report.json`.
 
@@ -95,7 +93,13 @@ If Python, scan against all falsegreen families before semantic judgment:
 | E - wrong thing | C33, C36, C37 | metric not asserted, fail without reason, duplicate case |
 | Optional / diagnostic (opt-in) | C22, D1, D3, D4, D5, D6, M2 | apply only when user requests |
 
-For TypeScript/JavaScript, skip to Step 3.
+For TypeScript, JavaScript, Robot Framework, and the project layer this file
+carries no table, but the structural pass is not optional. Load the matching
+`reference.md` section and apply every code in it - the 24 JS-codes for TS/JS,
+the R-codes for Robot, the PL codes for project layout - then continue to Step 3.
+Load the section in full: Gemini's context is measured in hundreds of thousands
+of tokens and the largest section is ~19 KiB, so the passage-scoped rule that the
+Codex path needs does not apply here.
 
 **Step 3: Classify test intent.**
 
@@ -118,6 +122,13 @@ A failing TDD test is not a false positive. Classify before judging.
 - **J6:** Does the test pass in isolation? Not order-dependent on siblings or shared mutable state.
 
 Flag only the first failing judgment per test. Do not double-report.
+
+**Then screen every S-code, on every file, whatever the language.** S1-S18 and
+S21 are part of this step, not a preamble to it: walk the table under "Semantic
+cases (quick lookup)" below row by row, check each candidate against "Look-alike
+exemptions for the semantic codes", then move on. Step 4 is not complete until
+every S-code has been considered. This holds for Python, TypeScript, JavaScript,
+and Robot Framework alike.
 
 **Step 5: Adversarial verify for case 18.**
 Case 18 (expected value contradicts what the code should do) requires an

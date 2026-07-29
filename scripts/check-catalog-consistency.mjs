@@ -155,6 +155,34 @@ for (const host of HOSTS) {
   }
 }
 
+// 3e. The S-series has to live INSIDE the ordered step sequence, not beside it.
+// This is the narrow, checkable half of mandate-versus-mention. It cannot tell an imperative
+// from a description - nothing static can - but it can tell WHERE the S-series sits, and
+// location was the actual defect both times a reviewer caught this: four hosts named the
+// S-codes in a preamble or scoped them to a language-specific step, so an agent could follow
+// every numbered step without ever screening them. Step 4 is where J1-J6 runs, so an S-code
+// mention has to appear between the Step 4 heading and the Step 5 heading.
+// ponytail: a host with no Step 4 heading is skipped rather than guessed at; those route to
+// another host's protocol (contexts/codex.md -> AGENTS.md).
+const STEP4 = /^\**#*\s*\**Step 4\b/m;
+const STEP5 = /^\**#*\s*\**Step 5\b/m;
+for (const host of HOSTS) {
+  let text;
+  try {
+    text = read(host);
+  } catch {
+    continue;
+  }
+  const open = text.match(STEP4);
+  if (!open) continue;
+  const body = text.slice(open.index);
+  const close = body.slice(1).match(STEP5);
+  const step4 = close ? body.slice(0, close.index + 1) : body;
+  if (!/\bS1\b|\bS-series\b|\bS-code/.test(step4)) {
+    fail(`${host}: Step 4 never mentions the S-series, so an agent can follow every numbered step without screening S1-S18 and S21 - the semantic codes belong inside Step 4, not in a preamble or a language-scoped step`);
+  }
+}
+
 // 3d. A doc may not advertise a range that implies codes the catalog does not define. The
 // invariant is per-id, not per-series: every id in the inclusive range has to exist. That
 // keeps an honest subset range legal ("D1-D6" when D1..D6 all exist) and rejects a range
