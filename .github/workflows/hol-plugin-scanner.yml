@@ -1,0 +1,31 @@
+name: HOL Plugin Scanner
+
+# Listing gate for hashgraph-online/awesome-codex-plugins. Its CONTRIBUTING.md
+# requires the HOL Plugin Scanner to run in CI on the source repo, not just
+# locally, and its PR checklist names this filename and these settings. The bar
+# is 80/130 with no critical or high findings; the score is the trust signal
+# maintainers cite. Actions are SHA-pinned because the scanner's Operational
+# category penalizes floating tags - the same pin style as ci.yml.
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: hashgraph-online/ai-plugin-scanner-action@8f0a503ca2a70c1968a9a883e11fdff5737b7909 # v1.2.514
+        with:
+          plugin_dir: "."
+          mode: scan
+          min_score: 80
+          fail_on_severity: high
+          format: sarif
+          upload_sarif: true

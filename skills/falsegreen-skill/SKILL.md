@@ -15,12 +15,21 @@ root. Read these files before judging any test:
    look-alike exemptions.
 
 **Mandatory for any non-Python file (JavaScript, TypeScript, Robot Framework,
-Gherkin, Tavern): load `reference.md` in full before you judge.** The tables in
-the root `SKILL.md` carry the complete catalog only for Python; for every other
-language they are a summary, and the full emitted code set (all JS-series codes,
-the Robot R-codes, the PL config-audit codes, and the S-series semantic codes)
-lives only in `reference.md`. Skipping this step silently under-detects
-non-Python tests. For Python the `SKILL.md` catalog is complete on its own.
+Gherkin, Tavern): read the matching language section of `reference.md` before you
+judge.** The tables in the root `SKILL.md` carry the complete catalog only for
+Python; for every other language they are a summary, and the full emitted code set
+(all JS-series codes, the Robot R-codes, the PL config-audit codes, and the
+S-series semantic codes) lives only in `reference.md`. Skipping this step silently
+under-detects non-Python tests. For Python the `SKILL.md` catalog is complete on
+its own.
+
+Load the section, not the whole file. `reference.md` is ~90 KB, so an eager full
+read overruns a small host-context budget (Codex CLI allows roughly 32 KiB) and
+truncates mid-file, which degrades the analysis without any warning. When the
+budget is tight, start from the compact tables in
+`fragments/semantic-cases-compact.md` and `fragments/precision-rules.md`, then
+pull the `reference.md` section for the language in front of you when a finding
+needs the full pattern definition or a look-alike exemption check.
 
 ## Protocol in one paragraph
 
