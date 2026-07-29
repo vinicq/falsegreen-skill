@@ -14,22 +14,35 @@ root. Read these files before judging any test:
 2. `reference.md` at the plugin root: the per-language pattern catalog with
    look-alike exemptions.
 
-**Mandatory for any non-Python file (JavaScript, TypeScript, Robot Framework,
-Gherkin, Tavern): read the matching language section of `reference.md` before you
-judge.** The tables in the root `SKILL.md` carry the complete catalog only for
-Python; for every other language they are a summary, and the full emitted code set
-(all JS-series codes, the Robot R-codes, the PL config-audit codes, and the
-S-series semantic codes) lives only in `reference.md`. Skipping this step silently
-under-detects non-Python tests. For Python the `SKILL.md` catalog is complete on
-its own.
+**Mandatory for every language, Python included: load the semantic catalog.** The
+S-series (S1-S18, S21) is language-agnostic and lives in `reference.md` under
+`## Patterns only the semantic pass can catch (AI-only)`, above the per-language
+sections. The root `SKILL.md` names only S3 and S17, so a run that loads a
+language section alone never sees the rest. Read that section of `reference.md`,
+or read the compact table in `fragments/semantic-cases-compact.md`, which carries
+a row for every S-code. Either way, also read the "Look-alikes - do NOT flag"
+paragraph that closes that section: the S-series without its exemptions produces
+false positives, which this skill treats as worse than a miss.
 
-Load the section, not the whole file. `reference.md` is ~90 KB, so an eager full
+**Mandatory for any non-Python file (JavaScript, TypeScript, Robot Framework,
+Gherkin, Tavern): also read the matching language section of `reference.md` before
+you judge.** The tables in the root `SKILL.md` carry the complete structural
+catalog only for Python; for every other language they are a summary, and the full
+emitted code set (all JS-series codes, the Robot R-codes, the PL config-audit
+codes) lives only in `reference.md`. Skipping this step silently under-detects
+non-Python tests.
+
+Load sections, not the whole file. `reference.md` is ~92 KiB, so an eager full
 read overruns a small host-context budget (Codex CLI allows roughly 32 KiB) and
-truncates mid-file, which degrades the analysis without any warning. When the
-budget is tight, start from the compact tables in
-`fragments/semantic-cases-compact.md` and `fragments/precision-rules.md`, then
-pull the `reference.md` section for the language in front of you when a finding
-needs the full pattern definition or a look-alike exemption check.
+truncates mid-file, which degrades the analysis without any warning. On a tight
+budget the semantic floor is the part you keep and the language section is the
+part you defer: the compact table plus the exemption paragraph is about 7.5 KiB
+and fits beside any single language section, while the full prose semantic section
+is about 13 KiB and leaves no room beside Python (~27 KiB) or TS/JS (~19 KiB).
+Start from `fragments/semantic-cases-compact.md` plus
+`fragments/precision-rules.md`, then pull the `reference.md` section for the
+language in front of you when a finding needs the full pattern definition or a
+look-alike exemption check.
 
 ## Protocol in one paragraph
 

@@ -31,9 +31,10 @@ tiers:
 
   semantic:
     description: >
-      Cases 10-15. Requires reasoning about test intent vs. what is actually tested.
-      Frontier models or 70B+ local models are needed for reliable results.
-    cases: "10-15"
+      Cases 10-15 plus the language-agnostic S-series (S1-S18 and S21). Requires reasoning
+      about test intent vs. what is actually tested. Frontier models or 70B+ local
+      models are needed for reliable results.
+    cases: "10-15, S1-S18, S21"
     minimum: "Frontier model or 70B+ local"
     rationale: "Requires reasoning about test intent vs. what is tested. Smaller models produce high false-positive rates on these cases."
     models:

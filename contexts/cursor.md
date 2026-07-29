@@ -53,7 +53,11 @@ integration (real HTTP client or ORM/driver - API and database), or E2E (browser
 Strongest signal wins (markers, paths, file names, `conventions:`). The level
 changes the oracle (E2E presence IS the assertion; affects J4/J6); a real API/DB
 call in a unit test is itself the smell. The full catalog for TS/JS (JS1-JS22),
-Robot (R-codes), the new Python codes, and the AI-only S-codes is in `reference.md`.
+Robot (R-codes), and the new Python codes is in `reference.md`. The AI-only
+S-codes (S1-S18 and S21) are language-agnostic and apply to every language including
+Python; they live in `reference.md` under
+`## Patterns only the semantic pass can catch (AI-only)`, above the per-language
+sections, so a language-section-only load skips them.
 Report the level in each finding.
 
 ### Step 2: For Python — apply the structural pattern catalog

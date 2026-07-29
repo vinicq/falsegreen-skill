@@ -82,8 +82,86 @@ skillLines.forEach((line, idx) => {
   }
 });
 
+// 3. The documented load path reaches the semantic catalog.
+// The S-series is language-agnostic and defined only in the reference.md section that sits
+// BEFORE the per-language sections. An instruction that says "load the matching language
+// section" therefore routes past all of it, and the tight-budget fallback fragment only
+// carried 6 of the 19 codes (issue #168). Assertions 1 and 2 above answer "is the catalog
+// self-consistent"; this one answers "does the documented reading path reach it".
+const SEMANTIC_SECTION = 'Patterns only the semantic pass can catch';
+const HOSTS = [
+  'SKILL.md',
+  'skills/falsegreen-skill/SKILL.md',
+  'AGENTS.md',
+  'GEMINI.md',
+  'llm.md',
+  'contexts/codex.md',
+  'contexts/cursor.md',
+];
+const semantic = Object.keys(committed).filter((id) => committed[id].family === 'Semantic');
+if (semantic.length === 0) fail('schema/code-catalog.json has no family="Semantic" codes - extraction broke');
+
+// 3a. The tight-budget path must carry every semantic code, since it replaces the prose.
+const floor = read('fragments/semantic-cases-compact.md');
+const missing = semantic.filter((id) => !new RegExp(`^\\|\\s*${id}\\s*\\|`, 'm').test(floor));
+if (missing.length > 0) {
+  fail(`fragments/semantic-cases-compact.md is the documented tight-budget load but omits ${missing.length} of ${semantic.length} semantic codes: ${missing.join(', ')}`);
+}
+
+// 3b. reference.md must still define the whole S-series in that one shared section, so a
+// language-agnostic load can reach it.
+const refSections = read('reference.md').split(/^## /m);
+const semanticBody = refSections.find((s) => s.startsWith(SEMANTIC_SECTION));
+if (!semanticBody) {
+  fail(`reference.md no longer has a "## ${SEMANTIC_SECTION}" section - update SEMANTIC_SECTION here`);
+} else {
+  const strayed = semantic.filter((id) => !new RegExp(`\\*\\*${id}\\s`).test(semanticBody));
+  if (strayed.length > 0) {
+    fail(`reference.md "${SEMANTIC_SECTION}" no longer defines ${strayed.join(', ')} - a semantic code moved into a language section and is now unreachable language-agnostically`);
+  }
+}
+
+// 3c. Every host that routes through reference.md must name that section, not only the
+// per-language one.
+for (const host of HOSTS) {
+  let text;
+  try {
+    text = read(host);
+  } catch {
+    fail(`${host}: missing host doc - update HOSTS here`);
+    continue;
+  }
+  if (!/reference\.md/.test(text)) continue;
+  if (!text.includes(SEMANTIC_SECTION)) {
+    fail(`${host}: mandates a reference.md load but never names the "${SEMANTIC_SECTION}" section, so a literal run loads only per-language sections and never sees ${semantic.join('/')}`);
+  }
+}
+
+// 3d. No doc may advertise an S-range that implies codes the catalog does not define. The
+// catalog is not contiguous (it ends S18, then S21), so only a range closing a contiguous
+// run from S1 is honest: "S1-S18 and S21" is legal, a bare "S1-S21" is not.
+const sNums = semantic.map((id) => Number(id.slice(1))).sort((x, y) => x - y);
+let contiguousEnd = 0;
+for (const n of sNums) {
+  if (n === contiguousEnd + 1) contiguousEnd = n;
+  else break;
+}
+for (const doc of [...HOSTS, 'README.md', 'STATUS.md', 'reference.md', 'models.yaml', 'docs/architecture.md']) {
+  let text;
+  try {
+    text = read(doc);
+  } catch {
+    continue;
+  }
+  for (const m of text.matchAll(/\bS1\s*[-–—]\s*S?(\d+)\b/g)) {
+    if (Number(m[1]) !== contiguousEnd) {
+      fail(`${doc}: advertises "${m[0]}", which implies codes the catalog does not define - the contiguous run ends at S${contiguousEnd}, so spell the rest out (for example "S1-S${contiguousEnd} and S${sNums[sNums.length - 1]}")`);
+    }
+  }
+}
+
 if (errors.length > 0) {
   process.stderr.write(errors.map((e) => `error: ${e}`).join('\n') + '\n');
   process.exit(1);
 }
-process.stdout.write(`catalog consistency OK (${Object.keys(committed).length} codes; reference.md == code-catalog.json; SKILL.md agrees)\n`);
+process.stdout.write(`catalog consistency OK (${Object.keys(committed).length} codes; reference.md == code-catalog.json; SKILL.md agrees; ${semantic.length} semantic codes reachable from the compact fragment and named in every host's reference.md load)\n`);

@@ -6,6 +6,40 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- Semantic catalog was unreachable from every documented load path. 0.8.2 traded
+  "load `reference.md` in full" for "load the matching language section", which
+  fits the ~32 KiB Codex budget but routes past the S-series: the S-codes are
+  language-agnostic and live in one section that sits above the per-language
+  sections, so a language-section-only load never sees any of them. The named
+  tight-budget fallback, `fragments/semantic-cases-compact.md`, carried 6 of the
+  19 codes. Python was not exempt either: the root `SKILL.md` defines no S-code
+  yet claims its catalog is complete on its own, so a Python run missed the same
+  19. The mandatory load is now additive (semantic section AND language section)
+  for every advertised language, the compact fragment carries a row for all 19
+  codes, and the "complete on its own" claims are scoped to the structural
+  catalog. Applied across `SKILL.md`, `skills/falsegreen-skill/SKILL.md`,
+  `llm.md`, `contexts/codex.md`, `contexts/cursor.md`, `docs/architecture.md`,
+  and, via `sync:hosts`, `AGENTS.md` and `GEMINI.md`.
+- `npm run validate` now fails when the load path stops reaching the catalog.
+  `check-catalog-consistency.mjs` gained three assertions: the compact fragment
+  carries every semantic code, `reference.md` still defines them all in the one
+  shared section, and every host that routes through `reference.md` names that
+  section. Nothing in CI caught this class before, which is why it regressed
+  silently one release after #117 closed it.
+- Stale advertised ranges. `llm.md` announced the S-series as `S1-S16`, three
+  codes short. Docs also mixed `S1-S16`, `S1-S21`, and `S1-S18 and S21` for the
+  same 19 codes; `S1-S21` implies an S19 and S20 that do not exist. Normalized to
+  `S1-S18 and S21`, and the new assertion rejects any range that closes outside
+  the catalog's contiguous run.
+- Stale byte figures that the budget argument rests on. `contexts/codex.md` and
+  `docs/packaging.md` put `SKILL.md` at ~29 KB and `reference.md` at ~80 KB. The
+  real numbers are ~36 KiB and ~92 KiB, which means `SKILL.md` alone already
+  exceeds the ~32 KiB budget. That is a stronger case for the compact path than
+  the docs were making.
+- `models.yaml` semantic tier listed `cases: "10-15"` and never mentioned the
+  S-series it depends on.
+
 ## [0.8.2] - 2026-07-08
 
 ### Fixed

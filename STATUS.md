@@ -54,7 +54,7 @@ Full flags: [docs/cli.md](docs/cli.md).
 `reference.md` is the superset of the deterministic scanners plus the semantic-only codes:
 **125 codes total**.
 
-- **Structural, mirrored from the static scanners:** the Python `C*` codes (S1-S21 span the
+- **Structural, mirrored from the static scanners:** the Python `C*` codes (S1-S18 and S21 span the
   semantic series; the C-series runs up to C59), the JS/TS `JS*` codes (up to JS31), the
   Robot `R*`/`C*` codes (up to R8b), and the project-layer `PL*` and diagnostic `D*`/`M*`
   codes.

@@ -163,9 +163,10 @@ keep it in CLI/provider examples only when there is a clear maintenance reason.
 ### Codex context budget (~32 KiB)
 
 Codex loads project guidance into a host context with a working budget of about
-**32 KiB**. The protocol files do not all fit at once: `SKILL.md` (~29 KB) plus
-`AGENTS.md` (~11 KB) plus `contexts/codex.md` (~18 KB) is roughly 58 KB together,
-well over budget, and loading all three truncates the protocol mid-file.
+**32 KiB**. The protocol files do not all fit at once: `SKILL.md` (~36 KiB) is
+over budget by itself, and with `AGENTS.md` (~15 KiB) plus `contexts/codex.md`
+(~24 KiB) the three come to roughly 75 KiB together, so loading them truncates
+the protocol mid-file.
 
 The supported path for Codex is the compact load order documented in
 `contexts/codex.md` ("Compact load order for Codex"): `AGENTS.md` eager, with

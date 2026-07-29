@@ -160,11 +160,21 @@ where the smell is the same concept and adds JS-specific codes. Apply the catalo
 then proceed to Step 3 for the semantic judgments no static pass can make.
 
 **Load `reference.md` first (mandatory for non-Python).** The table below is a
-summary. The full JS-series, the Robot R-codes, the PL config-audit codes, and
-the S-series semantic codes are defined only in `reference.md`. Read the matching
-language section in full before judging any TypeScript, JavaScript, or Robot
-Framework test - do not rely on this summary table alone. For Python, Step 2
-above is complete on its own.
+summary. The full JS-series, the Robot R-codes, and the PL config-audit codes are
+defined only in `reference.md`. Read the matching language section in full before
+judging any TypeScript, JavaScript, or Robot Framework test - do not rely on this
+summary table alone. For Python, the structural catalog in Step 2 above is
+complete on its own.
+
+**The S-series is separate, and it applies to every language including Python.**
+S1-S18 and S21 sit in `reference.md`, in the section
+`## Patterns only the semantic pass can catch (AI-only)`, which sits above the
+per-language sections, so loading a language section alone skips all of them. Load that section together with the "Look-alikes - do NOT
+flag" paragraph that closes it. When the host budget cannot hold both the semantic
+section and a language section, load the compact table in
+`fragments/semantic-cases-compact.md` instead of the prose (about 4.7 KiB against
+about 13 KiB) and keep the exemption paragraph; the language section is what you
+defer and pull per finding, never the semantic floor.
 
 | Family | Codes | What to look for |
 |---|---|---|
@@ -184,7 +194,8 @@ Full TS/JS pattern detail and look-alikes: see `reference.md`.
 For Robot Framework, Gherkin/BDD, and Tavern there is no summary table here: the
 full catalog (the Robot R-codes and the shared C-codes, plus the Gherkin/Tavern
 secondary passes) lives only in `reference.md`. Load it and apply the matching
-language section before Step 3. The companion Robot scanner is
+language section before Step 3, together with the language-agnostic S-series
+described in Step 2b. The companion Robot scanner is
 [robotframework-falsegreen](https://github.com/vinicq/robotframework-falsegreen);
 the skill mirrors its codes as a superset. If the user has run it and provides
 output, use that as the structural pass, then proceed to Step 3.

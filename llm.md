@@ -100,9 +100,16 @@ structural pass result and proceed directly to Step 3.
 
 For TypeScript / JavaScript and Robot Framework, apply their catalogs from
 `reference.md` (JS1-JS31, the shared C-codes, and the Robot R-codes), then proceed
-to Step 3. The full multi-stack catalog and the AI-only semantic codes (S1-S21)
-live in `reference.md`; this file carries the Python catalog inline as the most
-common case.
+to Step 3. The full multi-stack catalog lives in `reference.md`; this file carries
+the Python catalog inline as the most common case.
+
+The AI-only semantic codes (S1-S18 and S21) are language-agnostic and apply to every
+language, Python included. They sit in `reference.md` under
+`## Patterns only the semantic pass can catch (AI-only)`, above the per-language
+sections, so loading a language section alone skips them. Load that section as
+well, or the compact table in `fragments/semantic-cases-compact.md`, which carries
+a row for every S-code. Read the "Look-alikes - do NOT flag" paragraph that closes
+the section before reporting an S-code as HIGH.
 
 ### Step 3: Classify test intent
 
@@ -280,7 +287,7 @@ project, add it to the conventions: block (Step 0) to suppress future findings.
 ## Semantic cases — all three languages and Robot
 
 Semantic cases require LLM judgment. No static rule can detect them. The five
-numbered cases below are the core; the AI-only S-series (S1-S16) in `reference.md`
+numbered cases below are the core; the AI-only S-series (S1-S18 and S21) in `reference.md`
 extends them (intent mismatch, irrelevant oracle, plausible-but-wrong expected
 value, oracle too coarse to fail, tests the framework not the code, and more).
 
