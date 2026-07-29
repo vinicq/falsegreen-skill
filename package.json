@@ -40,6 +40,7 @@
     "providers.md",
     "models.yaml",
     "fragments/",
+    "assets/",
     "gemini-extension.json",
     "bin/",
     "docs/",

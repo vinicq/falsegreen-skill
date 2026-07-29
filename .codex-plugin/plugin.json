@@ -23,6 +23,7 @@
   "interface": {
     "displayName": "falsegreen-skill",
     "shortDescription": "Detect false-positive tests with the J1-J6 judgment framework",
+    "composerIcon": "./assets/icon.svg",
     "longDescription": "falsegreen-skill applies six structural judgments (J1-J6) to each test to determine whether it can actually fail when the code breaks. Covers the full falsegreen catalog for Python, TypeScript, JavaScript, and Robot Framework, plus semantic patterns only an LLM can detect. Provides HIGH/LOW confidence findings with evidence and fix hints.",
     "category": "code-quality",
     "defaultPrompt": [
