@@ -67,6 +67,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `npm run validate` fails if a host that advertises standalone use stops naming
   every emitted code. That assertion is the checkable form of self-containment and
   it would have caught this before review.
+- The compact semantic table omitted severity, which `reference.md` fixes for five
+  of its rows: S17 at HIGH, and S15, S16, S18 and S21 at LOW. A compact-only host
+  could promote a LOW code or demote a HIGH one and still follow every documented
+  instruction, so severity was host-dependent. The table carries a severity column
+  now, and `npm run validate` fails when a column value disagrees with the catalog.
+- The Codex plugin entry point contradicted itself. Its head routes a compact host
+  to the in-file index first, and a later paragraph still mandated reading the
+  matching `reference.md` section in full before judging, which does not fit beside
+  the file on a ~32 KiB host. The mandate now points at the index and the section
+  is the conditional follow-up. Two paragraphs that restated the same budget
+  argument in different words were merged: that duplication is how the byte figures
+  drifted three times.
+- `AGENTS.md` said the structural families cover "the 57 C-codes plus CC", which
+  implies 58 entries. The Python scanner emits 56 numbered C-codes plus CC.
+  Corrected, and the index block stopped carrying a hand-maintained byte figure
+  that had already gone stale twice.
+- The range assertion skipped suffixed endpoints entirely. The trailing word
+  boundary refused to match before a letter, so `C1-C11a` and `R1-R8b` never
+  reached the gap check, which is the opposite of the logic right below that
+  treats a suffixed id as defining its number. Both endpoints accept a suffix now.
 - The project layer went missing from the compact index. PL codes audit project
   config, not test source, so they are language-agnostic, but the index built its
   row set from the js and robot scanners and `falsegreen` is the only emitter of

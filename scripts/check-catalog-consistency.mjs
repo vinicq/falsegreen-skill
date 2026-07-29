@@ -108,6 +108,20 @@ if (missing.length > 0) {
   fail(`fragments/semantic-cases-compact.md is the documented tight-budget load but omits ${missing.length} of ${semantic.length} semantic codes: ${missing.join(', ')}`);
 }
 
+// Severity is part of the finding, not decoration: reference.md fixes S17 at HIGH and S15,
+// S16, S18 and S21 at LOW. The compact table is hand-maintained, so without this a
+// compact-only host could promote a LOW code or demote a HIGH one and still follow every
+// documented instruction. Column 3 of each row must match the catalog.
+for (const id of semantic) {
+  const row = floor.match(new RegExp(`^\\|\\s*${id}\\s*\\|([^|]*)\\|([^|]*)\\|`, 'm'));
+  if (!row) continue; // already reported by the omission check above
+  const stated = row[2].trim();
+  const expected = committed[id].severity || '-';
+  if (stated !== expected) {
+    fail(`fragments/semantic-cases-compact.md: ${id} is severity "${stated}" but reference.md fixes it at "${expected}" - a compact-only host would emit the wrong severity`);
+  }
+}
+
 // 3b. reference.md must still define the whole S-series in that one shared section, so a
 // language-agnostic load can reach it.
 const refSections = read('reference.md').split(/^## /m);
@@ -201,7 +215,10 @@ for (const host of HOSTS) {
 // The endpoint prefix is captured, not discarded. It used to be a non-capturing group, so
 // `S1-C18` consumed the C, threw it away, and then validated S1..S18 as a clean range: a
 // cross-series typo passed the gate that exists to reject impossible ranges.
-const SERIES = /\b([A-Z]{1,2})(\d+)\s*[-–—]\s*([A-Z]{1,2})?(\d+)\b/g;
+// Endpoints may carry a lowercase suffix. Without `[a-z]?` the trailing \b refuses to match
+// before a letter, so `C1-C11a` and `R1-R8b` were skipped entirely - the two shapes most
+// likely to be written, and the ones the gap check below explicitly knows how to handle.
+const SERIES = /\b([A-Z]{1,2})(\d+)[a-z]?\s*[-–—]\s*([A-Z]{1,2})?(\d+)[a-z]?\b/g;
 for (const doc of [...HOSTS, 'README.md', 'STATUS.md', 'reference.md', 'models.yaml', 'docs/architecture.md']) {
   let text;
   try {

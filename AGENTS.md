@@ -88,7 +88,8 @@ That order matters and the reverse does not work. This file is ~25 KiB and the
 TS/JS section is ~19 KiB, so loading a whole section puts the pair past the
 ~32 KiB Codex budget before any test source loads and the host truncates
 mid-file. But you also cannot ask for the passage of a code you have never seen
-named. The index is what closes that gap: ~3 KiB for all 39 codes.
+named. The index closes that gap, at a fraction of the section it replaces, and
+it grows with the catalog rather than with a figure someone maintains by hand.
 
 ### Structural code index (TS/JS, Robot, project layer)
 
@@ -97,6 +98,14 @@ cannot drift. Every code `falsegreen-js` or `falsegreen-robot` can emit has a ro
 Scanner column: `js` falsegreen-js, `rf` falsegreen-robot, `js/rf` both. Severity
 `-` means no fixed severity. The D-series and M2 are opt-in diagnostics: apply
 them only when the user asks.
+
+One limit worth knowing before you match on a row. A code shared across languages
+carries one title here, and for the C-series that title is the Python form. C31 is
+the clearest case: the row reads "capsys.readouterr() result discarded", and the
+Robot form of the same id is any captured keyword value that is never asserted on.
+C3, C9, C23 and C44 reuse ids the same way. Read a shared row as the concept, not
+as the syntax to grep for, and pull the `reference.md` passage for the language in
+front of you when the row is close but the syntax does not match.
 
 <!-- fg:structural-codes-compact:start -->
 | Code | Scanner | Severity | What to look for |
@@ -280,32 +289,32 @@ Precision over recall: a wrong HIGH finding is worse than a missed LOW one.
 ## Semantic cases (quick reference)
 
 <!-- fg:semantic-cases-compact:start -->
-| Case | Judgment | Name | Rule |
-|---|---|---|---|
-| 10 | J3 | Mocks the unit under test | Patches/mocks the function being tested, then asserts on the mock's return value |
-| 11 | J2/J3 | Asserts the value fed to the mock | Stubs dependency to return X, then asserts result == X with no real logic in between |
-| 12 | J2 | Re-implements the production formula | Expected value computed with the same formula as the SUT; both sides agree on the same wrong answer |
-| 15 | J6 | Passes only if another test ran first | Reads shared mutable state written by a sibling test; fails when run alone |
-| 18 | J2 | Expected value contradicts what the code should do | Asserts a value the independent oracle says is wrong; requires cited oracle before reporting |
-| S1 | J4 | Intent mismatch | The name or docstring claims to verify X, the assertion checks Y or a trivial property (`test_applies_discount` that only asserts the call did not raise) |
-| S2 | J4 | Irrelevant oracle | The assertion checks a property unrelated to the behavior under test: a test of the computed total that only asserts the response is not null |
-| S3 | J2 | Plausible-but-wrong expected value | The expected constant looks reasonable but contradicts the spec (off-by-one, wrong rounding, wrong sign); derive the correct value from the spec and compare |
-| S4 | J4 | Oracle cannot distinguish correct from a likely bug | The assertion passes for the right output and for a plausible wrong one: `len(result) == 3` when the suspected bug also yields three items |
-| S5 | J3 | Tests the framework, not the code | The assertion exercises a language or library guarantee (a dict stores a key, the ORM returns what was just saved) instead of the code under test |
-| S6 | J4 | Happy-path only against a stated contract | The spec or docstring promises error handling or boundaries, the test covers only the nominal path |
-| S7 | J2 | Expected lifted from the output | The expected value was copied from a run of the current code (a pasted dict, a captured response), so the test can only confirm the code matches itself |
-| S8 | J3 | Mock return reaches the assertion through an indirection | The stub's value flows through one or two trivial steps to the assertion, so the test still echoes the stub instead of verifying real behavior |
-| S9 | J2 | Self-fulfilling arrangement | The test arranges the exact state it then asserts, with no transformation by the unit under test |
-| S10 | J4 | Asserts the log, not the effect | The only check is that a message was logged, not the state change the message describes |
-| S11 | J4 | Negative-only assertion on a security filter | A sanitizer, redactor, or auth test asserts only that the bad thing is absent (`"password" not in response`); it passes when the output is empty or dropped, so require a paired positive assertion |
-| S12 | J3 | Patches core logic instead of an external edge | The test patches a private method or a direct collaborator on the class under test, so the assertion reads the stub, not the unit's own logic; patching a genuine external edge is legitimate |
-| S13 | J6 | Passes only via shared state a sibling set up | The test relies on module-global, fixture, or hoisted state that another test or an import mutates, so it passes only in a given execution order |
-| S14 | J2 | Recorded model output as the oracle | Asserts `==` against a snapshotted LLM/model result; green means the model still emits what it once emitted, not that the output is correct |
-| S15 | J6 | Hand-rolled retry/poll loop masking flakiness | Wraps action+assertion in a retry/poll and passes if any attempt succeeds; only the swallow-and-pass form (a retry that re-raises on exhaustion is a sanctioned settle, not S15) |
-| S16 | J4 | Call-verification as the sole oracle | The only check is that a collaborator was called (`assert_called_once`/`toHaveBeenCalled`), with no assertion on the unit's own return value or state |
-| S17 | J4 | Exception-path oracle blindness | `pytest.raises(Exception)`/`expect(fn).toThrow()` with no type or message on a documented error contract; goes green when the exception came from arrange (typo, missing import, None-deref) and the SUT never reached its raise |
-| S18 | J3 | Contract-impossible stub value | A legitimate edge stub is configured to return a value the real collaborator can never emit (negative price, schema-violating row, `None` where non-null is guaranteed); the SUT handles an unreachable branch while the real defect goes untouched |
-| S21 | J2 | Self-judging LLM/agent assertion | The oracle is a live model call (`judge_llm(...) == "yes"`, embedding-similarity against a model-generated reference, agent grading its own transcript); circular, passes whenever the judge is wrong in the same direction as the SUT |
+| Case | Judgment | Severity | Name | Rule |
+|---|---|---|---|---|
+| 10 | J3 | HIGH | Mocks the unit under test | Patches/mocks the function being tested, then asserts on the mock's return value |
+| 11 | J2/J3 | HIGH | Asserts the value fed to the mock | Stubs dependency to return X, then asserts result == X with no real logic in between |
+| 12 | J2 | HIGH | Re-implements the production formula | Expected value computed with the same formula as the SUT; both sides agree on the same wrong answer |
+| 15 | J6 | HIGH | Passes only if another test ran first | Reads shared mutable state written by a sibling test; fails when run alone |
+| 18 | J2 | HIGH | Expected value contradicts what the code should do | Asserts a value the independent oracle says is wrong; requires cited oracle before reporting |
+| S1 | J4 | - | Intent mismatch | The name or docstring claims to verify X, the assertion checks Y or a trivial property (`test_applies_discount` that only asserts the call did not raise) |
+| S2 | J4 | - | Irrelevant oracle | The assertion checks a property unrelated to the behavior under test: a test of the computed total that only asserts the response is not null |
+| S3 | J2 | - | Plausible-but-wrong expected value | The expected constant looks reasonable but contradicts the spec (off-by-one, wrong rounding, wrong sign); derive the correct value from the spec and compare |
+| S4 | J4 | - | Oracle cannot distinguish correct from a likely bug | The assertion passes for the right output and for a plausible wrong one: `len(result) == 3` when the suspected bug also yields three items |
+| S5 | J3 | - | Tests the framework, not the code | The assertion exercises a language or library guarantee (a dict stores a key, the ORM returns what was just saved) instead of the code under test |
+| S6 | J4 | - | Happy-path only against a stated contract | The spec or docstring promises error handling or boundaries, the test covers only the nominal path |
+| S7 | J2 | - | Expected lifted from the output | The expected value was copied from a run of the current code (a pasted dict, a captured response), so the test can only confirm the code matches itself |
+| S8 | J3 | - | Mock return reaches the assertion through an indirection | The stub's value flows through one or two trivial steps to the assertion, so the test still echoes the stub instead of verifying real behavior |
+| S9 | J2 | - | Self-fulfilling arrangement | The test arranges the exact state it then asserts, with no transformation by the unit under test |
+| S10 | J4 | - | Asserts the log, not the effect | The only check is that a message was logged, not the state change the message describes |
+| S11 | J4 | - | Negative-only assertion on a security filter | A sanitizer, redactor, or auth test asserts only that the bad thing is absent (`"password" not in response`); it passes when the output is empty or dropped, so require a paired positive assertion |
+| S12 | J3 | - | Patches core logic instead of an external edge | The test patches a private method or a direct collaborator on the class under test, so the assertion reads the stub, not the unit's own logic; patching a genuine external edge is legitimate |
+| S13 | J6 | - | Passes only via shared state a sibling set up | The test relies on module-global, fixture, or hoisted state that another test or an import mutates, so it passes only in a given execution order |
+| S14 | J2 | - | Recorded model output as the oracle | Asserts `==` against a snapshotted LLM/model result; green means the model still emits what it once emitted, not that the output is correct |
+| S15 | J6 | LOW | Hand-rolled retry/poll loop masking flakiness | Wraps action+assertion in a retry/poll and passes if any attempt succeeds; only the swallow-and-pass form (a retry that re-raises on exhaustion is a sanctioned settle, not S15) |
+| S16 | J4 | LOW | Call-verification as the sole oracle | The only check is that a collaborator was called (`assert_called_once`/`toHaveBeenCalled`), with no assertion on the unit's own return value or state |
+| S17 | J4 | HIGH | Exception-path oracle blindness | `pytest.raises(Exception)`/`expect(fn).toThrow()` with no type or message on a documented error contract; goes green when the exception came from arrange (typo, missing import, None-deref) and the SUT never reached its raise |
+| S18 | J3 | LOW | Contract-impossible stub value | A legitimate edge stub is configured to return a value the real collaborator can never emit (negative price, schema-violating row, `None` where non-null is guaranteed); the SUT handles an unreachable branch while the real defect goes untouched |
+| S21 | J2 | LOW | Self-judging LLM/agent assertion | The oracle is a live model call (`judge_llm(...) == "yes"`, embedding-similarity against a model-generated reference, agent grading its own transcript); circular, passes whenever the judge is wrong in the same direction as the SUT |
 <!-- fg:semantic-cases-compact:end -->
 
 ### Look-alike exemptions for the semantic codes
@@ -333,7 +342,7 @@ telemetry write, a queue publish - or a `toHaveBeenCalledWith`/`assert_called_on
 pins the specific arguments, or any call-verification paired with an assertion on the SUT's return value or state - S16 requires the call-verification to be the SOLE oracle (not S16); a `pytest.raises(SpecificError, match=...)` bound to the SUT line (not S17); a stub fed a value the collaborator's contract can actually return (not S18); a test under `*.problem.*` / `*.solution.*` / `exercises/` / `katas/` / `playground/` - a teaching or TDD-spec fixture whose expected value is intentional (the exercise IS the spec), not a frozen bug (not case 18, not S3); a deterministic rubric, structural validator, or frozen human-labeled judge set rather than a live model verdict (not S21).
 <!-- fg:semantic-exemptions:end -->
 
-Cases from the structural families (the 57 C-codes plus CC) apply to Python directly.
+Cases from the structural families (the 56 C-codes plus CC) apply to Python directly.
 For TypeScript/JavaScript, apply them by reading the source semantically.
 Full patterns with examples are in `reference.md`.
 
