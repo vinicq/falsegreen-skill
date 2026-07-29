@@ -21,12 +21,34 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   catalog. Applied across `SKILL.md`, `skills/falsegreen-skill/SKILL.md`,
   `llm.md`, `contexts/codex.md`, `contexts/cursor.md`, `docs/architecture.md`,
   and, via `sync:hosts`, `AGENTS.md` and `GEMINI.md`.
+- The compact path shipped the S-code rules without their exemptions, which turns
+  a precision fix into a false-positive generator. The `AGENTS.md`-only and
+  Cursor-only installs are documented paths where `reference.md` is not on disk,
+  so "check the exemptions in `reference.md`" was unreachable advice: the compact
+  S11 rule asks for a paired positive assertion, while the exemption permits a
+  negative-only check on a filter whose contract is to drop the input entirely.
+  The exemptions are now a synced fragment, `fragments/semantic-exemptions.md`,
+  and `reference.md` consumes it as a target like any host, so there is one copy
+  and `sync-host-files --check` guards every consumer. The floor is 7.5 KiB, the
+  compact table plus the exemptions, and covers every S-code with no
+  `reference.md` read.
+- Cursor got the S-series as a description, not a load. The generated
+  `.cursor/rules/falsegreen-skill.mdc` said where the catalog lived and carried a
+  hand-forked 5-bullet list of the numbered cases only, so Cursor had no S-code
+  definition at all. `contexts/cursor.md` now states the mandate and carries both
+  fragment blocks, which also removes a third rendering of a table that already
+  had two.
 - `npm run validate` now fails when the load path stops reaching the catalog.
   `check-catalog-consistency.mjs` gained three assertions: the compact fragment
   carries every semantic code, `reference.md` still defines them all in the one
-  shared section, and every host that routes through `reference.md` names that
-  section. Nothing in CI caught this class before, which is why it regressed
-  silently one release after #117 closed it.
+  shared section, and every host that routes through `reference.md` reaches the
+  S-series either by carrying all 19 rows inline or by naming that section.
+  Nothing in CI caught this class before, which is why it regressed silently one
+  release after #117 closed it. The check matches on a formatting-normalized copy,
+  because `` `S1`-`S21` `` and a soft line wrap hide the token from a plain regex
+  as effectively as any typo. Its ceiling is recorded in the script and in the PR
+  template: it proves the definition is reachable, it cannot tell an imperative
+  sentence from a descriptive one, so a reviewer does that.
 - Stale advertised ranges. `llm.md` announced the S-series as `S1-S16`, three
   codes short. Docs also mixed `S1-S16`, `S1-S21`, and `S1-S18 and S21` for the
   same 19 codes; `S1-S21` implies an S19 and S20 that do not exist. Normalized to

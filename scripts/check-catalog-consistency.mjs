@@ -121,8 +121,19 @@ if (!semanticBody) {
   }
 }
 
-// 3c. Every host that routes through reference.md must name that section, not only the
-// per-language one.
+// Markdown formatting hides the tokens the two assertions below match on: `S1`-`S21`,
+// **S1**-**S21**, and a soft wrap between S1 and the dash all read as plain S1-S21 to a human
+// and as a non-match to a regex. Normalize a working copy once instead of special-casing
+// backticks, which would only shrink the same blind spot.
+const flatten = (s) => s.replace(/[`*_]/g, '').replace(/\s+/g, ' ');
+const hasEverySemanticRow = (text) => semantic.every((id) => new RegExp(`\\|\\s*${id}\\s*\\|`).test(text));
+
+// 3c. Every host that routes through reference.md must reach the S-series by one of the two
+// sanctioned paths: carry the rows inline, or name the shared section so the load lands on it.
+// ponytail: this proves the definition is REACHABLE, not that the surrounding sentence is
+// imperative. "The S-series lives in reference.md" passes here and still leaves a host that
+// never tells the model to load it. No static check reaches that; a reviewer confirms the
+// sentence commands rather than describes (see .github/pull_request_template.md).
 for (const host of HOSTS) {
   let text;
   try {
@@ -132,8 +143,9 @@ for (const host of HOSTS) {
     continue;
   }
   if (!/reference\.md/.test(text)) continue;
-  if (!text.includes(SEMANTIC_SECTION)) {
-    fail(`${host}: mandates a reference.md load but never names the "${SEMANTIC_SECTION}" section, so a literal run loads only per-language sections and never sees ${semantic.join('/')}`);
+  const flat = flatten(text);
+  if (!flat.includes(SEMANTIC_SECTION) && !hasEverySemanticRow(text)) {
+    fail(`${host}: does not reach the S-series by either path - it neither names the "${SEMANTIC_SECTION}" section nor carries a row for all ${semantic.length} codes, so a run following it never sees ${semantic.join('/')}`);
   }
 }
 
@@ -146,10 +158,14 @@ for (const n of sNums) {
   if (n === contiguousEnd + 1) contiguousEnd = n;
   else break;
 }
+// CHANGELOG.md is deliberately absent: it is history, and its entries quote the retired
+// `S1-S16`/`S1-S21` forms on purpose while describing the releases that carried them.
+// .cursor/rules/*.mdc and dist/ are absent too - both are generated verbatim from sources
+// already in this list, and sync-cursor-mdc --check / build:targets keep them honest.
 for (const doc of [...HOSTS, 'README.md', 'STATUS.md', 'reference.md', 'models.yaml', 'docs/architecture.md']) {
   let text;
   try {
-    text = read(doc);
+    text = flatten(read(doc));
   } catch {
     continue;
   }
@@ -164,4 +180,4 @@ if (errors.length > 0) {
   process.stderr.write(errors.map((e) => `error: ${e}`).join('\n') + '\n');
   process.exit(1);
 }
-process.stdout.write(`catalog consistency OK (${Object.keys(committed).length} codes; reference.md == code-catalog.json; SKILL.md agrees; ${semantic.length} semantic codes reachable from the compact fragment and named in every host's reference.md load)\n`);
+process.stdout.write(`catalog consistency OK (${Object.keys(committed).length} codes; reference.md == code-catalog.json; SKILL.md agrees; all ${semantic.length} semantic codes reachable from every host, by inline rows or by the named shared section)\n`);

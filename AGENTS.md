@@ -83,11 +83,12 @@ For TypeScript / JavaScript (shared C-codes plus JS1-JS31) and Robot Framework
 `reference.md` section in full before judging, then proceed to Step 3.
 
 The S1-S18 and S21 semantic codes are language-agnostic and apply to every
-language, Python included. The table under "Semantic cases (quick reference)"
-below carries a row for each one and is enough to run them; `reference.md` under
-`## Patterns only the semantic pass can catch (AI-only)` has the full prose and
-the "Look-alikes - do NOT flag" exemptions, which you need before reporting an
-S-code as HIGH.
+language, Python included. Everything needed to run them is in this file: the
+table under "Semantic cases (quick reference)" below carries a row per code, and
+"Look-alike exemptions for the semantic codes" carries the exemptions you must
+check before reporting one. `reference.md` under
+`## Patterns only the semantic pass can catch (AI-only)` has the same codes as
+full prose with examples; read it when a finding needs the long form.
 
 ### Step 3: Classify test intent
 
@@ -208,6 +209,31 @@ Precision over recall: a wrong HIGH finding is worse than a missed LOW one.
 | S18 | J3 | Contract-impossible stub value | A legitimate edge stub is configured to return a value the real collaborator can never emit (negative price, schema-violating row, `None` where non-null is guaranteed); the SUT handles an unreachable branch while the real defect goes untouched |
 | S21 | J2 | Self-judging LLM/agent assertion | The oracle is a live model call (`judge_llm(...) == "yes"`, embedding-similarity against a model-generated reference, agent grading its own transcript); circular, passes whenever the judge is wrong in the same direction as the SUT |
 <!-- fg:semantic-cases-compact:end -->
+
+### Look-alike exemptions for the semantic codes
+
+Check these before reporting any S-code. They are the precision half of the
+table above, and they override it: a pattern listed here is correct code.
+
+<!-- fg:semantic-exemptions:start -->
+Look-alikes - do NOT flag: a deliberately narrow unit test whose scope the spec confirms
+(S6 needs a stated broader contract); a constant that the spec genuinely endorses (not S3);
+a sanitizer test that already pairs the negative check with a positive one (not S11); a test
+of a filter whose contract is to drop the input entirely - a blocklist sanitizer, a
+guard that returns empty on a forbidden value, a redactor that suppresses the whole field -
+where empty output is the correct behavior, so the negative-only assertion legitimately
+passes and a positive "content survived" assertion would contradict the design (not S11); a
+mock on a genuine external edge - DB, network, clock (not S12); a `jest.spyOn(instance, 'methodA')` / `vi.spyOn` that stubs a DIFFERENT method than the one under test, to isolate an orchestrator from a sibling sub-unit (the assertion is on the composed result, not the stub) - S12 fires only when the patched symbol is a method of the SUT instance itself or the assertion echoes the stub value (not S12); a constructor-injected or module-level collaborator mock - repository, db, auth, or HTTP client (a clean case-10 external edge, not S12); a stub-config call made on the very library under test - `mockingoose`, `tinyspy`, `jsdom-testing-mocks` - where the mocking library IS the SUT, so the stub setup is production code (not S5/S8/C11a); a test whose shared state is
+reset by an autouse/`beforeEach` teardown (not S13); a structural or contract assertion on a
+model output - valid JSON, required keys present, a cited source id matches, a refusal on a
+banned prompt, a deterministic post-processing step - or a mocked/stubbed model whose return is
+fixture data (not S14); a sanctioned async-settling wait - Robot `Wait Until Keyword Succeeds`,
+Testing Library `waitFor`/`findBy*`, Playwright/Cypress auto-wait, `await expect(...).toPass()` -
+that polls a real settle condition and still fails hard on timeout (not S15); a call-only
+assertion where the interaction IS the contract - a fire-and-forget event, an audit-log or
+telemetry write, a queue publish - or a `toHaveBeenCalledWith`/`assert_called_once_with` that
+pins the specific arguments, or any call-verification paired with an assertion on the SUT's return value or state - S16 requires the call-verification to be the SOLE oracle (not S16); a `pytest.raises(SpecificError, match=...)` bound to the SUT line (not S17); a stub fed a value the collaborator's contract can actually return (not S18); a test under `*.problem.*` / `*.solution.*` / `exercises/` / `katas/` / `playground/` - a teaching or TDD-spec fixture whose expected value is intentional (the exercise IS the spec), not a frozen bug (not case 18, not S3); a deterministic rubric, structural validator, or frozen human-labeled judge set rather than a live model verdict (not S21).
+<!-- fg:semantic-exemptions:end -->
 
 Cases from the structural families (C1-C45, C48, CC) apply to Python directly.
 For TypeScript/JavaScript, apply them by reading the source semantically.

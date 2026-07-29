@@ -20,9 +20,11 @@ S-series (S1-S18, S21) is language-agnostic and lives in `reference.md` under
 sections. The root `SKILL.md` names only S3 and S17, so a run that loads a
 language section alone never sees the rest. Read that section of `reference.md`,
 or read the compact table in `fragments/semantic-cases-compact.md`, which carries
-a row for every S-code. Either way, also read the "Look-alikes - do NOT flag"
-paragraph that closes that section: the S-series without its exemptions produces
-false positives, which this skill treats as worse than a miss.
+a row for every S-code. Either way you also need the exemptions, in
+`fragments/semantic-exemptions.md` or in the "Look-alikes - do NOT flag"
+paragraph that closes the same `reference.md` section: the S-series without its
+exemptions produces false positives, which this skill treats as worse than a
+miss.
 
 **Mandatory for any non-Python file (JavaScript, TypeScript, Robot Framework,
 Gherkin, Tavern): also read the matching language section of `reference.md` before
@@ -36,13 +38,16 @@ Load sections, not the whole file. `reference.md` is ~92 KiB, so an eager full
 read overruns a small host-context budget (Codex CLI allows roughly 32 KiB) and
 truncates mid-file, which degrades the analysis without any warning. On a tight
 budget the semantic floor is the part you keep and the language section is the
-part you defer: the compact table plus the exemption paragraph is about 7.5 KiB
-and fits beside any single language section, while the full prose semantic section
-is about 13 KiB and leaves no room beside Python (~27 KiB) or TS/JS (~19 KiB).
-Start from `fragments/semantic-cases-compact.md` plus
-`fragments/precision-rules.md`, then pull the `reference.md` section for the
-language in front of you when a finding needs the full pattern definition or a
-look-alike exemption check.
+part you defer. The floor is two fragments:
+`fragments/semantic-cases-compact.md` (~4.7 KiB, a row per S-code) plus
+`fragments/semantic-exemptions.md` (~2.8 KiB, the look-alike exemptions). At
+7.5 KiB it covers every S-code and its exemptions with no `reference.md` read at
+all, against ~13 KiB for the equivalent prose section, which leaves no room
+beside Python (~27 KiB) or TS/JS (~19 KiB). Start from those two plus
+`fragments/precision-rules.md`, then pull the passage of the `reference.md`
+language section that defines the code you are about to report. Pull the passage,
+not the section: a whole-section read is 15 to 19 KiB for Robot or TS/JS and does
+not co-reside with an eager host file.
 
 ## Protocol in one paragraph
 

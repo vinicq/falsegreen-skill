@@ -8,9 +8,13 @@
 // different code numbers). The canonical text lives in fragments/, and this
 // script injects each fragment between anchor comments in the host files.
 //
-// What is single-sourced (here): the precision-first rules (all four hosts) and
-// the compact semantic-case lookup table (AGENTS.md + GEMINI.md, which share
-// that table's format). What is deliberately NOT single-sourced: the per-host
+// What is single-sourced (here): the precision-first rules (all four hosts), the
+// compact semantic-case lookup table, and the S-series look-alike exemptions.
+// The exemptions list reference.md itself as a target, so the fragment is the one
+// copy and reference.md consumes it like any host; the AGENTS.md-only and
+// Cursor-only installs carry both blocks inline, because on those paths
+// reference.md is not on disk and an unreachable exemption turns a correct test
+// into a reported false-green. What is deliberately NOT single-sourced: the per-host
 // framing (headers, "how to invoke"), and the full-vs-compact rendering of the
 // Protocol and the J1-J6 judgments. SKILL.md/llm.md carry full prose; AGENTS.md
 // and GEMINI.md stay compact on purpose (Codex 32 KiB budget, Gemini long
@@ -38,15 +42,17 @@ function readFragment(name) {
 const FRAGMENTS = {
   'precision-rules': readFragment('precision-rules.md'),
   'semantic-cases-compact': readFragment('semantic-cases-compact.md'),
+  'semantic-exemptions': readFragment('semantic-exemptions.md'),
 };
 
 // Which managed regions each host file is expected to carry.
 const TARGETS = {
+  'reference.md': ['semantic-exemptions'],
   'SKILL.md': ['precision-rules'],
   'llm.md': ['precision-rules'],
-  'AGENTS.md': ['precision-rules', 'semantic-cases-compact'],
-  'GEMINI.md': ['precision-rules', 'semantic-cases-compact'],
-  'contexts/cursor.md': ['precision-rules'],
+  'AGENTS.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions'],
+  'GEMINI.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions'],
+  'contexts/cursor.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions'],
 };
 
 function markers(key) {
