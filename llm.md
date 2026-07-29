@@ -11,7 +11,7 @@
 framework across Python, TypeScript, JavaScript, and Robot Framework, plus
 semantic patterns no static tool can see.
 
-For Python, this skill covers the complete falsegreen catalog (C1-C45, C48, semantic
+For Python, this skill covers the complete falsegreen catalog (56 C-codes, semantic
 cases, diagnostic codes) without requiring the static scanner to run first. For
 TypeScript, JavaScript, and Robot Framework it is the primary detection tool, and
 a superset of the three static scanners.
@@ -99,7 +99,7 @@ If the user provides existing `falsegreen` scanner output, use it as the
 structural pass result and proceed directly to Step 3.
 
 For TypeScript / JavaScript and Robot Framework, apply their catalogs from
-`reference.md` (JS1-JS31, the shared C-codes, and the Robot R-codes), then proceed
+`reference.md` (24 JS-codes, the shared C-codes, and 9 Robot R-codes), then proceed
 to Step 3. The full multi-stack catalog lives in `reference.md`; this file carries
 the Python catalog inline as the most common case.
 
@@ -109,7 +109,10 @@ language, Python included. They sit in `reference.md` under
 sections, so loading a language section alone skips them. Load that section as
 well, or the compact table in `fragments/semantic-cases-compact.md`, which carries
 a row for every S-code. Read the "Look-alikes - do NOT flag" paragraph that closes
-the section before reporting an S-code as HIGH.
+the section before reporting any S-code. Not only the HIGH ones: S15, S16, S18 and
+S21 are LOW by definition, and their exemptions are what separate a sanctioned
+async settle, an interaction contract, a valid stub value and a deterministic judge
+from a false-green test.
 
 ### Step 3: Classify test intent
 

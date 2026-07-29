@@ -57,7 +57,7 @@ behavior), then apply the six judgments: J1 does the assertion run, J2 is the
 expected value from an independent oracle, J3 is the real unit under test, J4
 does the assertion verify enough, J5 is the test coupled to implementation
 internals, J6 does the test pass in isolation. For Python, also run the full
-structural catalog (families A-E, codes C1-C45, C48). Flag only the first failing
+structural catalog (families A-E, the 56 emitted C-codes). Flag only the first failing
 judgment per test.
 
 ## Non-negotiable rules

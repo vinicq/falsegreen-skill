@@ -59,6 +59,30 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `dist/` is gitignored and validate never builds it, so that is the only place
   those paths exist. Against the previous state it reports 9 dangling paths across
   the three packages.
+- The structural catalog had the same defect as the semantic one, and the compact
+  instruction made it circular. `SKILL.md` Step 2b's TS/JS table carries 10 of the
+  24 JS-codes and Robot had no table at all, so 23 structural codes were reachable
+  only by loading a whole `reference.md` language section. Scoping the pull to a
+  passage did not help: nothing can request the passage for a code whose
+  definition it has never seen. `AGENTS.md` and `contexts/cursor.md` now carry a
+  complete structural index, one row per code for the JS, R and PL series, so
+  every code is named without opening `reference.md`. The index is generated from
+  `schema/code-catalog.json` at injection time rather than hand-authored, so
+  `sync-host-files --check` is its drift assertion and no new checker was needed.
+  It costs ~2.9 KiB for 39 codes against ~19 KiB for the TS/JS section alone,
+  which means the completeness-versus-budget tradeoff that produced the passage
+  wording never existed: the catalog had already done the authoring.
+- Advertised code ranges were wrong in 12 places across 3 mutually contradictory
+  figures. `C1-C45, C48` appeared in 7 files, `C1-C37` in `models.yaml`, and the
+  scanner emits 56 C-codes running to C59, so the range both spanned holes and
+  truncated. `JS1-JS31` in 4 files implied JS10, JS12, JS14, JS16, JS19, JS20 and
+  JS28, none of which exist, and `contexts/cursor.md` also said `JS1-JS13` in a
+  second place. All now state counts. The range assertion generalized from the
+  S-series to every series, and its rule is per-id: every id in an advertised
+  inclusive range has to exist, which keeps an honest subset range like `D1-D6`
+  legal and rejects one that spans a gap. This is not cosmetic. Codex's own review
+  of this change reported "the TS/JS summary lacks JS14-JS31", and JS14 does not
+  exist: it read the repo's false range and inherited the error.
 - `AGENTS.md` told Codex to load a `reference.md` language section "in full",
   which its own budget forbids: at ~18 KiB the file plus the ~19 KiB TS/JS section
   is ~37 KiB against a ~32 KiB ceiling, so the instruction produced the silent

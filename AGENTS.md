@@ -78,14 +78,69 @@ Scan against all falsegreen pattern families in order:
 
 Report each structural finding before proceeding to Steps 3-6.
 
-For TypeScript / JavaScript (shared C-codes plus JS1-JS31) and Robot Framework
-(R-codes plus reused C-codes), the summaries here are partial. Open the matching
-`reference.md` section and read the passage that defines each code you are about
-to report, plus the look-alike block that closes the section, then proceed to
-Step 3. Read passages, not whole sections: this file is ~18 KiB and the TS/JS
-section is ~19 KiB, so pulling a section whole puts the pair past the ~32 KiB
-Codex budget before any test source loads, and the host truncates mid-file with
-no warning.
+For TypeScript / JavaScript, Robot Framework, and the project layer, the family
+tables above are partial. The complete emitted code set is indexed below, one row
+per code, so you can run every code without opening `reference.md` first. Work
+from the index, then pull the `reference.md` passage for a code only when a
+finding needs its full definition or its look-alike exemption.
+
+That order matters and the reverse does not work. This file is ~22 KiB and the
+TS/JS section is ~19 KiB, so loading a whole section puts the pair past the
+~32 KiB Codex budget before any test source loads and the host truncates
+mid-file. But you also cannot ask for the passage of a code you have never seen
+named. The index is what closes that gap: ~3 KiB for all 39 codes.
+
+### Structural code index (TS/JS, Robot, project layer)
+
+Generated from `schema/code-catalog.json`, so it cannot drift from
+`reference.md`. Severity `-` means the code carries no fixed severity.
+
+<!-- fg:structural-codes-compact:start -->
+| Code | Severity | What to look for |
+|---|---|---|
+| **TypeScript / JavaScript** | | 24 codes |
+| JS1 | HIGH | focused test (`it.only`/`fit`) skips the rest of the suite |
+| JS2 | HIGH | `expect(x)` with no matcher |
+| JS3 | LOW | snapshot is the only assertion |
+| JS4 | LOW | skipped test (`it.skip`/`xit`/`it.todo`) |
+| JS5 | LOW | async query/event not awaited (`findBy*`/`waitFor`/user-event) |
+| JS6 | HIGH | empty `describe`/`suite` |
+| JS7 | LOW | assertion in a non-awaited `setTimeout`/`then` callback |
+| JS8 | LOW | mocks the unit under test and asserts it directly |
+| JS9 | HIGH | assertion in a dead literal branch (`if(false)`) |
+| JS11 | LOW | `try/catch` swallows the assertion |
+| JS13 | LOW | `queryBy*`/`queryAllBy*` query (returns null when absent) as a loose statement, never asserted - `getBy*`/`getAllBy*`/`findBy*`/`findAllBy*` throw on absence and ARE the assertion |
+| JS15 | LOW | comparison wrapped in a boolean (`expect(a===b).toBe(true)`) |
+| JS17 | LOW | commented-out test block (`// it(...)`) |
+| JS18 | LOW | `done` callback instead of async/await |
+| JS21 | HIGH | matcher referenced but never called (`expect(x).toBe` with no `()`) |
+| JS22 | HIGH | empty `it.each`/`test.each` table |
+| JS23 | HIGH | `expect.assertions(N)` with fewer unconditional reachable `expect()` calls than `N` |
+| JS24 | LOW | Cypress `cy.get/find/contains` query statement with no `.should`/`.and`/`.then` assertion |
+| JS25 | HIGH | the only assertion sits inside an array-iterator callback (`forEach`/`map`/`filter`/`some`/`every`/`flatMap`) - runs zero times on an empty collection |
+| JS26 | LOW | fake timers installed but never advanced (`runAllTimers`/`advanceTimersByTime`/`tick`) - the scheduled callback never fires, so the assertion reads un-mutated state |
+| JS27 | LOW | `toHaveBeenCalled*` is the sole oracle on a locally-created double - verifies wiring, not behaviour |
+| JS29 | LOW | `expect(...).resolves`/`.rejects` chain is a bare statement, not awaited or returned - the test finishes green before the matcher settles |
+| JS30 | HIGH | literal-vs-literal assertion (`expect(2).toBe(3)`, chai `expect(x).to.equal(y)`) - both operands are fixed at parse time |
+| JS31 | LOW | `try/catch` swallows a possible throw with no assertion on the exception - a unit that stops throwing still passes green |
+| **Robot Framework** | | 9 codes |
+| R1 | - | Forced green |
+| R2 | - | Hollow verifier keyword |
+| R3 | - | Test Cases in a .resource |
+| R4 | - | No Operation only |
+| R5 | - | Empty [Template] |
+| R6 | - | Should Be True on a string literal |
+| R7 | - | Hollow [Template] keyword |
+| R8 | - | Verification only in Setup |
+| R8b | - | Verification only in Teardown |
+| **Project layer** | | 6 codes |
+| PL1 | - | Asserts stripped at runtime |
+| PL2 | - | Warnings not promoted |
+| PL7 | - | No coverage gate |
+| PL8 | - | Run stops early |
+| PL9 | - | Skip-on-failure run option |
+| PL10 | - | passWithNoTests |
+<!-- fg:structural-codes-compact:end -->
 
 The S1-S18 and S21 semantic codes are language-agnostic and apply to every
 language, Python included. Everything needed to run them is in this file: the
@@ -240,7 +295,7 @@ telemetry write, a queue publish - or a `toHaveBeenCalledWith`/`assert_called_on
 pins the specific arguments, or any call-verification paired with an assertion on the SUT's return value or state - S16 requires the call-verification to be the SOLE oracle (not S16); a `pytest.raises(SpecificError, match=...)` bound to the SUT line (not S17); a stub fed a value the collaborator's contract can actually return (not S18); a test under `*.problem.*` / `*.solution.*` / `exercises/` / `katas/` / `playground/` - a teaching or TDD-spec fixture whose expected value is intentional (the exercise IS the spec), not a frozen bug (not case 18, not S3); a deterministic rubric, structural validator, or frozen human-labeled judge set rather than a live model verdict (not S21).
 <!-- fg:semantic-exemptions:end -->
 
-Cases from the structural families (C1-C45, C48, CC) apply to Python directly.
+Cases from the structural families (the 57 C-codes plus CC) apply to Python directly.
 For TypeScript/JavaScript, apply them by reading the source semantically.
 Full patterns with examples are in `reference.md`.
 

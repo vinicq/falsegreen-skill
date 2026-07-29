@@ -333,7 +333,7 @@ append the note to the existing SUMMARY using what you already know from the ana
 | 18 | J2 | Expected value contradicts what the code should do | Semantic + adversarial verify |
 
 Structural codes are handled by the static scanners - [falsegreen](https://github.com/vinicq/falsegreen)
-for Python (C1-C45, C48) and [falsegreen-js](https://github.com/vinicq/falsegreen-js)
+for Python (56 C-codes) and [falsegreen-js](https://github.com/vinicq/falsegreen-js)
 for TypeScript/JavaScript (shared C-codes plus the JS-series; see reference.md for the full emitted set). This skill adjudicates
 scanner findings when review is needed, and handles the same patterns directly for
 any language. The five semantic cases above need the LLM regardless of language.

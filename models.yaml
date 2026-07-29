@@ -17,9 +17,9 @@ tiers:
 
   structural:
     description: >
-      C1-C37 structural patterns. Pattern matching against well-defined AST signatures.
+      The Python C-code structural patterns. Pattern matching against well-defined AST signatures.
       Small models handle this tier reliably.
-    cases: "C1-C37"
+    cases: "C-series"
     minimum: "7B+ instruction model"
     rationale: "Pattern matching against well-defined structural signatures. Small models handle this reliably."
     models:

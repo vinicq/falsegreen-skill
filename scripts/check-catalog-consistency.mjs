@@ -146,26 +146,31 @@ for (const host of HOSTS) {
     fail(`${host}: missing host doc - update HOSTS here`);
     continue;
   }
-  if (!/reference\.md/.test(text)) continue;
+  // No `mentions reference.md` guard: a host that drops the mention while also
+  // omitting the rows is the regression this asserts against, and a guard on the
+  // mention would skip exactly that case.
   const flat = flatten(text);
   if (!flat.includes(SEMANTIC_SECTION) && !hasEverySemanticRow(text)) {
     fail(`${host}: does not reach the S-series by either path - it neither names the "${SEMANTIC_SECTION}" section nor carries a row for all ${semantic.length} codes, so a run following it never sees ${semantic.join('/')}`);
   }
 }
 
-// 3d. No doc may advertise an S-range that implies codes the catalog does not define. The
-// catalog is not contiguous (it ends S18, then S21), so only a range closing a contiguous
-// run from S1 is honest: "S1-S18 and S21" is legal, a bare "S1-S21" is not.
-const sNums = semantic.map((id) => Number(id.slice(1))).sort((x, y) => x - y);
-let contiguousEnd = 0;
-for (const n of sNums) {
-  if (n === contiguousEnd + 1) contiguousEnd = n;
-  else break;
-}
+// 3d. A doc may not advertise a range that implies codes the catalog does not define. The
+// invariant is per-id, not per-series: every id in the inclusive range has to exist. That
+// keeps an honest subset range legal ("D1-D6" when D1..D6 all exist) and rejects a range
+// that spans a hole, whatever the series. No series here is gap-free: S skips 19 and 20, C
+// skips ten ids below C59, JS skips seven below JS31. A range is the wrong shape for those,
+// so the docs state a count or enumerate.
+//
+// This is not cosmetic. Codex's review of this very PR reported "the TS/JS summary lacks
+// JS14-JS31" - JS14 does not exist. It read the repo's own false range and inherited the
+// error, so a stale range corrupts a reader's model of the catalog, human or machine.
+//
 // CHANGELOG.md is deliberately absent: it is history, and its entries quote the retired
-// `S1-S16`/`S1-S21` forms on purpose while describing the releases that carried them.
-// .cursor/rules/*.mdc and dist/ are absent too - both are generated verbatim from sources
-// already in this list, and sync-cursor-mdc --check / build:targets keep them honest.
+// forms on purpose while describing the releases that carried them. .cursor/rules/*.mdc and
+// dist/ are absent too - both are generated verbatim from sources already in this list, and
+// sync-cursor-mdc --check / build:targets keep them honest.
+const SERIES = /\b([A-Z]{1,2})(\d+)\s*[-–—]\s*(?:[A-Z]{1,2})?(\d+)\b/g;
 for (const doc of [...HOSTS, 'README.md', 'STATUS.md', 'reference.md', 'models.yaml', 'docs/architecture.md']) {
   let text;
   try {
@@ -173,9 +178,18 @@ for (const doc of [...HOSTS, 'README.md', 'STATUS.md', 'reference.md', 'models.y
   } catch {
     continue;
   }
-  for (const m of text.matchAll(/\bS1\s*[-–—]\s*S?(\d+)\b/g)) {
-    if (Number(m[1]) !== contiguousEnd) {
-      fail(`${doc}: advertises "${m[0]}", which implies codes the catalog does not define - the contiguous run ends at S${contiguousEnd}, so spell the rest out (for example "S1-S${contiguousEnd} and S${sNums[sNums.length - 1]}")`);
+  for (const [range, prefix, fromRaw, toRaw] of text.matchAll(SERIES)) {
+    const from = Number(fromRaw);
+    const to = Number(toRaw);
+    // A suffixed id counts as the number being defined: the catalog spells C11a and R8b
+    // with no bare C11 or R8, and a range covering 11 is not lying about C11a.
+    const defines = (n) => Object.hasOwn(committed, `${prefix}${n}`) || Object.keys(committed).some((id) => new RegExp(`^${prefix}${n}[a-z]$`).test(id));
+    // Only ranges over a series the catalog actually owns, and only ascending ones.
+    if (to <= from || !defines(from)) continue;
+    const absent = [];
+    for (let n = from; n <= to; n++) if (!defines(n)) absent.push(`${prefix}${n}`);
+    if (absent.length > 0) {
+      fail(`${doc}: advertises "${range}" but the catalog does not define ${absent.join(', ')} - state a count or enumerate instead of spanning the gap`);
     }
   }
 }

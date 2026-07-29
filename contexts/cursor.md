@@ -52,7 +52,7 @@ Robot). Read the level from signals (the pyramid): unit (boundaries doubled),
 integration (real HTTP client or ORM/driver - API and database), or E2E (browser).
 Strongest signal wins (markers, paths, file names, `conventions:`). The level
 changes the oracle (E2E presence IS the assertion; affects J4/J6); a real API/DB
-call in a unit test is itself the smell. The full catalog for TS/JS (JS1-JS31),
+call in a unit test is itself the smell. The full catalog for TS/JS (24 JS-codes),
 Robot (R-codes), and the new Python codes is in `reference.md`. The AI-only
 S-codes (S1-S18 and S21) are language-agnostic: run every one of them on every
 file, whatever the language, Python included. Their rules and their look-alike
@@ -120,8 +120,57 @@ proceeding:
 - C36: pytest.fail() with no reason argument (LOW)
 - C37: @parametrize has duplicate argument set (LOW)
 
-For TypeScript and JavaScript, apply the falsegreen-js code set (shared C-codes
-plus JS1-JS13; see reference.md), then proceed to Step 3 for the semantic judgments.
+For TypeScript and JavaScript, Robot Framework, and the project layer, apply the
+complete emitted code set indexed here, then proceed to Step 3 for the semantic
+judgments. The index is generated from the canonical catalog, so it cannot drift.
+Severity `-` means the code carries no fixed severity.
+
+<!-- fg:structural-codes-compact:start -->
+| Code | Severity | What to look for |
+|---|---|---|
+| **TypeScript / JavaScript** | | 24 codes |
+| JS1 | HIGH | focused test (`it.only`/`fit`) skips the rest of the suite |
+| JS2 | HIGH | `expect(x)` with no matcher |
+| JS3 | LOW | snapshot is the only assertion |
+| JS4 | LOW | skipped test (`it.skip`/`xit`/`it.todo`) |
+| JS5 | LOW | async query/event not awaited (`findBy*`/`waitFor`/user-event) |
+| JS6 | HIGH | empty `describe`/`suite` |
+| JS7 | LOW | assertion in a non-awaited `setTimeout`/`then` callback |
+| JS8 | LOW | mocks the unit under test and asserts it directly |
+| JS9 | HIGH | assertion in a dead literal branch (`if(false)`) |
+| JS11 | LOW | `try/catch` swallows the assertion |
+| JS13 | LOW | `queryBy*`/`queryAllBy*` query (returns null when absent) as a loose statement, never asserted - `getBy*`/`getAllBy*`/`findBy*`/`findAllBy*` throw on absence and ARE the assertion |
+| JS15 | LOW | comparison wrapped in a boolean (`expect(a===b).toBe(true)`) |
+| JS17 | LOW | commented-out test block (`// it(...)`) |
+| JS18 | LOW | `done` callback instead of async/await |
+| JS21 | HIGH | matcher referenced but never called (`expect(x).toBe` with no `()`) |
+| JS22 | HIGH | empty `it.each`/`test.each` table |
+| JS23 | HIGH | `expect.assertions(N)` with fewer unconditional reachable `expect()` calls than `N` |
+| JS24 | LOW | Cypress `cy.get/find/contains` query statement with no `.should`/`.and`/`.then` assertion |
+| JS25 | HIGH | the only assertion sits inside an array-iterator callback (`forEach`/`map`/`filter`/`some`/`every`/`flatMap`) - runs zero times on an empty collection |
+| JS26 | LOW | fake timers installed but never advanced (`runAllTimers`/`advanceTimersByTime`/`tick`) - the scheduled callback never fires, so the assertion reads un-mutated state |
+| JS27 | LOW | `toHaveBeenCalled*` is the sole oracle on a locally-created double - verifies wiring, not behaviour |
+| JS29 | LOW | `expect(...).resolves`/`.rejects` chain is a bare statement, not awaited or returned - the test finishes green before the matcher settles |
+| JS30 | HIGH | literal-vs-literal assertion (`expect(2).toBe(3)`, chai `expect(x).to.equal(y)`) - both operands are fixed at parse time |
+| JS31 | LOW | `try/catch` swallows a possible throw with no assertion on the exception - a unit that stops throwing still passes green |
+| **Robot Framework** | | 9 codes |
+| R1 | - | Forced green |
+| R2 | - | Hollow verifier keyword |
+| R3 | - | Test Cases in a .resource |
+| R4 | - | No Operation only |
+| R5 | - | Empty [Template] |
+| R6 | - | Should Be True on a string literal |
+| R7 | - | Hollow [Template] keyword |
+| R8 | - | Verification only in Setup |
+| R8b | - | Verification only in Teardown |
+| **Project layer** | | 6 codes |
+| PL1 | - | Asserts stripped at runtime |
+| PL2 | - | Warnings not promoted |
+| PL7 | - | No coverage gate |
+| PL8 | - | Run stops early |
+| PL9 | - | Skip-on-failure run option |
+| PL10 | - | passWithNoTests |
+<!-- fg:structural-codes-compact:end -->
 
 ### Step 3: Classify test intent
 
@@ -411,5 +460,5 @@ pip install falsegreen
 falsegreen tests/
 ```
 
-The scanner covers all Python structural codes (C1-C45, C48) without an LLM. The Cursor
+The scanner covers all 56 Python structural codes it emits without an LLM. The Cursor
 skill covers semantic cases and TypeScript/JavaScript, where no static scanner exists.

@@ -34,6 +34,32 @@ function readFragment(name) {
   return text.replace(/\r\n/g, '\n').replace(/\s*$/, '');
 }
 
+
+// The structural index is GENERATED, not authored. schema/code-catalog.json already carries
+// id + severity + title for every JS, R and PL code, extracted from reference.md by
+// build-code-catalog.mjs, so a hand-written compact table would be a second copy free to
+// drift the way the advertised code ranges did. Rendering it here makes
+// sync-host-files --check the drift assertion, so no new checker is needed.
+//
+// Why it exists: the compact hosts used to say "load the matching reference.md section", then
+// "read the passage that defines each code you are about to report". Both fail. The section is
+// 19 KiB for TS/JS and does not co-reside with an 18 KiB host file, and a passage cannot be
+// requested for a code whose definition the reader has never seen. The index breaks that
+// circle: ~2.9 KiB for all 39 codes against ~19 KiB for the TS/JS section alone.
+function renderStructuralIndex() {
+  const catalog = JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'schema/code-catalog.json'), 'utf8')).codes;
+  const num = (id) => Number(id.match(/\d+/)[0]);
+  const rows = ['| Code | Severity | What to look for |', '|---|---|---|'];
+  for (const [prefix, label] of [['JS', 'TypeScript / JavaScript'], ['R', 'Robot Framework'], ['PL', 'Project layer']]) {
+    const ids = Object.keys(catalog)
+      .filter((id) => id.startsWith(prefix) && /^\d/.test(id.slice(prefix.length)))
+      .sort((a, b) => num(a) - num(b) || a.localeCompare(b));
+    rows.push(`| **${label}** | | ${ids.length} codes |`);
+    for (const id of ids) rows.push(`| ${id} | ${catalog[id].severity || '-'} | ${catalog[id].title} |`);
+  }
+  return rows.join('\n');
+}
+
 // Each managed region is identified by a key. The host file must contain:
 //   <!-- fg:KEY:start -->
 //   ...generated content...
@@ -43,6 +69,7 @@ const FRAGMENTS = {
   'precision-rules': readFragment('precision-rules.md'),
   'semantic-cases-compact': readFragment('semantic-cases-compact.md'),
   'semantic-exemptions': readFragment('semantic-exemptions.md'),
+  'structural-codes-compact': renderStructuralIndex(),
 };
 
 // Which managed regions each host file is expected to carry.
@@ -50,9 +77,9 @@ const TARGETS = {
   'reference.md': ['semantic-exemptions'],
   'SKILL.md': ['precision-rules'],
   'llm.md': ['precision-rules'],
-  'AGENTS.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions'],
+  'AGENTS.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions', 'structural-codes-compact'],
   'GEMINI.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions'],
-  'contexts/cursor.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions'],
+  'contexts/cursor.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions', 'structural-codes-compact'],
 };
 
 function markers(key) {
