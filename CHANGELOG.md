@@ -59,6 +59,30 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `dist/` is gitignored and validate never builds it, so that is the only place
   those paths exist. Against the previous state it reports 9 dangling paths across
   the three packages.
+- `llm.md` claims at its third line to work pasted whole with no other file, and
+  it did not. A standalone paste named none of JS1-JS31, none of R1-R8b, and was
+  missing 16 Python codes: 54 of the codes the three scanners emit had no
+  definition in the file. It now carries the semantic table, the look-alike
+  exemptions, and a structural index covering all three scanners, and
+  `npm run validate` fails if a host that advertises standalone use stops naming
+  every emitted code. That assertion is the checkable form of self-containment and
+  it would have caught this before review.
+- The structural index named 39 of the 67 codes the non-Python scanners emit. It
+  filtered on the `JS`, `R` and `PL` prefixes, so it dropped every shared C-code,
+  the Robot-only C9b and D2, and the diagnostics, while promising to name the
+  complete emitted set. It builds from `schema/scanner-codes.json` now, with a
+  scanner column, so the promise holds by construction rather than by a prefix
+  that looked complete.
+- The Codex plugin entry point named five `fragments/...` paths that resolve
+  inside `skills/falsegreen-skill/`, where no such directory exists. Fourth
+  instance of the same class in this change, and the `dist` verifier could not see
+  it because `build-targets` never ships that file. Its tables are in-file now, so
+  the paths are gone rather than corrected. Its opening instruction was also
+  unconditional, numbering the ~36 KiB root protocol first while a nested caveat
+  told a ~32 KiB host to avoid it: the compact path is the default now and the
+  root protocol is an explicit exception.
+- `AGENTS.md` claimed "nothing outside this file is needed" where that holds for
+  the S-series but not for structural passages. Scoped.
 - A TypeScript, JavaScript, or Robot review driven by `GEMINI.md` ran no
   structural pass at all. Its Step 2 carried a Python family table and then said
   "For TypeScript/JavaScript, skip to Step 3", with no TS/JS table, no Robot

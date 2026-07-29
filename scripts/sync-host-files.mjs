@@ -46,17 +46,25 @@ function readFragment(name) {
 // 19 KiB for TS/JS and does not co-reside with an 18 KiB host file, and a passage cannot be
 // requested for a code whose definition the reader has never seen. The index breaks that
 // circle: ~2.9 KiB for all 39 codes against ~19 KiB for the TS/JS section alone.
-function renderStructuralIndex() {
+// Scanner-driven, not prefix-driven. The JS/R/PL prefix filter named 39 of the 67 codes the
+// non-Python scanners emit: it dropped every shared C-code (C5, C7, C20, CC...), the
+// Robot-specific C9b and D2, and the diagnostics. schema/scanner-codes.json pins what each
+// scanner emits, so building the row set from it makes the "complete emitted code set"
+// promise hold by construction rather than by a prefix that happened to look complete.
+// The prefix section labels are gone on purpose: once a shared code is in the table it
+// belongs to more than one language, so the language signal moves to a Scanner column.
+const SCANNER_TAG = { falsegreen: 'py', 'falsegreen-js': 'js', 'falsegreen-robot': 'rf' };
+
+function renderStructuralIndex(packages) {
   const catalog = JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'schema/code-catalog.json'), 'utf8')).codes;
-  const num = (id) => Number(id.match(/\d+/)[0]);
-  const rows = ['| Code | Severity | What to look for |', '|---|---|---|'];
-  for (const [prefix, label] of [['JS', 'TypeScript / JavaScript'], ['R', 'Robot Framework'], ['PL', 'Project layer']]) {
-    const ids = Object.keys(catalog)
-      .filter((id) => id.startsWith(prefix) && /^\d/.test(id.slice(prefix.length)))
-      .sort((a, b) => num(a) - num(b) || a.localeCompare(b));
-    rows.push(`| **${label}** | | ${ids.length} codes |`);
-    for (const id of ids) rows.push(`| ${id} | ${catalog[id].severity || '-'} | ${catalog[id].title} |`);
-  }
+  const scanners = JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'schema/scanner-codes.json'), 'utf8'));
+  const pre = (id) => id.replace(/\d.*$/, '');
+  const num = (id) => Number((id.match(/\d+/) || [0])[0]);
+  const tag = (id) => packages.filter((k) => scanners[k].codes.includes(id)).map((k) => SCANNER_TAG[k]).join('/');
+  const ids = [...new Set(packages.flatMap((k) => scanners[k].codes))]
+    .sort((a, b) => pre(a).localeCompare(pre(b)) || num(a) - num(b) || a.localeCompare(b));
+  const rows = ['| Code | Scanner | Severity | What to look for |', '|---|---|---|---|'];
+  for (const id of ids) rows.push(`| ${id} | ${tag(id)} | ${(catalog[id] || {}).severity || '-'} | ${(catalog[id] || {}).title || '-'} |`);
   return rows.join('\n');
 }
 
@@ -69,18 +77,19 @@ const FRAGMENTS = {
   'precision-rules': readFragment('precision-rules.md'),
   'semantic-cases-compact': readFragment('semantic-cases-compact.md'),
   'semantic-exemptions': readFragment('semantic-exemptions.md'),
-  'structural-codes-compact': renderStructuralIndex(),
+  'structural-codes-compact': renderStructuralIndex(['falsegreen-js', 'falsegreen-robot']),
+  'structural-codes-all': renderStructuralIndex(['falsegreen', 'falsegreen-js', 'falsegreen-robot']),
 };
 
 // Which managed regions each host file is expected to carry.
 const TARGETS = {
   'reference.md': ['semantic-exemptions'],
   'SKILL.md': ['precision-rules'],
-  'llm.md': ['precision-rules'],
+  'llm.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions', 'structural-codes-all'],
   'AGENTS.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions', 'structural-codes-compact'],
   'GEMINI.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions'],
-  'contexts/cursor.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions', 'structural-codes-compact'],
-  'skills/falsegreen-skill/SKILL.md': ['structural-codes-compact'],
+  'contexts/cursor.md': ['precision-rules', 'semantic-cases-compact', 'semantic-exemptions', 'structural-codes-all'],
+  'skills/falsegreen-skill/SKILL.md': ['structural-codes-all', 'semantic-cases-compact', 'semantic-exemptions'],
 };
 
 function markers(key) {

@@ -122,55 +122,123 @@ proceeding:
 
 For TypeScript and JavaScript, Robot Framework, and the project layer, apply the
 complete emitted code set indexed here, then proceed to Step 3 for the semantic
-judgments. The index is generated from the canonical catalog, so it cannot drift.
-Severity `-` means the code carries no fixed severity.
+judgments. Generated from `schema/code-catalog.json` and
+`schema/scanner-codes.json`, so it cannot drift. Every code any of the three
+scanners can emit has a row, which matters here because this rule is copied into
+repositories that have no `reference.md`. Scanner column: `py` falsegreen, `js`
+falsegreen-js, `rf` falsegreen-robot. Severity `-` means no fixed severity. The
+D-series and M2 are opt-in diagnostics: apply them only when the user asks.
 
-<!-- fg:structural-codes-compact:start -->
-| Code | Severity | What to look for |
-|---|---|---|
-| **TypeScript / JavaScript** | | 24 codes |
-| JS1 | HIGH | focused test (`it.only`/`fit`) skips the rest of the suite |
-| JS2 | HIGH | `expect(x)` with no matcher |
-| JS3 | LOW | snapshot is the only assertion |
-| JS4 | LOW | skipped test (`it.skip`/`xit`/`it.todo`) |
-| JS5 | LOW | async query/event not awaited (`findBy*`/`waitFor`/user-event) |
-| JS6 | HIGH | empty `describe`/`suite` |
-| JS7 | LOW | assertion in a non-awaited `setTimeout`/`then` callback |
-| JS8 | LOW | mocks the unit under test and asserts it directly |
-| JS9 | HIGH | assertion in a dead literal branch (`if(false)`) |
-| JS11 | LOW | `try/catch` swallows the assertion |
-| JS13 | LOW | `queryBy*`/`queryAllBy*` query (returns null when absent) as a loose statement, never asserted - `getBy*`/`getAllBy*`/`findBy*`/`findAllBy*` throw on absence and ARE the assertion |
-| JS15 | LOW | comparison wrapped in a boolean (`expect(a===b).toBe(true)`) |
-| JS17 | LOW | commented-out test block (`// it(...)`) |
-| JS18 | LOW | `done` callback instead of async/await |
-| JS21 | HIGH | matcher referenced but never called (`expect(x).toBe` with no `()`) |
-| JS22 | HIGH | empty `it.each`/`test.each` table |
-| JS23 | HIGH | `expect.assertions(N)` with fewer unconditional reachable `expect()` calls than `N` |
-| JS24 | LOW | Cypress `cy.get/find/contains` query statement with no `.should`/`.and`/`.then` assertion |
-| JS25 | HIGH | the only assertion sits inside an array-iterator callback (`forEach`/`map`/`filter`/`some`/`every`/`flatMap`) - runs zero times on an empty collection |
-| JS26 | LOW | fake timers installed but never advanced (`runAllTimers`/`advanceTimersByTime`/`tick`) - the scheduled callback never fires, so the assertion reads un-mutated state |
-| JS27 | LOW | `toHaveBeenCalled*` is the sole oracle on a locally-created double - verifies wiring, not behaviour |
-| JS29 | LOW | `expect(...).resolves`/`.rejects` chain is a bare statement, not awaited or returned - the test finishes green before the matcher settles |
-| JS30 | HIGH | literal-vs-literal assertion (`expect(2).toBe(3)`, chai `expect(x).to.equal(y)`) - both operands are fixed at parse time |
-| JS31 | LOW | `try/catch` swallows a possible throw with no assertion on the exception - a unit that stops throwing still passes green |
-| **Robot Framework** | | 9 codes |
-| R1 | - | Forced green |
-| R2 | - | Hollow verifier keyword |
-| R3 | - | Test Cases in a .resource |
-| R4 | - | No Operation only |
-| R5 | - | Empty [Template] |
-| R6 | - | Should Be True on a string literal |
-| R7 | - | Hollow [Template] keyword |
-| R8 | - | Verification only in Setup |
-| R8b | - | Verification only in Teardown |
-| **Project layer** | | 6 codes |
-| PL1 | - | Asserts stripped at runtime |
-| PL2 | - | Warnings not promoted |
-| PL7 | - | No coverage gate |
-| PL8 | - | Run stops early |
-| PL9 | - | Skip-on-failure run option |
-| PL10 | - | passWithNoTests |
-<!-- fg:structural-codes-compact:end -->
+<!-- fg:structural-codes-all:start -->
+| Code | Scanner | Severity | What to look for |
+|---|---|---|---|
+| C1 | py | LOW | Assertion inside conditional or loop that may never run |
+| C2 | py/js/rf | HIGH | Test body contains no assertion at all |
+| C2b | py/js/rf | LOW | Test calls production code but verifies nothing |
+| C2c | py | LOW | Empty `self.subTest(...)` block |
+| C3 | py/rf | HIGH | Assert inside try whose except swallows the error |
+| C4 | py | HIGH | Test function not collected by pytest |
+| C4b | py | LOW | Test class has `__init__` (pytest won't collect it) |
+| C5 | py/js/rf | HIGH | Always-true assertion |
+| C6 | py/js/rf | LOW | Weak assertion: only checks that something came back |
+| C6b | py | LOW | Assertion on positional mock argument via computed index |
+| C6c | py | LOW | Mock `call_count` truthiness as the oracle |
+| C7 | py/js/rf | HIGH | Self-comparison: both sides are identical |
+| C8 | py/js | LOW | Float exact equality |
+| C8b | py/js | LOW | Approximate equality with no explicit tolerance |
+| C9 | py/js/rf | LOW | pytest.raises too broad |
+| C9b | rf | - | RequestsLibrary `expected_status=any` |
+| C11a | py/js/rf | LOW | Self-confirming literal: test assigns then asserts the same value |
+| C13 | py | HIGH | Mock assertion misspelled or not called |
+| C13b | py | LOW | patch() without autospec |
+| C14 | py | LOW | Golden file generated from the actual output |
+| C16 | py/js/rf | LOW | Result depends on uncontrolled time, randomness, or sleep |
+| C17 | py | HIGH | pytest.skip() inside broad except |
+| C18 | py/js | LOW | String/repr comparison |
+| C19 | py | LOW | pytest.raises wraps more than one call |
+| C20 | py/js/rf | HIGH | Assertion after unconditional return/raise/fail |
+| C21 | py/js/rf | LOW | Every assertion is inside a conditional; none runs unconditionally |
+| C22 | py | OFF | Async test never awaits the unit under test |
+| C23 | py/js/rf | LOW | Hard-coded absolute or home-relative file path |
+| C24 | py | LOW | Module-level mutable state mutated by test |
+| C25 | py | LOW | xfail without strict=True |
+| C27 | py | HIGH | try/except/pass around SUT call with no assertion |
+| C28 | py | LOW | pytest.raises binding variable never read |
+| C29 | py | LOW | os.environ modified directly in test |
+| C30 | py | LOW | HTTP mock not activated |
+| C31 | py/rf | LOW | capsys.readouterr() result discarded |
+| C32 | py/rf | LOW | @pytest.mark.skip without reason |
+| C33 | py | LOW | ML metric computed but not asserted |
+| C34 | py | LOW | Suboptimal assertion form |
+| C35 | py | LOW | Retry/flaky decorator |
+| C36 | py | LOW | pytest.fail() without reason |
+| C37 | py/js/rf | LOW | Duplicate parametrize case |
+| C38 | py | HIGH | Two tests share a name |
+| C39 | py | HIGH | Returns a comparison instead of asserting |
+| C41 | py | LOW | Assertion on a None-returning mutator |
+| C42 | py | HIGH | Assertion on a generator/lambda |
+| C43 | py | LOW | Mid-test skip |
+| C44 | py/js/rf | HIGH | Numeric tautology |
+| C45 | py | HIGH | Empty parametrize |
+| C48 | py/js | LOW | Dark patch: flips a test-mode flag then asserts |
+| C49 | py | LOW | `pytest.warns`/`assertWarns` wraps more than one call |
+| C50 | py | LOW | Captured log never asserted |
+| C51 | py | HIGH | Empty-bodied `pytest.raises`/`warns` context |
+| C52 | py | LOW | Membership self-confirmation |
+| C55 | py | LOW | Assertion compares two mock-rooted values |
+| C56 | py | LOW | Sync assert of a never-awaited coroutine |
+| C57 | py | LOW | Assertion against an unconfigured Mock attribute |
+| C59 | py | HIGH | Bare comparison written as a statement |
+| CC | py/js/rf | LOW | Commented-out assert |
+| D1 | py/js | LOW | Assertion Roulette: multiple asserts, none with a message |
+| D2 | rf | - | Control flow at test level |
+| D3 | py/js | LOW | Duplicate Assert: same assertion appears twice |
+| D4 | py/js | LOW | Unnamed parametrize cases |
+| D5 | py | LOW | Excessive inline setup |
+| D6 | py/js | LOW | Debug print in test |
+| D7 | js | LOW | Anonymous test: empty or missing description |
+| D8 | js | LOW | Magic number in an assertion |
+| JS1 | js | HIGH | focused test (`it.only`/`fit`) skips the rest of the suite |
+| JS2 | js | HIGH | `expect(x)` with no matcher |
+| JS3 | js | LOW | snapshot is the only assertion |
+| JS4 | js | LOW | skipped test (`it.skip`/`xit`/`it.todo`) |
+| JS5 | js | LOW | async query/event not awaited (`findBy*`/`waitFor`/user-event) |
+| JS6 | js | HIGH | empty `describe`/`suite` |
+| JS7 | js | LOW | assertion in a non-awaited `setTimeout`/`then` callback |
+| JS8 | js | LOW | mocks the unit under test and asserts it directly |
+| JS9 | js | HIGH | assertion in a dead literal branch (`if(false)`) |
+| JS11 | js | LOW | `try/catch` swallows the assertion |
+| JS13 | js | LOW | `queryBy*`/`queryAllBy*` query (returns null when absent) as a loose statement, never asserted - `getBy*`/`getAllBy*`/`findBy*`/`findAllBy*` throw on absence and ARE the assertion |
+| JS15 | js | LOW | comparison wrapped in a boolean (`expect(a===b).toBe(true)`) |
+| JS17 | js | LOW | commented-out test block (`// it(...)`) |
+| JS18 | js | LOW | `done` callback instead of async/await |
+| JS21 | js | HIGH | matcher referenced but never called (`expect(x).toBe` with no `()`) |
+| JS22 | js | HIGH | empty `it.each`/`test.each` table |
+| JS23 | js | HIGH | `expect.assertions(N)` with fewer unconditional reachable `expect()` calls than `N` |
+| JS24 | js | LOW | Cypress `cy.get/find/contains` query statement with no `.should`/`.and`/`.then` assertion |
+| JS25 | js | HIGH | the only assertion sits inside an array-iterator callback (`forEach`/`map`/`filter`/`some`/`every`/`flatMap`) - runs zero times on an empty collection |
+| JS26 | js | LOW | fake timers installed but never advanced (`runAllTimers`/`advanceTimersByTime`/`tick`) - the scheduled callback never fires, so the assertion reads un-mutated state |
+| JS27 | js | LOW | `toHaveBeenCalled*` is the sole oracle on a locally-created double - verifies wiring, not behaviour |
+| JS29 | js | LOW | `expect(...).resolves`/`.rejects` chain is a bare statement, not awaited or returned - the test finishes green before the matcher settles |
+| JS30 | js | HIGH | literal-vs-literal assertion (`expect(2).toBe(3)`, chai `expect(x).to.equal(y)`) - both operands are fixed at parse time |
+| JS31 | js | LOW | `try/catch` swallows a possible throw with no assertion on the exception - a unit that stops throwing still passes green |
+| M2 | py/js/rf | LOW | Long test method |
+| PL1 | py | - | Asserts stripped at runtime |
+| PL2 | py | - | Warnings not promoted |
+| PL7 | py/js | - | No coverage gate |
+| PL8 | py/js | - | Run stops early |
+| PL9 | rf | - | Skip-on-failure run option |
+| PL10 | js | - | passWithNoTests |
+| R1 | rf | - | Forced green |
+| R2 | rf | - | Hollow verifier keyword |
+| R3 | rf | - | Test Cases in a .resource |
+| R4 | rf | - | No Operation only |
+| R5 | rf | - | Empty [Template] |
+| R6 | rf | - | Should Be True on a string literal |
+| R7 | rf | - | Hollow [Template] keyword |
+| R8 | rf | - | Verification only in Setup |
+| R8b | rf | - | Verification only in Teardown |
+<!-- fg:structural-codes-all:end -->
 
 ### Step 3: Classify test intent
 

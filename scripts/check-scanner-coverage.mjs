@@ -33,6 +33,27 @@ for (const [pkg, info] of Object.entries(scanners)) {
   }
 }
 
+// Self-containment. A host that advertises "works with no other file" has to name every
+// code the scanners emit, or a standalone paste silently runs a subset. `llm.md:3` makes
+// exactly that claim, and it was false: a paste-only review ran no TS/JS or Robot structural
+// code at all and missed 16 Python codes. Hosts that ship alongside reference.md make no
+// such claim and are deliberately not listed.
+// ponytail: presence is "the id appears in the file", not "the id has a table row". A
+// stricter parse is a bigger checker; upgrade only if a code gets named in prose alone.
+const STANDALONE = ['llm.md'];
+const emitted = [...new Set(
+  Object.entries(scanners)
+    .filter(([pkg, v]) => !pkg.startsWith('$') && v && Array.isArray(v.codes))
+    .flatMap(([, v]) => v.codes)
+)].sort();
+for (const file of STANDALONE) {
+  const text = fs.readFileSync(path.join(PKG_ROOT, file), 'utf8');
+  const missing = emitted.filter((code) => !new RegExp(`(^|[^A-Za-z0-9])${code}([^A-Za-z0-9]|$)`).test(text));
+  if (missing.length > 0) {
+    errors.push(`${file} claims to work standalone but never names ${missing.length} emitted code(s): ${missing.join(', ')}`);
+  }
+}
+
 if (errors.length > 0) {
   process.stderr.write(errors.map((e) => `error: ${e}`).join('\n') + '\n');
   process.exit(1);

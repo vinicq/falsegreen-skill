@@ -84,7 +84,7 @@ per code, so you can run every code without opening `reference.md` first. Work
 from the index, then pull the `reference.md` passage for a code only when a
 finding needs its full definition or its look-alike exemption.
 
-That order matters and the reverse does not work. This file is ~23 KiB and the
+That order matters and the reverse does not work. This file is ~25 KiB and the
 TS/JS section is ~19 KiB, so loading a whole section puts the pair past the
 ~32 KiB Codex budget before any test source loads and the host truncates
 mid-file. But you also cannot ask for the passage of a code you have never seen
@@ -92,54 +92,82 @@ named. The index is what closes that gap: ~3 KiB for all 39 codes.
 
 ### Structural code index (TS/JS, Robot, project layer)
 
-Generated from `schema/code-catalog.json`, so it cannot drift from
-`reference.md`. Severity `-` means the code carries no fixed severity.
+Generated from `schema/code-catalog.json` and `schema/scanner-codes.json`, so it
+cannot drift. Every code `falsegreen-js` or `falsegreen-robot` can emit has a row.
+Scanner column: `js` falsegreen-js, `rf` falsegreen-robot, `js/rf` both. Severity
+`-` means no fixed severity. The D-series and M2 are opt-in diagnostics: apply
+them only when the user asks.
 
 <!-- fg:structural-codes-compact:start -->
-| Code | Severity | What to look for |
-|---|---|---|
-| **TypeScript / JavaScript** | | 24 codes |
-| JS1 | HIGH | focused test (`it.only`/`fit`) skips the rest of the suite |
-| JS2 | HIGH | `expect(x)` with no matcher |
-| JS3 | LOW | snapshot is the only assertion |
-| JS4 | LOW | skipped test (`it.skip`/`xit`/`it.todo`) |
-| JS5 | LOW | async query/event not awaited (`findBy*`/`waitFor`/user-event) |
-| JS6 | HIGH | empty `describe`/`suite` |
-| JS7 | LOW | assertion in a non-awaited `setTimeout`/`then` callback |
-| JS8 | LOW | mocks the unit under test and asserts it directly |
-| JS9 | HIGH | assertion in a dead literal branch (`if(false)`) |
-| JS11 | LOW | `try/catch` swallows the assertion |
-| JS13 | LOW | `queryBy*`/`queryAllBy*` query (returns null when absent) as a loose statement, never asserted - `getBy*`/`getAllBy*`/`findBy*`/`findAllBy*` throw on absence and ARE the assertion |
-| JS15 | LOW | comparison wrapped in a boolean (`expect(a===b).toBe(true)`) |
-| JS17 | LOW | commented-out test block (`// it(...)`) |
-| JS18 | LOW | `done` callback instead of async/await |
-| JS21 | HIGH | matcher referenced but never called (`expect(x).toBe` with no `()`) |
-| JS22 | HIGH | empty `it.each`/`test.each` table |
-| JS23 | HIGH | `expect.assertions(N)` with fewer unconditional reachable `expect()` calls than `N` |
-| JS24 | LOW | Cypress `cy.get/find/contains` query statement with no `.should`/`.and`/`.then` assertion |
-| JS25 | HIGH | the only assertion sits inside an array-iterator callback (`forEach`/`map`/`filter`/`some`/`every`/`flatMap`) - runs zero times on an empty collection |
-| JS26 | LOW | fake timers installed but never advanced (`runAllTimers`/`advanceTimersByTime`/`tick`) - the scheduled callback never fires, so the assertion reads un-mutated state |
-| JS27 | LOW | `toHaveBeenCalled*` is the sole oracle on a locally-created double - verifies wiring, not behaviour |
-| JS29 | LOW | `expect(...).resolves`/`.rejects` chain is a bare statement, not awaited or returned - the test finishes green before the matcher settles |
-| JS30 | HIGH | literal-vs-literal assertion (`expect(2).toBe(3)`, chai `expect(x).to.equal(y)`) - both operands are fixed at parse time |
-| JS31 | LOW | `try/catch` swallows a possible throw with no assertion on the exception - a unit that stops throwing still passes green |
-| **Robot Framework** | | 9 codes |
-| R1 | - | Forced green |
-| R2 | - | Hollow verifier keyword |
-| R3 | - | Test Cases in a .resource |
-| R4 | - | No Operation only |
-| R5 | - | Empty [Template] |
-| R6 | - | Should Be True on a string literal |
-| R7 | - | Hollow [Template] keyword |
-| R8 | - | Verification only in Setup |
-| R8b | - | Verification only in Teardown |
-| **Project layer** | | 6 codes |
-| PL1 | - | Asserts stripped at runtime |
-| PL2 | - | Warnings not promoted |
-| PL7 | - | No coverage gate |
-| PL8 | - | Run stops early |
-| PL9 | - | Skip-on-failure run option |
-| PL10 | - | passWithNoTests |
+| Code | Scanner | Severity | What to look for |
+|---|---|---|---|
+| C2 | js/rf | HIGH | Test body contains no assertion at all |
+| C2b | js/rf | LOW | Test calls production code but verifies nothing |
+| C3 | rf | HIGH | Assert inside try whose except swallows the error |
+| C5 | js/rf | HIGH | Always-true assertion |
+| C6 | js/rf | LOW | Weak assertion: only checks that something came back |
+| C7 | js/rf | HIGH | Self-comparison: both sides are identical |
+| C8 | js | LOW | Float exact equality |
+| C8b | js | LOW | Approximate equality with no explicit tolerance |
+| C9 | js/rf | LOW | pytest.raises too broad |
+| C9b | rf | - | RequestsLibrary `expected_status=any` |
+| C11a | js/rf | LOW | Self-confirming literal: test assigns then asserts the same value |
+| C16 | js/rf | LOW | Result depends on uncontrolled time, randomness, or sleep |
+| C18 | js | LOW | String/repr comparison |
+| C20 | js/rf | HIGH | Assertion after unconditional return/raise/fail |
+| C21 | js/rf | LOW | Every assertion is inside a conditional; none runs unconditionally |
+| C23 | js/rf | LOW | Hard-coded absolute or home-relative file path |
+| C31 | rf | LOW | capsys.readouterr() result discarded |
+| C32 | rf | LOW | @pytest.mark.skip without reason |
+| C37 | js/rf | LOW | Duplicate parametrize case |
+| C44 | js/rf | HIGH | Numeric tautology |
+| C48 | js | LOW | Dark patch: flips a test-mode flag then asserts |
+| CC | js/rf | LOW | Commented-out assert |
+| D1 | js | LOW | Assertion Roulette: multiple asserts, none with a message |
+| D2 | rf | - | Control flow at test level |
+| D3 | js | LOW | Duplicate Assert: same assertion appears twice |
+| D4 | js | LOW | Unnamed parametrize cases |
+| D6 | js | LOW | Debug print in test |
+| D7 | js | LOW | Anonymous test: empty or missing description |
+| D8 | js | LOW | Magic number in an assertion |
+| JS1 | js | HIGH | focused test (`it.only`/`fit`) skips the rest of the suite |
+| JS2 | js | HIGH | `expect(x)` with no matcher |
+| JS3 | js | LOW | snapshot is the only assertion |
+| JS4 | js | LOW | skipped test (`it.skip`/`xit`/`it.todo`) |
+| JS5 | js | LOW | async query/event not awaited (`findBy*`/`waitFor`/user-event) |
+| JS6 | js | HIGH | empty `describe`/`suite` |
+| JS7 | js | LOW | assertion in a non-awaited `setTimeout`/`then` callback |
+| JS8 | js | LOW | mocks the unit under test and asserts it directly |
+| JS9 | js | HIGH | assertion in a dead literal branch (`if(false)`) |
+| JS11 | js | LOW | `try/catch` swallows the assertion |
+| JS13 | js | LOW | `queryBy*`/`queryAllBy*` query (returns null when absent) as a loose statement, never asserted - `getBy*`/`getAllBy*`/`findBy*`/`findAllBy*` throw on absence and ARE the assertion |
+| JS15 | js | LOW | comparison wrapped in a boolean (`expect(a===b).toBe(true)`) |
+| JS17 | js | LOW | commented-out test block (`// it(...)`) |
+| JS18 | js | LOW | `done` callback instead of async/await |
+| JS21 | js | HIGH | matcher referenced but never called (`expect(x).toBe` with no `()`) |
+| JS22 | js | HIGH | empty `it.each`/`test.each` table |
+| JS23 | js | HIGH | `expect.assertions(N)` with fewer unconditional reachable `expect()` calls than `N` |
+| JS24 | js | LOW | Cypress `cy.get/find/contains` query statement with no `.should`/`.and`/`.then` assertion |
+| JS25 | js | HIGH | the only assertion sits inside an array-iterator callback (`forEach`/`map`/`filter`/`some`/`every`/`flatMap`) - runs zero times on an empty collection |
+| JS26 | js | LOW | fake timers installed but never advanced (`runAllTimers`/`advanceTimersByTime`/`tick`) - the scheduled callback never fires, so the assertion reads un-mutated state |
+| JS27 | js | LOW | `toHaveBeenCalled*` is the sole oracle on a locally-created double - verifies wiring, not behaviour |
+| JS29 | js | LOW | `expect(...).resolves`/`.rejects` chain is a bare statement, not awaited or returned - the test finishes green before the matcher settles |
+| JS30 | js | HIGH | literal-vs-literal assertion (`expect(2).toBe(3)`, chai `expect(x).to.equal(y)`) - both operands are fixed at parse time |
+| JS31 | js | LOW | `try/catch` swallows a possible throw with no assertion on the exception - a unit that stops throwing still passes green |
+| M2 | js/rf | LOW | Long test method |
+| PL7 | js | - | No coverage gate |
+| PL8 | js | - | Run stops early |
+| PL9 | rf | - | Skip-on-failure run option |
+| PL10 | js | - | passWithNoTests |
+| R1 | rf | - | Forced green |
+| R2 | rf | - | Hollow verifier keyword |
+| R3 | rf | - | Test Cases in a .resource |
+| R4 | rf | - | No Operation only |
+| R5 | rf | - | Empty [Template] |
+| R6 | rf | - | Should Be True on a string literal |
+| R7 | rf | - | Hollow [Template] keyword |
+| R8 | rf | - | Verification only in Setup |
+| R8b | rf | - | Verification only in Teardown |
 <!-- fg:structural-codes-compact:end -->
 
 The S1-S18 and S21 semantic codes are language-agnostic and apply to every
@@ -197,8 +225,9 @@ passes only in a specific order is not reliably testing anything.
 S21 are part of this step, not a preamble to it: walk the table under "Semantic
 cases (quick reference)" below row by row, check each candidate against
 "Look-alike exemptions for the semantic codes", then move on. Step 4 is not
-complete until every S-code has been considered, and nothing outside this file is
-needed to do it.
+complete until every S-code has been considered. For the S-series specifically,
+nothing outside this file is needed; structural passages still come from
+`reference.md`.
 
 ### Step 5: Adversarial verify for case 18
 
