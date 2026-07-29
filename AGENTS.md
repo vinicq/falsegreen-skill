@@ -79,8 +79,13 @@ Scan against all falsegreen pattern families in order:
 Report each structural finding before proceeding to Steps 3-6.
 
 For TypeScript / JavaScript (shared C-codes plus JS1-JS31) and Robot Framework
-(R-codes plus reused C-codes), the summaries here are partial - load the matching
-`reference.md` section in full before judging, then proceed to Step 3.
+(R-codes plus reused C-codes), the summaries here are partial. Open the matching
+`reference.md` section and read the passage that defines each code you are about
+to report, plus the look-alike block that closes the section, then proceed to
+Step 3. Read passages, not whole sections: this file is ~18 KiB and the TS/JS
+section is ~19 KiB, so pulling a section whole puts the pair past the ~32 KiB
+Codex budget before any test source loads, and the host truncates mid-file with
+no warning.
 
 The S1-S18 and S21 semantic codes are language-agnostic and apply to every
 language, Python included. Everything needed to run them is in this file: the

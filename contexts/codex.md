@@ -65,8 +65,8 @@ your own prompts if they work for you; nothing here requires removing them.
 
 Codex loads project guidance into a host context with a working budget of
 about **32 KiB**. The full set of protocol files does not fit: `SKILL.md`
-(~36 KiB) already breaks the budget on its own, and with `AGENTS.md` (~15 KiB)
-plus this guide (~24 KiB) the three come to roughly 75 KiB loaded together.
+(~35 KiB) already breaks the budget on its own, and with `AGENTS.md` (~18 KiB)
+plus this guide (~24 KiB) the three come to roughly 77 KiB loaded together.
 Loading them at once truncates the protocol mid-file and the analysis degrades
 silently.
 
@@ -87,9 +87,13 @@ Eager (always loaded when Codex opens the project):
 On demand (load only when the case calls for it, never eagerly):
 
 2. **`reference.md`** - the full per-language pattern catalog with examples and
-   look-alike exemptions. At ~92 KiB it never fits eagerly. Pull the relevant
-   section only when a finding needs the full pattern definition or an
-   exemption check that the compact table does not spell out. Two sections
+   look-alike exemptions. At ~92 KiB it never fits eagerly, and neither does a
+   whole language section: `AGENTS.md` (~18 KiB) plus the TS/JS section
+   (~19 KiB) is ~37 KiB, past the budget before any test source loads, and
+   Robot (~15 KiB) is over too. Pull the passage that defines the code you are
+   about to report, not the section, and only when a finding needs the full
+   pattern definition or an exemption check that the compact table does not
+   spell out. Two sections
    matter here and they are not interchangeable. The per-language section
    carries the structural codes for the file in front of you. The section
    `## Patterns only the semantic pass can catch (AI-only)` carries the

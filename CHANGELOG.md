@@ -49,6 +49,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   as effectively as any typo. Its ceiling is recorded in the script and in the PR
   template: it proves the definition is reachable, it cannot tell an imperative
   sentence from a descriptive one, so a reviewer does that.
+- The built packages named files they did not ship. `build-targets.mjs` copies
+  `reference.md` and the schemas into each target but never `fragments/`, so the
+  tight-budget floor the protocol points at did not exist on disk in any Claude,
+  Gemini, or Antigravity artifact. `fragments/precision-rules.md` and `CREDITS.md`
+  had the same problem, and predate this change. All are shipped now, and
+  `build-targets` fails when the generated protocol names a path the target does
+  not contain. The check lives there rather than in `npm run validate` because
+  `dist/` is gitignored and validate never builds it, so that is the only place
+  those paths exist. Against the previous state it reports 9 dangling paths across
+  the three packages.
+- `AGENTS.md` told Codex to load a `reference.md` language section "in full",
+  which its own budget forbids: at ~18 KiB the file plus the ~19 KiB TS/JS section
+  is ~37 KiB against a ~32 KiB ceiling, so the instruction produced the silent
+  truncation the same paragraph warns about. The on-demand pull is a passage now,
+  not a section. `SKILL.md` and `llm.md` keep "in full" on purpose: `SKILL.md` is
+  ~35 KiB, so any host that opens it is a large-context host by construction and
+  the budget is not the constraint there.
+- Byte figures went stale again inside the same change: `contexts/codex.md` and
+  `docs/packaging.md` still put `AGENTS.md` at ~15 KiB after the exemptions block
+  took it to ~18 KiB. Corrected, along with the three-file eager sum.
 - Stale advertised ranges. `llm.md` announced the S-series as `S1-S16`, three
   codes short. Docs also mixed `S1-S16`, `S1-S21`, and `S1-S18 and S21` for the
   same 19 codes; `S1-S21` implies an S19 and S20 that do not exist. Normalized to

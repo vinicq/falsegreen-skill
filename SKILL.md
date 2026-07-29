@@ -171,10 +171,12 @@ S1-S18 and S21 sit in `reference.md`, in the section
 `## Patterns only the semantic pass can catch (AI-only)`, which sits above the
 per-language sections, so loading a language section alone skips all of them. Load that section together with the "Look-alikes - do NOT
 flag" paragraph that closes it. When the host budget cannot hold both the semantic
-section and a language section, load the compact table in
-`fragments/semantic-cases-compact.md` instead of the prose (about 4.7 KiB against
-about 13 KiB) and keep the exemption paragraph; the language section is what you
-defer and pull per finding, never the semantic floor.
+section and a language section, load the two floor fragments instead of the prose:
+`fragments/semantic-cases-compact.md` (a row per S-code) plus
+`fragments/semantic-exemptions.md` (the same look-alike exemptions, so the floor
+needs no `reference.md` read at all). That is about 7.5 KiB against about 13 KiB.
+The language section is what you defer and pull per finding, never the semantic
+floor.
 
 | Family | Codes | What to look for |
 |---|---|---|
@@ -554,7 +556,7 @@ fix catches the targeted mutant, not every possible bug.
 
 Output the finding being fixed, the proposed test (language, level, cited oracle,
 code), the line confirming it passes its own Mode A self-check, and the
-`fix-validation.json` contract for the host to run. State plainly that acceptance
+`schema/fix-validation.json` contract for the host to run. State plainly that acceptance
 waits on the host's gate result; the skill does not run it.
 
 ---

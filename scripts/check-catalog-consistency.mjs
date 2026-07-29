@@ -126,7 +126,11 @@ if (!semanticBody) {
 // and as a non-match to a regex. Normalize a working copy once instead of special-casing
 // backticks, which would only shrink the same blind spot.
 const flatten = (s) => s.replace(/[`*_]/g, '').replace(/\s+/g, ' ');
-const hasEverySemanticRow = (text) => semantic.every((id) => new RegExp(`\\|\\s*${id}\\s*\\|`).test(text));
+// Normalizes internally so no caller can pass raw text and silently lose the normalization.
+const hasEverySemanticRow = (text) => {
+  const flat = flatten(text);
+  return semantic.every((id) => new RegExp(`\\|\\s*${id}\\s*\\|`).test(flat));
+};
 
 // 3c. Every host that routes through reference.md must reach the S-series by one of the two
 // sanctioned paths: carry the rows inline, or name the shared section so the load lands on it.
