@@ -1,24 +1,29 @@
 #!/usr/bin/env node
 'use strict';
 
-// Single source of truth for the INVARIANT blocks shared across the host files
-// (SKILL.md, llm.md, AGENTS.md, GEMINI.md). These blocks must read identically
-// in every host or the protocol drifts; they did drift once (the precision
-// rules diverged into four different wordings, with different counts and even
-// different code numbers). The canonical text lives in fragments/, and this
-// script injects each fragment between anchor comments in the host files.
+// Single source of truth for the INVARIANT blocks shared across the host files. These blocks
+// must read identically in every host or the protocol drifts; they did drift once (the
+// precision rules diverged into four different wordings, with different counts and even
+// different code numbers). The canonical text lives in fragments/ or is rendered from the
+// schemas, and this script injects each block between anchor comments. TARGETS below is the
+// authoritative list of consumers - read it rather than trusting this paragraph.
 //
-// What is single-sourced (here): the precision-first rules (all four hosts), the
-// compact semantic-case lookup table, and the S-series look-alike exemptions.
-// The exemptions list reference.md itself as a target, so the fragment is the one
-// copy and reference.md consumes it like any host; the AGENTS.md-only and
-// Cursor-only installs carry both blocks inline, because on those paths
-// reference.md is not on disk and an unreachable exemption turns a correct test
-// into a reported false-green. What is deliberately NOT single-sourced: the per-host
-// framing (headers, "how to invoke"), and the full-vs-compact rendering of the
-// Protocol and the J1-J6 judgments. SKILL.md/llm.md carry full prose; AGENTS.md
-// and GEMINI.md stay compact on purpose (Codex 32 KiB budget, Gemini long
-// context). Flattening those would defeat the compaction, so they stay by hand.
+// What is single-sourced (here): the precision-first rules, the compact semantic-case table,
+// the S-series look-alike exemptions, and the structural code index. reference.md itself is a
+// target for the exemptions, so the fragment is the one copy and reference.md consumes it like
+// any host.
+//
+// Which hosts carry which blocks is a function of what their install path has on disk, not of
+// taste. llm.md advertises working pasted whole with no other file, and the AGENTS.md-only and
+// Cursor-only installs have no reference.md at all, so those three carry the tables and the
+// exemptions inline: on those paths an unreachable exemption turns a correct test into a
+// reported false-green. SKILL.md ships beside reference.md and needs neither.
+//
+// What is deliberately NOT single-sourced: the per-host framing (headers, "how to invoke") and
+// the full-vs-compact rendering of the Protocol and the J1-J6 judgments. SKILL.md carries full
+// prose; AGENTS.md and GEMINI.md stay compact on purpose (Codex 32 KiB budget, Gemini long
+// context). Flattening those would defeat the compaction, so they stay by hand - which is why
+// check-catalog-consistency.mjs asserts the hand-written family tables are complete.
 //
 // Mirrors scripts/sync-cursor-mdc.mjs: run with no args to write the host files,
 // run with --check (wired into `npm run validate`) to fail CI on any drift.
@@ -35,24 +40,25 @@ function readFragment(name) {
 }
 
 
-// The structural index is GENERATED, not authored. schema/code-catalog.json already carries
-// id + severity + title for every JS, R and PL code, extracted from reference.md by
-// build-code-catalog.mjs, so a hand-written compact table would be a second copy free to
-// drift the way the advertised code ranges did. Rendering it here makes
-// sync-host-files --check the drift assertion, so no new checker is needed.
+// The structural index is GENERATED, not authored, and driven by the scanner sets rather than
+// by an id prefix.
 //
 // Why it exists: the compact hosts used to say "load the matching reference.md section", then
-// "read the passage that defines each code you are about to report". Both fail. The section is
-// 19 KiB for TS/JS and does not co-reside with an 18 KiB host file, and a passage cannot be
-// requested for a code whose definition the reader has never seen. The index breaks that
-// circle: ~2.9 KiB for all 39 codes against ~19 KiB for the TS/JS section alone.
-// Scanner-driven, not prefix-driven. The JS/R/PL prefix filter named 39 of the 67 codes the
-// non-Python scanners emit: it dropped every shared C-code (C5, C7, C20, CC...), the
-// Robot-specific C9b and D2, and the diagnostics. schema/scanner-codes.json pins what each
-// scanner emits, so building the row set from it makes the "complete emitted code set"
-// promise hold by construction rather than by a prefix that happened to look complete.
-// The prefix section labels are gone on purpose: once a shared code is in the table it
-// belongs to more than one language, so the language signal moves to a Scanner column.
+// "read the passage that defines each code you are about to report". Both fail. A section is
+// 15-19 KiB for Robot or TS/JS and does not co-reside with a 20+ KiB host file on a 32 KiB
+// budget, and a passage cannot be requested for a code whose definition the reader has never
+// seen. The index breaks that circle at a fraction of the section it replaces.
+//
+// Why scanner-driven: the first version filtered on the JS/R/PL prefixes and named 39 of the
+// 67 codes the non-Python scanners emit, dropping every shared C-code (C5, C7, C20, CC...),
+// the Robot-only C9b and D2, and the diagnostics - while the block promised the complete
+// emitted set. schema/scanner-codes.json pins what each scanner emits, so building the row
+// set from it makes that promise hold by construction instead of by a prefix that happened to
+// look complete. Prefix section labels are gone for the same reason: a shared code belongs to
+// more than one language, so the language signal is a Scanner column.
+//
+// Rendering here rather than committing a fragment means sync-host-files --check is already
+// the drift assertion; no separate checker is needed.
 const SCANNER_TAG = { falsegreen: 'py', 'falsegreen-js': 'js', 'falsegreen-robot': 'rf' };
 
 function renderStructuralIndex(packages) {

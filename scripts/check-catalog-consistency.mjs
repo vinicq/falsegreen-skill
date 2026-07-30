@@ -82,6 +82,60 @@ skillLines.forEach((line, idx) => {
   }
 });
 
+// 2b. The family tables are COMPLETE, in every host that carries one.
+// Assertion 2 above checks the other direction: every code a table lists exists in the
+// catalog. It never checked that every catalog code reaches a table, and it only looked at
+// SKILL.md, so GEMINI.md's table drifted 12 codes behind (C2c, C6c, C8b, C41, C49-C52,
+// C55-C57, C59) while its own text promised "scan against all falsegreen families". Nothing
+// caught it: not CI, not the review, not a reader. A host that claims the full Python pass
+// has to list every letter-family code the catalog defines.
+//
+// Two tables carry that promise, not one. A default-pass code belongs in the letter-family
+// rows; an opt-in code (severity=OFF, or the Diagnostic family) belongs in the "Optional /
+// diagnostic (opt-in)" row, whose first cell is prose and so never matches ROW_RE. Requiring
+// OFF codes in the family rows reported C22 missing from all three hosts when every host
+// documents it, in the row meant for it. Both destinations are checked, so neither table can
+// quietly drop a code.
+//
+// The required set is every code the Python pass owns, NOT every code carrying a letter.
+// reference.md declares letters under "#### Family <Letter>" only; the 16 codes under
+// "#### Family additions (catalog sync)" get family="catalog-sync", so a letter-only set
+// silently excused them - and with them C48, absent from all three hosts, plus D7/D8 absent
+// from two. The letter-placement assertion above stays restricted to A-E, since reference.md
+// declares no letter for the additions: presence is checkable there, placement is not.
+const FAMILY_HOSTS = ['SKILL.md', 'GEMINI.md', 'AGENTS.md'];
+const OPT_IN_RE = /^\|[^|]*opt-in[^|]*\|\s*([^|]+)\|/i;
+const PYTHON_PASS_FAMILY = /^([A-E]|catalog-sync)$/;
+const isOptIn = (id) => committed[id].severity === 'OFF' || committed[id].family === 'Diagnostic';
+const letterCodes = Object.keys(committed).filter((id) => PYTHON_PASS_FAMILY.test(committed[id].family || '') && !isOptIn(id));
+const optInCodes = Object.keys(committed).filter((id) => isOptIn(id));
+for (const host of FAMILY_HOSTS) {
+  let text;
+  try {
+    text = read(host);
+  } catch {
+    fail(`${host}: missing host doc - update FAMILY_HOSTS here`);
+    continue;
+  }
+  const listed = new Set();
+  const optInListed = new Set();
+  for (const line of text.split(/\r?\n/)) {
+    const m = line.match(ROW_RE);
+    if (m) for (const id of m[2].match(CODE_TOKEN) || []) listed.add(id);
+    const o = line.match(OPT_IN_RE);
+    if (o) for (const id of o[1].match(CODE_TOKEN) || []) optInListed.add(id);
+  }
+  if (listed.size === 0) continue; // host carries no family table at all
+  const absent = letterCodes.filter((id) => !listed.has(id));
+  if (absent.length > 0) {
+    fail(`${host}: family tables omit ${absent.length} of ${letterCodes.length} default-pass Python codes (${absent.join(', ')}), so a Python run following this host misses them`);
+  }
+  const absentOptIn = optInCodes.filter((id) => !optInListed.has(id) && !listed.has(id));
+  if (absentOptIn.length > 0) {
+    fail(`${host}: omits ${absentOptIn.length} opt-in code(s) (${absentOptIn.join(', ')}) from both the family tables and the opt-in row, so a diagnostic pass following this host misses them`);
+  }
+}
+
 // 3. The documented load path reaches the semantic catalog.
 // The S-series is language-agnostic and defined only in the reference.md section that sits
 // BEFORE the per-language sections. An instruction that says "load the matching language
