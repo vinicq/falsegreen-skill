@@ -6,6 +6,184 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- Semantic catalog was unreachable from every documented load path. 0.8.2 traded
+  "load `reference.md` in full" for "load the matching language section", which
+  fits the ~32 KiB Codex budget but routes past the S-series: the S-codes are
+  language-agnostic and live in one section that sits above the per-language
+  sections, so a language-section-only load never sees any of them. The named
+  tight-budget fallback, `fragments/semantic-cases-compact.md`, carried 6 of the
+  19 codes. Python was not exempt either: the root `SKILL.md` defines no S-code
+  yet claims its catalog is complete on its own, so a Python run missed the same
+  19. The mandatory load is now additive (semantic section AND language section)
+  for every advertised language, the compact fragment carries a row for all 19
+  codes, and the "complete on its own" claims are scoped to the structural
+  catalog. Applied across `SKILL.md`, `skills/falsegreen-skill/SKILL.md`,
+  `llm.md`, `contexts/codex.md`, `contexts/cursor.md`, `docs/architecture.md`,
+  and, via `sync:hosts`, `AGENTS.md` and `GEMINI.md`.
+- The compact path shipped the S-code rules without their exemptions, which turns
+  a precision fix into a false-positive generator. The `AGENTS.md`-only and
+  Cursor-only installs are documented paths where `reference.md` is not on disk,
+  so "check the exemptions in `reference.md`" was unreachable advice: the compact
+  S11 rule asks for a paired positive assertion, while the exemption permits a
+  negative-only check on a filter whose contract is to drop the input entirely.
+  The exemptions are now a synced fragment, `fragments/semantic-exemptions.md`,
+  and `reference.md` consumes it as a target like any host, so there is one copy
+  and `sync-host-files --check` guards every consumer. The floor is 7.5 KiB, the
+  compact table plus the exemptions, and covers every S-code with no
+  `reference.md` read.
+- Cursor got the S-series as a description, not a load. The generated
+  `.cursor/rules/falsegreen-skill.mdc` said where the catalog lived and carried a
+  hand-forked 5-bullet list of the numbered cases only, so Cursor had no S-code
+  definition at all. `contexts/cursor.md` now states the mandate and carries both
+  fragment blocks, which also removes a third rendering of a table that already
+  had two.
+- `npm run validate` now fails when the load path stops reaching the catalog.
+  `check-catalog-consistency.mjs` gained three assertions: the compact fragment
+  carries every semantic code, `reference.md` still defines them all in the one
+  shared section, and every host that routes through `reference.md` reaches the
+  S-series either by carrying all 19 rows inline or by naming that section.
+  Nothing in CI caught this class before, which is why it regressed silently one
+  release after #117 closed it. The check matches on a formatting-normalized copy,
+  because `` `S1`-`S21` `` and a soft line wrap hide the token from a plain regex
+  as effectively as any typo. Its ceiling is recorded in the script and in the PR
+  template: it proves the definition is reachable, it cannot tell an imperative
+  sentence from a descriptive one, so a reviewer does that.
+- The built packages named files they did not ship. `build-targets.mjs` copies
+  `reference.md` and the schemas into each target but never `fragments/`, so the
+  tight-budget floor the protocol points at did not exist on disk in any Claude,
+  Gemini, or Antigravity artifact. `fragments/precision-rules.md` and `CREDITS.md`
+  had the same problem, and predate this change. All are shipped now, and
+  `build-targets` fails when the generated protocol names a path the target does
+  not contain. The check lives there rather than in `npm run validate` because
+  `dist/` is gitignored and validate never builds it, so that is the only place
+  those paths exist. Against the previous state it reports 9 dangling paths across
+  the three packages.
+- `llm.md` claims at its third line to work pasted whole with no other file, and
+  it did not. A standalone paste named none of JS1-JS31, none of R1-R8b, and was
+  missing 16 Python codes: 54 of the codes the three scanners emit had no
+  definition in the file. It now carries the semantic table, the look-alike
+  exemptions, and a structural index covering all three scanners, and
+  `npm run validate` fails if a host that advertises standalone use stops naming
+  every emitted code. That assertion is the checkable form of self-containment and
+  it would have caught this before review.
+- The compact semantic table omitted severity, which `reference.md` fixes for five
+  of its rows: S17 at HIGH, and S15, S16, S18 and S21 at LOW. A compact-only host
+  could promote a LOW code or demote a HIGH one and still follow every documented
+  instruction, so severity was host-dependent. The table carries a severity column
+  now, and `npm run validate` fails when a column value disagrees with the catalog.
+- The Codex plugin entry point contradicted itself. Its head routes a compact host
+  to the in-file index first, and a later paragraph still mandated reading the
+  matching `reference.md` section in full before judging, which does not fit beside
+  the file on a ~32 KiB host. The mandate now points at the index and the section
+  is the conditional follow-up. Two paragraphs that restated the same budget
+  argument in different words were merged: that duplication is how the byte figures
+  drifted three times.
+- `AGENTS.md` said the structural families cover "the 57 C-codes plus CC", which
+  implies 58 entries. The Python scanner emits 56 numbered C-codes plus CC.
+  Corrected, and the index block stopped carrying a hand-maintained byte figure
+  that had already gone stale twice.
+- The range assertion skipped suffixed endpoints entirely. The trailing word
+  boundary refused to match before a letter, so `C1-C11a` and `R1-R8b` never
+  reached the gap check, which is the opposite of the logic right below that
+  treats a suffixed id as defining its number. Both endpoints accept a suffix now.
+- The project layer went missing from the compact index. PL codes audit project
+  config, not test source, so they are language-agnostic, but the index built its
+  row set from the js and robot scanners and `falsegreen` is the only emitter of
+  PL1 and PL2. The two checks for `python -O` assertion stripping and warnings not
+  promoted were in no compact host. Every PL code any scanner emits is in every
+  index now.
+- The range assertion accepted a cross-series typo. The endpoint prefix was a
+  non-capturing group, so `S1-C18` consumed the C, discarded it, and validated
+  S1..S18 as a clean range: the gate passed the exact shape it exists to reject.
+  Endpoints must now share a series.
+- The structural index named 39 of the 67 codes the non-Python scanners emit. It
+  filtered on the `JS`, `R` and `PL` prefixes, so it dropped every shared C-code,
+  the Robot-only C9b and D2, and the diagnostics, while promising to name the
+  complete emitted set. It builds from `schema/scanner-codes.json` now, with a
+  scanner column, so the promise holds by construction rather than by a prefix
+  that looked complete.
+- The Codex plugin entry point named five `fragments/...` paths that resolve
+  inside `skills/falsegreen-skill/`, where no such directory exists. Fourth
+  instance of the same class in this change, and the `dist` verifier could not see
+  it because `build-targets` never ships that file. Its tables are in-file now, so
+  the paths are gone rather than corrected. Its opening instruction was also
+  unconditional, numbering the ~36 KiB root protocol first while a nested caveat
+  told a ~32 KiB host to avoid it: the compact path is the default now and the
+  root protocol is an explicit exception.
+- `AGENTS.md` claimed "nothing outside this file is needed" where that holds for
+  the S-series but not for structural passages. Scoped.
+- A TypeScript, JavaScript, or Robot review driven by `GEMINI.md` ran no
+  structural pass at all. Its Step 2 carried a Python family table and then said
+  "For TypeScript/JavaScript, skip to Step 3", with no TS/JS table, no Robot
+  section, no index, and no instruction to open `reference.md`. Not a missing
+  index, a missing pass, and it predates this change. Gemini has no budget
+  constraint, so it loads the matching section in full.
+- The S-series sat outside the ordered step sequence in four of the seven hosts.
+  `SKILL.md` scoped it to Step 2b ("TS/JS only"), `llm.md` to Step 2 ("Python
+  only"), and `AGENTS.md` and `GEMINI.md` named it in a preamble with the table
+  after the last step. In all four an agent could follow every numbered step
+  without ever screening S1-S18 and S21, which is the under-detection this change
+  exists to fix, surviving inside the fix. The mandate now lives in Step 4, where
+  J1-J6 runs, in every host. `contexts/cursor.md` already did this and was the
+  pattern the other four now follow.
+- `npm run validate` asserts that placement. A static check cannot tell an
+  imperative from a description, but it can tell where the S-series sits, and
+  location was the real defect both times a reviewer caught it: an S-code mention
+  must appear between a host's Step 4 heading and its Step 5 heading. Against the
+  previous commit the assertion names all four hosts.
+- The Codex plugin entry point told a ~32 KiB host to read a ~36 KiB file.
+  `.codex-plugin/plugin.json` points Codex at `skills/falsegreen-skill/SKILL.md`,
+  whose first instruction was to read the root `SKILL.md`, so its own two
+  instructions could not both be followed. It now carries the structural index
+  itself and treats the root protocol as the large-context read it is.
+- The structural catalog had the same defect as the semantic one, and the compact
+  instruction made it circular. `SKILL.md` Step 2b's TS/JS table carries 10 of the
+  24 JS-codes and Robot had no table at all, so 23 structural codes were reachable
+  only by loading a whole `reference.md` language section. Scoping the pull to a
+  passage did not help: nothing can request the passage for a code whose
+  definition it has never seen. `AGENTS.md` and `contexts/cursor.md` now carry a
+  complete structural index, one row per code for the JS, R and PL series, so
+  every code is named without opening `reference.md`. The index is generated from
+  `schema/code-catalog.json` at injection time rather than hand-authored, so
+  `sync-host-files --check` is its drift assertion and no new checker was needed.
+  It costs ~2.9 KiB for 39 codes against ~19 KiB for the TS/JS section alone,
+  which means the completeness-versus-budget tradeoff that produced the passage
+  wording never existed: the catalog had already done the authoring.
+- Advertised code ranges were wrong in 12 places across 3 mutually contradictory
+  figures. `C1-C45, C48` appeared in 7 files, `C1-C37` in `models.yaml`, and the
+  scanner emits 56 C-codes running to C59, so the range both spanned holes and
+  truncated. `JS1-JS31` in 4 files implied JS10, JS12, JS14, JS16, JS19, JS20 and
+  JS28, none of which exist, and `contexts/cursor.md` also said `JS1-JS13` in a
+  second place. All now state counts. The range assertion generalized from the
+  S-series to every series, and its rule is per-id: every id in an advertised
+  inclusive range has to exist, which keeps an honest subset range like `D1-D6`
+  legal and rejects one that spans a gap. This is not cosmetic. Codex's own review
+  of this change reported "the TS/JS summary lacks JS14-JS31", and JS14 does not
+  exist: it read the repo's false range and inherited the error.
+- `AGENTS.md` told Codex to load a `reference.md` language section "in full",
+  which its own budget forbids: at ~18 KiB the file plus the ~19 KiB TS/JS section
+  is ~37 KiB against a ~32 KiB ceiling, so the instruction produced the silent
+  truncation the same paragraph warns about. The on-demand pull is a passage now,
+  not a section. `SKILL.md` and `llm.md` keep "in full" on purpose: `SKILL.md` is
+  ~35 KiB, so any host that opens it is a large-context host by construction and
+  the budget is not the constraint there.
+- Byte figures went stale again inside the same change: `contexts/codex.md` and
+  `docs/packaging.md` still put `AGENTS.md` at ~15 KiB after the exemptions block
+  took it to ~18 KiB. Corrected, along with the three-file eager sum.
+- Stale advertised ranges. `llm.md` announced the S-series as `S1-S16`, three
+  codes short. Docs also mixed `S1-S16`, `S1-S21`, and `S1-S18 and S21` for the
+  same 19 codes; `S1-S21` implies an S19 and S20 that do not exist. Normalized to
+  `S1-S18 and S21`, and the new assertion rejects any range that closes outside
+  the catalog's contiguous run.
+- Stale byte figures that the budget argument rests on. `contexts/codex.md` and
+  `docs/packaging.md` put `SKILL.md` at ~29 KB and `reference.md` at ~80 KB. The
+  real numbers are ~36 KiB and ~92 KiB, which means `SKILL.md` alone already
+  exceeds the ~32 KiB budget. That is a stronger case for the compact path than
+  the docs were making.
+- `models.yaml` semantic tier listed `cases: "10-15"` and never mentioned the
+  S-series it depends on.
+
 ## [0.8.2] - 2026-07-08
 
 ### Fixed

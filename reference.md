@@ -415,6 +415,7 @@ clear the contradiction is); never auto-block on these without showing the reaso
       assert judge_llm(f"is this summary correct? {out}") == "yes"   # S21
   ```
 
+<!-- fg:semantic-exemptions:start -->
 Look-alikes - do NOT flag: a deliberately narrow unit test whose scope the spec confirms
 (S6 needs a stated broader contract); a constant that the spec genuinely endorses (not S3);
 a sanitizer test that already pairs the negative check with a positive one (not S11); a test
@@ -432,6 +433,7 @@ that polls a real settle condition and still fails hard on timeout (not S15); a 
 assertion where the interaction IS the contract - a fire-and-forget event, an audit-log or
 telemetry write, a queue publish - or a `toHaveBeenCalledWith`/`assert_called_once_with` that
 pins the specific arguments, or any call-verification paired with an assertion on the SUT's return value or state - S16 requires the call-verification to be the SOLE oracle (not S16); a `pytest.raises(SpecificError, match=...)` bound to the SUT line (not S17); a stub fed a value the collaborator's contract can actually return (not S18); a test under `*.problem.*` / `*.solution.*` / `exercises/` / `katas/` / `playground/` - a teaching or TDD-spec fixture whose expected value is intentional (the exercise IS the spec), not a frozen bug (not case 18, not S3); a deterministic rubric, structural validator, or frozen human-labeled judge set rather than a live model verdict (not S21).
+<!-- fg:semantic-exemptions:end -->
 
 ---
 

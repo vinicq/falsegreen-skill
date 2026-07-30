@@ -25,6 +25,26 @@ function copy(from, to) {
   fs.copyFileSync(src, dest);
 }
 
+// Every path the generated protocol names has to exist inside the target that
+// ships it. rootProtocol() is a verbatim copy of SKILL.md, so a path SKILL.md
+// names and build-targets does not copy is an instruction pointing at nothing.
+// That shipped once: the tight-budget floor (fragments/*) and CREDITS.md were
+// named by the protocol and absent from all three packages.
+const SHARED = [
+  'CREDITS.md',
+  'fragments/precision-rules.md',
+  'fragments/semantic-cases-compact.md',
+  'fragments/semantic-exemptions.md',
+  'schema/finding.json',
+  'schema/report.json',
+  'schema/test-spec.json',
+  'schema/fix-validation.json',
+];
+
+function copyShared(root) {
+  for (const f of SHARED) copy(f, `${root}/${f}`);
+}
+
 function stripFrontmatter(text) {
   return text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '');
 }
@@ -50,10 +70,7 @@ function buildClaudeAgentSkill() {
 
   write(`${dir}/SKILL.md`, frontmatter + rootProtocol() + '\n');
   copy('reference.md', `${dir}/reference.md`);
-  copy('schema/finding.json', `${dir}/schema/finding.json`);
-  copy('schema/report.json', `${dir}/schema/report.json`);
-  copy('schema/test-spec.json', `${dir}/schema/test-spec.json`);
-  copy('schema/fix-validation.json', `${dir}/schema/fix-validation.json`);
+  copyShared(dir);
 }
 
 function buildGeminiSkill() {
@@ -67,7 +84,8 @@ function buildGeminiSkill() {
     '# falsegreen-skill for Gemini',
     '',
     'Read `references/protocol.md` before judging any test. Read',
-    '`references/reference.md` before reporting a HIGH finding.',
+    '`references/reference.md` before reporting any finding whose look-alike',
+    'exemptions you have not already loaded, whatever its severity.',
     '',
     'Use Gemini long context for whole-suite analysis when the user provides a',
     'directory. For JSON output, conform to `schema/report.json` exactly.',
@@ -77,10 +95,7 @@ function buildGeminiSkill() {
   write(`${dir}/SKILL.md`, skill);
   write(`${dir}/references/protocol.md`, rootProtocol() + '\n');
   copy('reference.md', `${dir}/references/reference.md`);
-  copy('schema/finding.json', `${dir}/schema/finding.json`);
-  copy('schema/report.json', `${dir}/schema/report.json`);
-  copy('schema/test-spec.json', `${dir}/schema/test-spec.json`);
-  copy('schema/fix-validation.json', `${dir}/schema/fix-validation.json`);
+  copyShared(dir);
 }
 
 function buildAntigravityPlugin() {
@@ -96,7 +111,8 @@ function buildAntigravityPlugin() {
     '# falsegreen-skill (Antigravity CLI plugin)',
     '',
     'Read `references/protocol.md` before judging any test. Read',
-    '`references/reference.md` before reporting a HIGH finding.',
+    '`references/reference.md` before reporting any finding whose look-alike',
+    'exemptions you have not already loaded, whatever its severity.',
     '',
     'Use the model long context for whole-suite analysis when the user provides a',
     'directory. For JSON output, conform to `schema/report.json` exactly.',
@@ -105,15 +121,48 @@ function buildAntigravityPlugin() {
   write(`${skillDir}/SKILL.md`, skill);
   write(`${skillDir}/references/protocol.md`, rootProtocol() + '\n');
   copy('reference.md', `${skillDir}/references/reference.md`);
-  copy('schema/finding.json', `${skillDir}/schema/finding.json`);
-  copy('schema/report.json', `${skillDir}/schema/report.json`);
-  copy('schema/test-spec.json', `${skillDir}/schema/test-spec.json`);
-  copy('schema/fix-validation.json', `${skillDir}/schema/fix-validation.json`);
+  copyShared(skillDir);
 }
 
 cleanDist();
 buildClaudeAgentSkill();
 buildGeminiSkill();
 buildAntigravityPlugin();
+
+// Root-cause check for the class above: every `path.md` / `path.json` the generated
+// protocol names must resolve inside the target that ships it, either next to the file
+// that names it or at the package root. No allowlist on purpose: an exception here is
+// how a dangling path gets waved through. This lives in build-targets rather than in
+// npm run validate because dist/ is gitignored and validate never builds it, so this
+// is the only place the paths exist. CI runs this script.
+const NAMED_PATH = /`([A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:md|json))`/g;
+
+function verifyTarget(root, files) {
+  const problems = [];
+  for (const file of files) {
+    const abs = path.join(PKG_ROOT, root, file);
+    const here = path.dirname(abs);
+    const seen = new Set();
+    for (const [, named] of fs.readFileSync(abs, 'utf8').matchAll(NAMED_PATH)) {
+      if (seen.has(named)) continue;
+      seen.add(named);
+      if (fs.existsSync(path.join(here, named))) continue;
+      if (fs.existsSync(path.join(PKG_ROOT, root, named))) continue;
+      problems.push(`${root}/${file} names \`${named}\`, absent from the built target`);
+    }
+  }
+  return problems;
+}
+
+const dangling = [
+  ...verifyTarget('dist/claude-agent-skill', ['SKILL.md']),
+  ...verifyTarget('dist/gemini-skill/falsegreen-skill', ['SKILL.md', 'references/protocol.md']),
+  ...verifyTarget('dist/antigravity-plugin/skills/falsegreen-skill', ['SKILL.md', 'references/protocol.md']),
+];
+if (dangling.length > 0) {
+  process.stderr.write(dangling.map((d) => `error: ${d}`).join('\n') + '\n');
+  process.exit(1);
+}
+
 
 process.stdout.write('built targets in dist/\n');

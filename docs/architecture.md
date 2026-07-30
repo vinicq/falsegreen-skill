@@ -94,7 +94,8 @@ flowchart TD
     S0 -->|yes| S0A["Step 0: load conventions<br/>(extends exemptions, never lowers severity)"]
     S0 -->|no| S1
     S0A --> S1["Step 1: language + framework + level"]
-    S1 --> S2{Language == Python?}
+    S1 --> SEM["Always: reference.md semantic section<br/>(S1-S18 and S21,<br/>language-agnostic)<br/>or the compact S-table"]
+    SEM --> S2{Language == Python?}
     S2 -->|yes| S2A["Step 2: full Python catalog"]
     S2 -->|JS/TS| S2B["Step 2b: TS/JS catalog"]
     S2 -->|Robot/other| S2C["reference.md language section"]

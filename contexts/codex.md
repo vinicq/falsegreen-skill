@@ -65,9 +65,10 @@ your own prompts if they work for you; nothing here requires removing them.
 
 Codex loads project guidance into a host context with a working budget of
 about **32 KiB**. The full set of protocol files does not fit: `SKILL.md`
-(~29 KB) plus `AGENTS.md` (~11 KB) plus this guide (~18 KB) is roughly 58 KB
-loaded together, well past the budget. Loading all three at once truncates
-the protocol mid-file and the analysis degrades silently.
+(~36 KiB) already breaks the budget on its own, and with `AGENTS.md` (~25 KiB)
+plus this guide (~25 KiB) the three come to roughly 86 KiB loaded together.
+Loading them at once truncates the protocol mid-file and the analysis degrades
+silently.
 
 Load the compact path instead. It carries the same J1-J6 protocol and case
 catalog through the single-source fragments, not a separate summary, so it
@@ -86,9 +87,21 @@ Eager (always loaded when Codex opens the project):
 On demand (load only when the case calls for it, never eagerly):
 
 2. **`reference.md`** - the full per-language pattern catalog with examples and
-   look-alike exemptions. At ~80 KB it never fits eagerly. Pull the relevant
-   section only when a finding needs the full pattern definition or an
-   exemption check that the compact table does not spell out.
+   look-alike exemptions. At ~92 KiB it never fits eagerly, and neither does a
+   whole language section: `AGENTS.md` (~25 KiB) plus the TS/JS section
+   (~19 KiB) is ~44 KiB, past the budget before any test source loads, and
+   Robot (~15 KiB) is over too. You do not need either. `AGENTS.md` carries the
+   complete structural code index and the complete semantic table, so it names
+   every code on its own; come here for the passage that defines a code only
+   when a finding needs its full definition or an exemption the compact tables
+   do not spell out. Two sections
+   matter here and they are not interchangeable. The per-language section
+   carries the structural codes for the file in front of you. The section
+   `## Patterns only the semantic pass can catch (AI-only)` carries the
+   language-agnostic S-series (S1-S18 and S21), which applies to every language
+   including Python; the compact S-table in `AGENTS.md` covers it row-for-row,
+   so pull the prose only when a finding needs the full definition or the
+   "Look-alikes - do NOT flag" exemptions that close the section.
 3. **`SKILL.md`** - the full prose protocol, edge cases, and multi-agent mode.
    Load it only when you need the long-form judgment wording or the multi-agent
    procedure; the compact protocol in `AGENTS.md` covers routine review.

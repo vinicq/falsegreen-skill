@@ -220,7 +220,7 @@ Semantic patterns require LLM judgment - no static rule can detect them.
 The tables above are the most common Python and semantic patterns, not the whole catalog.
 The full set is **125 codes**: the Python `C*` series (up to C59), the TS/JS `JS*` series
 (up to JS31), the Robot `R*` series (up to R8b), the project-layer `PL*` and diagnostic
-`D*`/`M*` codes, and the semantic `S1`-`S21` series. Each carries a bad-pattern example and
+`D*`/`M*` codes, and the semantic `S1`-`S18` and `S21` series. Each carries a bad-pattern example and
 a clean look-alike in [reference.md](reference.md), the canonical catalog.
 
 ---
@@ -284,7 +284,7 @@ maintainability smells in general.
 
 Where there is overlap (Assertion Roulette = D1, Duplicate Assert = D3),
 falsegreen flags them as diagnostic codes - informational, not blocking.
-The structural codes unique to falsegreen (C1-C45, C48) cover patterns that
+The structural codes unique to falsegreen, 56 of them, cover patterns that
 Palomba's taxonomy does not address because they were derived specifically
 from studying how green tests hide broken code in CI.
 
@@ -520,7 +520,7 @@ says so rather than accepting the level at face value.
 
 The same false-green shape is classified by the level the test runs at: the level is a
 per-finding axis (J3), read as unit, integration, or E2E. As the superset of the three
-scanners, the skill covers every level and every language, plus the semantic `S1`-`S21`
+scanners, the skill covers every level and every language, plus the semantic `S1`-`S18` and `S21`
 patterns no parser sees. The clusters at each level:
 
 - **Unit:** always-true and self-compare (`C5`/`C7`/`JS30`), no oracle (`C2`/`C2b`), asserts its own double (`JS8`/`JS27`/`C13b`/`S8`), and the semantic `S1`/`S5` (intent mismatch, tests the framework).

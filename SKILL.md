@@ -137,10 +137,10 @@ before proceeding to the semantic judgments. These patterns are organized in
 |---|---|---|
 | A — never checks | C1, C2, C2b, C2c, C3, C4, C4b, C20, C21, C38, C39, C43, C45, C49, C50, C51, C59, CC | assertion unreachable, missing, swallowed, uncollected, name-shadowed, returned-not-asserted, discarded-comparison statement, empty/multi-call raises-warns context, captured log/output never asserted, skipped mid-test, empty parametrize |
 | B — weak/always-true | C5, C6, C6b, C6c, C7, C8, C8b, C9, C11a, C13, C13b, C14, C16, C18, C25, C34, C42, C44, C52, C55, C56, C57 | tautology, truthiness-only, self-compare, broad exception, string repr, generator/lambda always truthy, numeric tautology, membership self-confirmation, mock-rooted compare, never-awaited coroutine, unconfigured Mock attribute |
-| C — checks own setup | C19, C28, C29 | pytest.raises wraps too much, binding unread, env mutation |
+| C — checks own setup | C19, C28, C29, C48 | pytest.raises wraps too much, binding unread, env mutation, test-mode flag flipped then asserted |
 | D — external state | C17, C23, C24, C27, C30, C31, C32, C35 | skip-on-failure, hard path, shared mutable, try/pass, flaky |
 | E — wrong thing | C33, C36, C37, C41 | metric not asserted, fail without reason, duplicate case, assert on a None-returning mutator |
-| Optional / diagnostic (opt-in) | C22, D1, D3, D4, D5, D6, M2 | apply only when user requests diagnostic pass |
+| Optional / diagnostic (opt-in) | C22, D1, D3, D4, D5, D6, D7, D8, M2 | apply only when user requests diagnostic pass |
 
 Report each structural finding with its code number and confidence level before
 proceeding to Steps 3-6.
@@ -160,11 +160,24 @@ where the smell is the same concept and adds JS-specific codes. Apply the catalo
 then proceed to Step 3 for the semantic judgments no static pass can make.
 
 **Load `reference.md` first (mandatory for non-Python).** The table below is a
-summary. The full JS-series, the Robot R-codes, the PL config-audit codes, and
-the S-series semantic codes are defined only in `reference.md`. Read the matching
-language section in full before judging any TypeScript, JavaScript, or Robot
-Framework test - do not rely on this summary table alone. For Python, Step 2
-above is complete on its own.
+summary. The full JS-series, the Robot R-codes, and the PL config-audit codes are
+defined only in `reference.md`. Read the matching language section in full before
+judging any TypeScript, JavaScript, or Robot Framework test - do not rely on this
+summary table alone. For Python, the structural catalog in Step 2 above is
+complete on its own.
+
+**The S-series is separate, and it applies to every language including Python.**
+S1-S18 and S21 sit in `reference.md`, in the section
+`## Patterns only the semantic pass can catch (AI-only)`, which sits above the
+per-language sections, so loading a language section alone skips all of them. Load
+that section together with the "Look-alikes - do NOT flag" paragraph that closes
+it. When the host budget cannot hold both the semantic
+section and a language section, load the two floor fragments instead of the prose:
+`fragments/semantic-cases-compact.md` (a row per S-code) plus
+`fragments/semantic-exemptions.md` (the same look-alike exemptions, so the floor
+needs no `reference.md` read at all). That is about 7.5 KiB against about 13 KiB.
+The language section is what you defer and pull per finding, never the semantic
+floor.
 
 | Family | Codes | What to look for |
 |---|---|---|
@@ -184,7 +197,8 @@ Full TS/JS pattern detail and look-alikes: see `reference.md`.
 For Robot Framework, Gherkin/BDD, and Tavern there is no summary table here: the
 full catalog (the Robot R-codes and the shared C-codes, plus the Gherkin/Tavern
 secondary passes) lives only in `reference.md`. Load it and apply the matching
-language section before Step 3. The companion Robot scanner is
+language section before Step 3, together with the language-agnostic S-series
+described in Step 2b. The companion Robot scanner is
 [robotframework-falsegreen](https://github.com/vinicq/robotframework-falsegreen);
 the skill mirrors its codes as a superset. If the user has run it and provides
 output, use that as the structural pass, then proceed to Step 3.
@@ -237,6 +251,14 @@ call order - even though the public contract still holds?
 Does the test depend on execution order, shared mutable state, or fixtures set
 up by a sibling test? A test that passes only in a specific order is not
 reliably testing anything.
+
+**Then screen every S-code, on every file, whatever the language.** S1-S18 and
+S21 are part of this step, not a preamble to it: walk them one by one against
+`## Patterns only the semantic pass can catch (AI-only)` in `reference.md`, check
+each candidate against the look-alike block that closes that section, then move
+on. Step 4 is not complete until every S-code has been considered. The S-series
+does not belong to Step 2b or 2c, so a Python run that skipped both still runs it
+in full.
 
 ### Step 5: Adversarial verify for case 18
 
@@ -320,7 +342,7 @@ append the note to the existing SUMMARY using what you already know from the ana
 | 18 | J2 | Expected value contradicts what the code should do | Semantic + adversarial verify |
 
 Structural codes are handled by the static scanners - [falsegreen](https://github.com/vinicq/falsegreen)
-for Python (C1-C45, C48) and [falsegreen-js](https://github.com/vinicq/falsegreen-js)
+for Python (56 C-codes) and [falsegreen-js](https://github.com/vinicq/falsegreen-js)
 for TypeScript/JavaScript (shared C-codes plus the JS-series; see reference.md for the full emitted set). This skill adjudicates
 scanner findings when review is needed, and handles the same patterns directly for
 any language. The five semantic cases above need the LLM regardless of language.
@@ -543,7 +565,7 @@ fix catches the targeted mutant, not every possible bug.
 
 Output the finding being fixed, the proposed test (language, level, cited oracle,
 code), the line confirming it passes its own Mode A self-check, and the
-`fix-validation.json` contract for the host to run. State plainly that acceptance
+`schema/fix-validation.json` contract for the host to run. State plainly that acceptance
 waits on the host's gate result; the skill does not run it.
 
 ---

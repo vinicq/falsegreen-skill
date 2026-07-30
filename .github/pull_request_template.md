@@ -37,6 +37,10 @@ Valid types: feat / fix / docs / refactor / test / chore / ci. Examples:
 - [ ] HIGH-confidence codes were stress-tested against legitimate look-alikes
       before being set to HIGH (they block).
 - [ ] Generated targets stay in sync (`npm run validate` is green).
+- [ ] If this PR touches a host's load instruction: the sentence **commands** the
+      load, it does not merely describe where the catalog lives. `npm run validate`
+      proves the definition is reachable; it cannot tell an imperative from a
+      description, so a reviewer has to.
 - [ ] No `Co-Authored-By:` AI agent trailers in the commit history.
 - [ ] Commit count is reasonable for review (rule of thumb: at most 3).
 
