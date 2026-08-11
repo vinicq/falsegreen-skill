@@ -1,6 +1,7 @@
 ---
 name: falsegreen-skill
 description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when reviewing Python, TypeScript, JavaScript, or Robot Framework tests for weak assertions, vacuous passes, mock misuse, async assertion gaps, or whether a test can actually fail.
+license: MIT
 ---
 
 # falsegreen-skill for Antigravity CLI

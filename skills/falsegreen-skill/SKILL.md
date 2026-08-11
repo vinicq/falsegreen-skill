@@ -1,6 +1,7 @@
 ---
 name: falsegreen-skill
 description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when the user asks to review tests for false positives, weak assertions, mock misuse, test smells, or asks whether a test can actually fail. Covers Python (pytest, unittest), TypeScript, JavaScript (Jest, Vitest, Mocha), and Robot Framework.
+license: MIT
 ---
 
 # falsegreen-skill: false-positive test detection
