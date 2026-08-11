@@ -58,16 +58,42 @@ function cleanDist() {
   fs.mkdirSync(DIST, { recursive: true });
 }
 
+// One source for every generated SKILL.md frontmatter. It used to be spelled out
+// three times, so adding `license` to the repo's own skill frontmatters left all
+// three dist targets without it and every consumer of dist/ kept tripping
+// MANIFEST_MISSING_LICENSE (#178). A field added here now reaches all of them.
+const SKILL_FRONTMATTER = [
+  '---',
+  'name: falsegreen-skill',
+  'description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when reviewing Python, TypeScript, JavaScript, or Robot Framework tests for weak assertions, vacuous passes, mock misuse, async assertion gaps, or whether a test can actually fail.',
+  'license: MIT',
+  '---',
+  '',
+].join('\n');
+
+// Required frontmatter keys, checked on every generated SKILL.md below. Derived
+// from what the registry scanner demands, not from the shape of the last bug.
+const REQUIRED_FRONTMATTER_KEYS = ['name', 'description', 'license'];
+
+function assertFrontmatter(target, content) {
+  const end = content.indexOf('\n---', 4);
+  if (!content.startsWith('---\n') || end === -1) {
+    throw new Error(`${target}: SKILL.md has no frontmatter block`);
+  }
+  const block = content.slice(4, end);
+  const missing = REQUIRED_FRONTMATTER_KEYS.filter(
+    (k) => !new RegExp(`^${k}:`, 'm').test(block)
+  );
+  if (missing.length) {
+    throw new Error(`${target}: SKILL.md frontmatter missing ${missing.join(', ')}`);
+  }
+}
+
 function buildClaudeAgentSkill() {
   const dir = 'dist/claude-agent-skill';
-  const frontmatter = [
-    '---',
-    'name: falsegreen-skill',
-    'description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when reviewing Python, TypeScript, JavaScript, or Robot Framework tests for weak assertions, vacuous passes, mock misuse, async assertion gaps, or whether a test can actually fail.',
-    '---',
-    '',
-  ].join('\n');
+  const frontmatter = SKILL_FRONTMATTER;
 
+  assertFrontmatter(dir, frontmatter);
   write(`${dir}/SKILL.md`, frontmatter + rootProtocol() + '\n');
   copy('reference.md', `${dir}/reference.md`);
   copyShared(dir);
@@ -76,11 +102,7 @@ function buildClaudeAgentSkill() {
 function buildGeminiSkill() {
   const dir = 'dist/gemini-skill/falsegreen-skill';
   const skill = [
-    '---',
-    'name: falsegreen-skill',
-    'description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when reviewing Python, TypeScript, JavaScript, or Robot Framework tests for weak assertions, vacuous passes, mock misuse, async assertion gaps, or whether a test can actually fail.',
-    '---',
-    '',
+    SKILL_FRONTMATTER,
     '# falsegreen-skill for Gemini',
     '',
     'Read `references/protocol.md` before judging any test. Read',
@@ -92,6 +114,7 @@ function buildGeminiSkill() {
     '',
   ].join('\n');
 
+  assertFrontmatter(dir, skill);
   write(`${dir}/SKILL.md`, skill);
   write(`${dir}/references/protocol.md`, rootProtocol() + '\n');
   copy('reference.md', `${dir}/references/reference.md`);
@@ -103,11 +126,7 @@ function buildAntigravityPlugin() {
   const skillDir = `${root}/skills/falsegreen-skill`;
   write(`${root}/plugin.json`, read('.antigravity-plugin/plugin.json'));
   const skill = [
-    '---',
-    'name: falsegreen-skill',
-    'description: Analyze test files for false-positive smells, meaning tests that pass even when the code breaks. Use when reviewing Python, TypeScript, JavaScript, or Robot Framework tests for weak assertions, vacuous passes, mock misuse, async assertion gaps, or whether a test can actually fail.',
-    '---',
-    '',
+    SKILL_FRONTMATTER,
     '# falsegreen-skill (Antigravity CLI plugin)',
     '',
     'Read `references/protocol.md` before judging any test. Read',
@@ -118,6 +137,7 @@ function buildAntigravityPlugin() {
     'directory. For JSON output, conform to `schema/report.json` exactly.',
     '',
   ].join('\n');
+  assertFrontmatter(skillDir, skill);
   write(`${skillDir}/SKILL.md`, skill);
   write(`${skillDir}/references/protocol.md`, rootProtocol() + '\n');
   copy('reference.md', `${skillDir}/references/reference.md`);
