@@ -6,6 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Docs](https://img.shields.io/badge/docs-online-blue.svg)](https://vinicq.github.io/falsegreen-docs/)
+[![HOL Registry trust score](https://img.shields.io/endpoint?url=https%3A%2F%2Fhol.org%2Fapi%2Fregistry%2Fbadges%2Fplugin%3Fslug%3Dvinicq%252Ffalsegreen-skill%26metric%3Dtrust%26label%3Dtrust)](https://hol.org/registry/plugins/vinicq%2Ffalsegreen-skill)
 
 **LLM-based semantic analysis for false-positive test detection.** Companion
 to [falsegreen](https://github.com/vinicq/falsegreen), the Python static
